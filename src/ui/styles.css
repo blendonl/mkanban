@@ -1,0 +1,277 @@
+/* MKanban TUI Styles - Catppuccin Mocha Theme with Black Background */
+
+/* Catppuccin Mocha color palette */
+/* Backgrounds: base = #1e1e2e, mantle = #181825, crust = #11111b, black = #000000 */
+/* Text: text = #cdd6f4, subtext1 = #bac2de, subtext0 = #a6adc8 */
+/* Accents: mauve = #cba6f7, pink = #f5c2e7, red = #f38ba8, peach = #fab387 */
+/* Nature: green = #a6e3a1, yellow = #f9e2af, blue = #89b4fa, sapphire = #74c7ec */
+
+/* Main layout with pure black background */
+Screen {
+  layout: vertical;
+  background: #000000;
+  color: #cdd6f4;
+}
+
+Markdown:focus {
+  background: #000000;
+}
+
+/* Main container for centering */
+.main-container {
+  height: 1fr;
+  align: center middle;
+  background: #000000;
+}
+
+.board-container {
+  align: center middle;
+  background: #000000;
+}
+
+/* Board view */
+BoardView {
+  height: auto;
+  width: auto;
+  margin: 1;
+  background: #000000;
+}
+
+/* Column styling */
+.column {
+  border: solid #89b4fa;
+  margin: 0 1;
+  padding: 1;
+  height: 99%;
+  min-width: 30;
+  background: #000000;
+}
+
+.column-header {
+  text-style: bold;
+  background: white;
+  color: #000000;
+  padding: 0 1;
+  margin-bottom: 1;
+}
+
+/* Item styling */
+.item {
+  padding: 0;
+  margin-bottom: 1;
+  color: #cdd6f4;
+  min-height: 3;
+  max-height: 15;
+}
+
+.item:focus {
+  background: #313244;
+}
+
+.item.selected {
+  background: #222222;
+}
+
+.item-content {
+  padding: 1;
+  background: #111111;
+  color: #cdd6f4;
+  height: 100;
+}
+
+.item-content:focus-within {
+  background: #222222;
+}
+
+.item-content .h1 {
+  color: #cba6f7;
+  text-style: bold;
+  text-align: left;
+  margin: 0;
+  padding: 0;
+}
+
+.item-content .h2 {
+  color: #89b4fa;
+  text-style: bold;
+}
+
+.item-content .bold {
+  color: #f9e2af;
+  text-style: bold;
+}
+
+.item-content .italic {
+  color: #a6adc8;
+  text-style: italic;
+}
+
+.item-parent {
+  color: #a6e3a1;
+  text-style: italic;
+}
+
+/* Parent group styling */
+.parent-group {
+  border: solid #a6e3a1;
+  margin-bottom: 1;
+  padding: 1;
+  background: #000000;
+}
+
+.parent-header {
+  text-style: bold;
+  color: #a6e3a1;
+  margin-bottom: 1;
+}
+
+/* Dialog styling */
+.dialog {
+  width: 40;
+  height: 40;
+  background: #000000;
+  margin: 5 50;
+  padding: 0;
+  color: #cdd6f4;
+}
+
+.vertical-scroll {
+  background: #000000;
+  color: #000000;
+}
+
+.items-scroll {
+  scrollbar-color: #000000;
+  scrollbar-size: 1 1;
+  overflow: scroll;
+  color: #000000;
+}
+
+.help-dialog {
+  align: center middle;
+  width: 60;
+  height: 30;
+}
+
+.dialog-title {
+  text-style: bold;
+  text-align: center;
+  margin-bottom: 1;
+  color: #cba6f7;
+}
+
+.input {
+  text-style: bold;
+  text-align: center;
+  margin-bottom: 1;
+  color: #cba6f7;
+  height: 3;
+  width: 40;
+}
+
+/* Input fields */
+Input {
+  margin: 1 0;
+  padding: 0 1;
+  border: solid #6c7086;
+  background: #11111b;
+  color: #cdd6f4;
+}
+
+Input:focus {
+  border: solid #89b4fa;
+  background: #181825;
+}
+
+Input.current-field {
+  border: solid #f9e2af;
+  background: #313244;
+}
+
+Input.current-field:disabled {
+  border: solid #f9e2af;
+  background: #11111b;
+  opacity: 0.8;
+}
+
+/* Select widgets */
+Select {
+  margin: 1 0;
+  border: solid #6c7086;
+  background: #11111b;
+  color: #cdd6f4;
+}
+
+Select:focus {
+  border: solid #89b4fa;
+}
+
+Select.current-field {
+  border: solid #f9e2af;
+  background: #313244;
+}
+
+Select.current-field:disabled {
+  border: solid #f9e2af;
+  background: #11111b;
+  opacity: 0.8;
+}
+
+/* Button styling */
+Button {
+  margin: 1;
+  padding: 0 2;
+  border: solid #6c7086;
+  background: #313244;
+  color: #cdd6f4;
+}
+
+Button:focus {
+  border: solid #89b4fa;
+  background: #45475a;
+}
+
+Button.-primary {
+  background: #89b4fa;
+  color: #000000;
+  border: solid #89b4fa;
+}
+
+Button.-primary:focus {
+  background: #74c7ec;
+  border: solid #74c7ec;
+}
+
+/* Header styling */
+Header {
+  background: #000000;
+  color: #cba6f7;
+}
+
+/* Labels */
+Label {
+  color: #cdd6f4;
+}
+
+.help-text {
+  color: #a6adc8;
+  text-style: italic;
+  text-align: center;
+  margin-top: 1;
+}
+
+/* Markdown in help dialog */
+Markdown {
+  background: #000000;
+  color: red;
+}
+
+.item-content MarkdownH1 {
+  display: block;
+  color: #cba6f7;
+  text-style: bold;
+  text-align: left;
+  margin: 0;
+  padding: 0;
+  height: 1;
+}
