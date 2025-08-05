@@ -98,8 +98,6 @@ class MKanbanApp(App):
                 if board_found:
                     self.current_board = board_found
                 else:
-                    self.notify(
-                        f"Board '{self.initial_board}' not found", severity="error")
                     self.create_sample_board()
             else:
                 # Load first available board or create sample
@@ -115,8 +113,7 @@ class MKanbanApp(App):
                 if self.board_view:
                     self.board_view.set_board(self.current_board)
 
-        except Exception as e:
-            self.notify(f"Error loading board: {e}", severity="error")
+        except Exception:
             self.create_sample_board()
 
     def create_sample_board(self) -> None:

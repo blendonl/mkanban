@@ -161,25 +161,8 @@ class MarkdownStorage:
 
     def load_item(self, item_id: str) -> Optional[Item]:
         """Load an item from its individual markdown file (legacy location)."""
-        item_file = self.items_dir / f"{item_id}.md"
-        if not item_file.exists():
-            return None
-
-        with open(item_file, 'r', encoding='utf-8') as f:
-            post = frontmatter.load(f)
-
-        # Handle frontmatter structure - it may add a 'metadata' wrapper
-        item_metadata = post.metadata.get('metadata', post.metadata)
-        return Item(
-            id=item_metadata['id'],
-            title=item_metadata['title'],
-            description=post.content.strip(),
-            column_id=item_metadata['column_id'],
-            parent_id=item_metadata.get('parent_id'),
-            created_at=item_metadata.get('created_at', datetime.now()),
-            updated_at=item_metadata.get('updated_at', datetime.now()),
-            metadata=item_metadata.get('metadata', {})
-        )
+        # Legacy method - items are now stored in column folders
+        return None
 
     def load_item_from_column(self, board: Board, column: Column, item_id: str) -> Optional[Item]:
         """Load an item from a column folder."""
@@ -312,23 +295,13 @@ class MarkdownStorage:
 
     def save_item(self, item: Item) -> None:
         """Save an item to its individual markdown file (legacy location)."""
-        item_file = self.items_dir / f"{item.id}.md"
+        # Legacy method - items are now saved in column folders via save_item_in_column
+        pass
 
-        item_metadata = {
-            'id': item.id,
-            'title': item.title,
-            'column_id': item.column_id,
-            'parent_id': item.parent_id,
-            'created_at': item.created_at,
-            'updated_at': item.updated_at,
-            'metadata': item.metadata
-        }
-
-        post = frontmatter.Post(
-            content=item.description or "", metadata=item_metadata)
-
-        with open(item_file, 'w', encoding='utf-8') as f:
-            f.write(frontmatter.dumps(post))
+    def delete_item(self, item_id: str) -> bool:
+        """Delete an item from legacy location (backwards compatibility)."""
+        # Legacy method - items are now deleted via delete_item_from_column
+        return False
 
     def save_item_in_column(self, board: Board, item: Item) -> None:
         """Save an item to its column folder."""
@@ -338,6 +311,9 @@ class MarkdownStorage:
             if col.id == item.column_id:
                 column = col
                 break
+
+        if not column:
+            return
 
         board_dir = self._get_board_directory(board)
         column_safe_name = self._get_safe_name(column.name)
@@ -370,6 +346,9 @@ class MarkdownStorage:
             if col.id == item.column_id:
                 column = col
                 break
+
+        if not column:
+            return False
 
         board_dir = self._get_board_directory(board)
         column_safe_name = self._get_safe_name(column.name)

@@ -360,22 +360,10 @@ class BoardView(Widget):
         if not selected:
             return
 
-        def confirm_delete() -> None:
-            if hasattr(self.app, 'controller') and self.app.controller:
-                controller = self.app.controller
-                if controller.delete_item(selected.id):
-                    self.refresh_board()
-                    self.app.notify(f"Deleted item: {selected.title}")
-                else:
-                    self.app.notify("Failed to delete item", severity="error")
-
-        from .dialogs import ConfirmDialog
-        dialog = ConfirmDialog(
-            "Delete Item",
-            f"Are you sure you want to delete '{selected.title}'?",
-            confirm_delete
-        )
-        self.app.push_screen(dialog)
+        if hasattr(self.app, 'controller') and self.app.controller:
+            controller = self.app.controller
+            if controller.delete_item(selected.id):
+                self.refresh_board()
 
     def edit_selected_item(self) -> None:
         """Edit the currently selected item inline."""

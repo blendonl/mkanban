@@ -39,11 +39,19 @@ class BoardController:
                 item = board_item
                 break
         
+        if not item:
+            return False
+        
+        # Delete the item file first (if it exists)
+        self.storage.delete_item_from_column(self.board, item)
+        
+        # Remove from board
         success = self.board.remove_item(item_id)
-        if success and item:
-            # Try to delete from column folder first, fallback to legacy
-            if not self.storage.delete_item_from_column(self.board, item):
-                self.storage.delete_item(item_id)
+        
+        if success:
+            # Save the board to update references
+            self.storage.save_board(self.board)
+        
         return success
     
     def move_item(self, item_id: str, target_column_id: str) -> bool:
