@@ -22,13 +22,28 @@ class BoardController:
         item = self.board.add_item(title, column_id, parent_id)
         if description:
             item.description = description
+        
+        # Save the new item to its column folder
+        self.storage.save_item_in_column(self.board, item)
+        # Save the board to update the item references
+        self.storage.save_board(self.board)
+        
         return item
     
     def delete_item(self, item_id: str) -> bool:
         """Delete an item from the board and its file."""
+        # Find the item first to delete from correct location
+        item = None
+        for board_item in self.board.items:
+            if board_item.id == item_id:
+                item = board_item
+                break
+        
         success = self.board.remove_item(item_id)
-        if success:
-            self.storage.delete_item(item_id)
+        if success and item:
+            # Try to delete from column folder first, fallback to legacy
+            if not self.storage.delete_item_from_column(self.board, item):
+                self.storage.delete_item(item_id)
         return success
     
     def move_item(self, item_id: str, target_column_id: str) -> bool:
@@ -36,6 +51,12 @@ class BoardController:
         for item in self.board.items:
             if item.id == item_id:
                 item.move_to_column(target_column_id)
+                
+                # Save the updated item to its column folder
+                self.storage.save_item_in_column(self.board, item)
+                # Save the board to update column references
+                self.storage.save_board(self.board)
+                
                 return True
         return False
     
@@ -44,6 +65,12 @@ class BoardController:
         for item in self.board.items:
             if item.id == item_id:
                 item.update(**kwargs)
+                
+                # Save the updated item to its column folder
+                self.storage.save_item_in_column(self.board, item)
+                # Save the board in case title or other references changed
+                self.storage.save_board(self.board)
+                
                 return True
         return False
     
@@ -52,6 +79,12 @@ class BoardController:
         for item in self.board.items:
             if item.id == item_id:
                 item.set_parent(parent_id)
+                
+                # Save the updated item to its column folder
+                self.storage.save_item_in_column(self.board, item)
+                # Save the board to update parent references
+                self.storage.save_board(self.board)
+                
                 return True
         return False
     
