@@ -1,5 +1,3 @@
-"""Main MKanban application."""
-
 from pathlib import Path
 from typing import Optional
 from textual.app import App, ComposeResult
@@ -7,16 +5,16 @@ from textual.containers import Horizontal, Vertical
 from textual.widgets import Header
 from textual.binding import Binding
 
-from .storage import MarkdownStorage
-from .models import Board
-from .ui import BoardView
-from .controllers import BoardController
+from .storage.markdown_storage import MarkdownStorage
+from .models.board import Board
+from .ui.board_view import BoardView
+from .controllers.board_controller import BoardController
+from .controllers.item_controller import ItemController
+from .controllers.column_controller import ColumnController
 from .utils.config import Config
 
 
 class MKanbanApp(App):
-    """Main MKanban TUI application."""
-
     CSS_PATH = "ui/styles.css"
     TITLE = "MKanban"
     SUB_TITLE = "Terminal Kanban Board"
@@ -51,11 +49,9 @@ class MKanbanApp(App):
     ]
 
     def __init__(self, data_dir: Path, initial_board: Optional[str] = None):
-        """Initialize the application."""
         super().__init__()
         self.config = Config.load()
 
-        # Override data_dir if provided
         if data_dir != Path("./data"):
             self.config.data_dir = str(data_dir)
 
@@ -63,11 +59,12 @@ class MKanbanApp(App):
         self.storage = MarkdownStorage(self.data_dir)
         self.initial_board = initial_board
         self.current_board: Optional[Board] = None
-        self.controller: Optional[BoardController] = None
+        self.board_controller: Optional[BoardController] = None
+        self.column_controller: Optional[ColumnController] = None
+        self.item_ontroller: Optional[ItemController] = None
         self.board_view: Optional[BoardView] = None
 
     def compose(self) -> ComposeResult:
-        """Create the UI layout."""
         yield Header()
 
         with Vertical(classes="main-container"):
@@ -76,7 +73,6 @@ class MKanbanApp(App):
                 yield self.board_view
 
     def on_mount(self) -> None:
-        """Initialize the application on mount."""
         self.load_initial_board()
 
     def load_initial_board(self) -> None:

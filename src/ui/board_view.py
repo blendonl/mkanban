@@ -1,12 +1,15 @@
 
-from typing import Optional, List, Dict
+from typing import Optional, List
 from enum import Enum
-from textual.widgets import Static, Markdown
+from textual.widgets import Markdown
 from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.widget import Widget
 from textual.reactive import reactive
 
-from ..models import Board, Column, Item, Parent
+
+from ..models.board import Board
+from ..models.column import Column
+from ..models.item import Item
 from .vim_widgets import VimTextArea
 
 
@@ -137,8 +140,8 @@ class ColumnWidget(Vertical):
             return
 
         def on_save(title: str, content: str):
-            if self.board_view and hasattr(self.board_view.app, 'controller'):
-                controller = self.board_view.app.controller
+            if self.board_view:
+                controller = self.board_view.app.column_controller
                 controller.add_item(title, self.column.id, None, content)
                 self.board_view.refresh_board()
             self._finish_editing()
@@ -334,7 +337,7 @@ class BoardView(Widget):
         if not selected:
             return
 
-        if hasattr(self.app, 'controller') and self.app.controller:
+        if self.app.column_controller:
             controller = self.app.controller
             if controller.delete_item(selected.id):
                 self.refresh_board()
@@ -353,7 +356,7 @@ class BoardView(Widget):
             return
 
         def on_save(title: str, content: str):
-            if hasattr(self.app, 'controller') and self.app.controller:
+            if hasattr(self.app, 'item_controller') and self.app.item_controller:
                 controller = self.app.controller
                 controller.update_item(
                     selected.id, title=title, description=content)
@@ -379,19 +382,18 @@ class BoardView(Widget):
             return
 
         async def move_item(target_column_id: str) -> None:
-            if hasattr(self.app, 'controller') and self.app.controller:
-                items_container = self.query_one(
-                    f"#column_{target_column_id.replace("-", "_")}", Vertical)
+            items_container = self.query_one(
+                f"#column_{target_column_id.replace("-", "_")}", Vertical)
 
-                item = self.query_one(f"#item_{selected.id.replace("-", "_")}")
+            item = self.query_one(f"#item_{selected.id.replace("-", "_")}")
 
-                await item.remove()
-                items_container.children[0].children[0].mount(item)
-                items_container.items.append(item)
-                item.focus()
+            await item.remove()
+            items_container.children[0].children[0].mount(item)
+            items_container.items.append(item)
+            item.focus()
 
-                controller = self.app.controller
-                controller.move_item(selected.id, target_column_id)
+            controller = self.app.column_controller
+            controller.move_item(selected.id, target_column_id)
 
         column = None
 
@@ -409,18 +411,17 @@ class BoardView(Widget):
             return
 
         async def move_item(target_column_id: str) -> None:
-            if hasattr(self.app, 'controller') and self.app.controller:
-                items_container = self.query_one(
-                    f"#column_{target_column_id.replace("-", "_")}", Vertical)
+            items_container = self.query_one(
+                f"#column_{target_column_id.replace("-", "_")}", Vertical)
 
-                item = self.query_one(f"#item_{selected.id.replace("-", "_")}")
-                await item.remove()
-                items_container.children[0].children[0].mount(item)
+            item = self.query_one(f"#item_{selected.id.replace("-", "_")}")
+            await item.remove()
+            items_container.children[0].children[0].mount(item)
 
-                controller = self.app.controller
-                controller.move_item(selected.id, target_column_id)
+            controller = self.app.column_controller
+            controller.move_item(selected.id, target_column_id)
 
-                item.focus()
+            item.focus()
 
         column = None
 
