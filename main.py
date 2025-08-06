@@ -4,6 +4,7 @@ MKanban - A Terminal User Interface Kanban Board
 """
 
 import click
+import asyncio
 from pathlib import Path
 from src.app import MKanbanApp
 
@@ -28,4 +29,4 @@ def main(data_dir: Path, board: str):
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

@@ -14,7 +14,7 @@ Screen {
 }
 
 Markdown:focus {
-  background: #000000;
+  background: white;
 }
 
 /* Main container for centering */
@@ -57,7 +57,7 @@ BoardView {
 
 /* Item styling */
 .item {
-  padding: 0;
+  padding: 1;
   margin-bottom: 1;
   color: #cdd6f4;
   min-height: 3;
@@ -68,8 +68,12 @@ BoardView {
   background: #313244;
 }
 
-.item.selected {
+.focused {
   background: #222222;
+}
+
+.item-content:focus {
+  background: white;
 }
 
 .item-content {

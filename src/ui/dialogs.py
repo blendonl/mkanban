@@ -10,6 +10,119 @@ from ..models import Board, Column, Parent
 from .vim_widgets import VimInput, VimMode
 
 
+class NewItemDialog(ModalScreen):
+    """Dialog for creating a new item."""
+
+    def __init__(self, board: Board, on_create: Callable[[str, str, Optional[str]], None]):
+        """Initialize dialog."""
+        super().__init__()
+        self.board = board
+        self.on_create = on_create
+        self.current_field = 0  # Track current field for vim navigation
+        self.insert_mode = False  # Track insert mode state
+
+    def compose(self) -> ComposeResult:
+        """Compose the dialog."""
+        with Vertical(classes="dialog"):
+            yield Label("Create New Item", classes="dialog-title")
+
+            yield Label("Title:")
+            yield VimInput(placeholder="Enter item title", id="title_input", classes="input", disabled=True)
+
+            yield Label("Column:")
+            column_options = [(col.name, col.id) for col in sorted(
+                self.board.columns, key=lambda c: c.position)]
+            yield Select(column_options, id="column_select", classes="input", disabled=True)
+
+            yield Label("Parent (optional):")
+            parent_options = [("None", None)] + [(parent.name, parent.id)
+                                                 for parent in self.board.parents]
+            yield Select(parent_options, id="parent_select", classes="input", disabled=True)
+
+            yield Label("[i] Insert mode, [j/k] Navigate, [Enter] Create, [Esc] Cancel",
+                        classes="help-text")
+
+    def on_mount(self) -> None:
+        """Initialize dialog state."""
+        self._update_field_focus()
+
+    def _get_fields(self):
+        """Get all navigable fields in order."""
+        return [
+            self.query_one("#title_input", VimInput),
+            self.query_one("#column_select", Select),
+            self.query_one("#parent_select", Select)
+        ]
+
+    def _update_field_focus(self):
+        """Update field focus and disabled states."""
+        fields = self._get_fields()
+
+        # Disable all fields first
+        for field in fields:
+            field.disabled = True
+            field.remove_class("current-field")
+            if hasattr(field, 'vim_mode'):
+                field.vim_mode = VimMode.NORMAL
+
+        # Enable and highlight current field
+        if 0 <= self.current_field < len(fields):
+            current = fields[self.current_field]
+            current.add_class("current-field")
+            if self.insert_mode:
+                current.disabled = False
+                current.focus()
+                if hasattr(current, 'vim_mode'):
+                    current.vim_mode = VimMode.INSERT
+
+    def on_key(self, event) -> None:
+        """Handle key presses for vim navigation."""
+        # In insert mode, let the focused input handle most keys
+        if self.insert_mode:
+            if event.key == "escape":
+                # Exit insert mode
+                self.insert_mode = False
+                self._update_field_focus()
+                event.prevent_default()
+            return
+
+        # Normal mode navigation
+        if event.key == "j":
+            # Move down to next field
+            fields = self._get_fields()
+            if self.current_field < len(fields) - 1:
+                self.current_field += 1
+                self._update_field_focus()
+        elif event.key == "k":
+            # Move up to previous field
+            if self.current_field > 0:
+                self.current_field -= 1
+                self._update_field_focus()
+        elif event.key == "i":
+            # Enter insert mode
+            self.insert_mode = True
+            self._update_field_focus()
+        elif event.key == "enter":
+            # Create item
+            title_input = self.query_one("#title_input", VimInput)
+            column_select = self.query_one("#column_select", Select)
+            parent_select = self.query_one("#parent_select", Select)
+
+            title = title_input.value.strip()
+            if not title:
+                self.app.notify("Title is required", severity="error")
+                return
+
+            column_id = column_select.value
+            parent_id = parent_select.value if parent_select.value != "None" else None
+
+            self.on_create(title, column_id, parent_id)
+            self.dismiss()
+        elif event.key in ("escape", "q"):
+            # Close dialog
+            self.dismiss()
+
+
 class EditItemDialog(ModalScreen):
     """Dialog for editing an existing item."""
 

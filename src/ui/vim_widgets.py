@@ -1,201 +1,27 @@
 """Vim-enabled input widgets for MKanban."""
 
-from typing import Optional
-from textual.widgets import Input, TextArea
+from textual.widgets import TextArea
 from textual import events
-from textual.messages import Message
 
 
 class VimMode:
-    """Enum-like class for vim modes."""
     NORMAL = "normal"
     INSERT = "insert"
-    VISUAL = "visual"
-
-
-class VimInput(Input):
-    """Input widget with vim key bindings."""
-
-    def __init__(self, *args, **kwargs):
-        """Initialize vim input."""
-        super().__init__(*args, **kwargs)
-        self._vim_mode = VimMode.INSERT  # Start in insert mode for inputs
-        self.cursor_home_position = 0
-        self.visual_start = None
-
-    @property
-    def vim_mode(self):
-        """Get vim mode."""
-        return getattr(self, '_vim_mode', VimMode.INSERT)
-
-    @vim_mode.setter
-    def vim_mode(self, value):
-        """Set vim mode."""
-        self._vim_mode = value
-
-    def on_key(self, event: events.Key) -> None:
-        """Handle vim key bindings."""
-        key = event.key
-
-        if self.vim_mode == VimMode.INSERT:
-            if key == "escape":
-                self.vim_mode = VimMode.NORMAL
-                event.prevent_default()
-                return
-            # Let default input handling work in insert mode
-            return
-
-        elif self.vim_mode == VimMode.NORMAL:
-            if key == "i":
-                # Enter insert mode at cursor
-                self.vim_mode = VimMode.INSERT
-                event.prevent_default()
-            elif key == "I":
-                # Enter insert mode at beginning of line
-                self.cursor_position = 0
-                self.vim_mode = VimMode.INSERT
-                event.prevent_default()
-            elif key == "a":
-                # Enter insert mode after cursor
-                if self.cursor_position < len(self.value):
-                    self.cursor_position += 1
-                self.vim_mode = VimMode.INSERT
-                event.prevent_default()
-            elif key == "A":
-                # Enter insert mode at end of line
-                self.cursor_position = len(self.value)
-                self.vim_mode = VimMode.INSERT
-                event.prevent_default()
-            elif key == "h" or key == "left":
-                # Move cursor left
-                if self.cursor_position > 0:
-                    self.cursor_position -= 1
-                event.prevent_default()
-            elif key == "l" or key == "right":
-                # Move cursor right
-                if self.cursor_position < len(self.value):
-                    self.cursor_position += 1
-                event.prevent_default()
-            elif key == "0":
-                # Move to beginning of line
-                self.cursor_position = 0
-                event.prevent_default()
-            elif key == "dollar":
-                # Move to end of line
-                self.cursor_position = len(self.value)
-                event.prevent_default()
-            elif key == "w":
-                # Move to next word
-                self._move_to_next_word()
-                event.prevent_default()
-            elif key == "b":
-                # Move to previous word
-                self._move_to_previous_word()
-                event.prevent_default()
-            elif key == "x":
-                # Delete character under cursor
-                if self.cursor_position < len(self.value):
-                    self.value = (self.value[:self.cursor_position] +
-                                  self.value[self.cursor_position + 1:])
-                event.prevent_default()
-            elif key == "X":
-                # Delete character before cursor
-                if self.cursor_position > 0:
-                    self.cursor_position -= 1
-                    self.value = (self.value[:self.cursor_position] +
-                                  self.value[self.cursor_position + 1:])
-                event.prevent_default()
-            elif key == "d":
-                # Start delete operation (would need to handle dd, dw, etc.)
-                pass
-            elif key == "v":
-                # Enter visual mode
-                self.vim_mode = VimMode.VISUAL
-                self.visual_start = self.cursor_position
-                event.prevent_default()
-            else:
-                # Let other keys pass through
-                return
-
-        elif self.vim_mode == VimMode.VISUAL:
-            if key == "escape":
-                self.vim_mode = VimMode.NORMAL
-                self.visual_start = None
-                event.prevent_default()
-            elif key == "h" or key == "left":
-                if self.cursor_position > 0:
-                    self.cursor_position -= 1
-                event.prevent_default()
-            elif key == "l" or key == "right":
-                if self.cursor_position < len(self.value):
-                    self.cursor_position += 1
-                event.prevent_default()
-            elif key == "d" or key == "x":
-                # Delete selected text
-                if self.visual_start is not None:
-                    start = min(self.visual_start, self.cursor_position)
-                    end = max(self.visual_start, self.cursor_position) + 1
-                    self.value = self.value[:start] + self.value[end:]
-                    self.cursor_position = start
-                    self.vim_mode = VimMode.NORMAL
-                    self.visual_start = None
-                event.prevent_default()
-            else:
-                return
-
-    def _move_to_next_word(self) -> None:
-        """Move cursor to the beginning of the next word."""
-        pos = self.cursor_position
-        value = self.value
-
-        # Skip current word if in middle of one
-        while pos < len(value) and value[pos].isalnum():
-            pos += 1
-
-        # Skip whitespace
-        while pos < len(value) and value[pos].isspace():
-            pos += 1
-
-        self.cursor_position = min(pos, len(value))
-
-    def _move_to_previous_word(self) -> None:
-        """Move cursor to the beginning of the previous word."""
-        pos = self.cursor_position
-        value = self.value
-
-        if pos > 0:
-            pos -= 1
-
-        # Skip whitespace
-        while pos > 0 and value[pos].isspace():
-            pos -= 1
-
-        # Skip to beginning of word
-        while pos > 0 and value[pos - 1].isalnum():
-            pos -= 1
-
-        self.cursor_position = pos
 
 
 class VimTextArea(TextArea):
-    """TextArea widget with vim key bindings."""
-
     def __init__(self, text="", **kwargs):
-        """Initialize vim text area."""
-        # Use default TextArea initialization
         super().__init__(text=text, **kwargs)
-        self._vim_mode = VimMode.NORMAL  # Start in insert mode for easier editing
+        self._vim_mode = VimMode.NORMAL
         self.last_command = None
         self.visual_start = None
 
     @property
     def vim_mode(self):
-        """Get vim mode."""
         return getattr(self, '_vim_mode', VimMode.INSERT)
 
     @vim_mode.setter
     def vim_mode(self, value):
-        """Set vim mode."""
         self._vim_mode = value
 
     def on_key(self, event: events.Key) -> None:

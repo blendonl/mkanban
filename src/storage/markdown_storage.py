@@ -4,6 +4,7 @@ import frontmatter
 from pathlib import Path
 from typing import List, Optional
 from datetime import datetime
+from uuid import uuid4
 
 from ..models import Board, Column, Item, Parent
 
@@ -26,20 +27,20 @@ class MarkdownStorage:
         # Load from board folders (new structure)
         for board_dir in self.boards_dir.iterdir():
             if board_dir.is_dir():
-                board_file = board_dir / "board.md"
-                if board_file.exists():
-                    board = self.load_board_from_file(board_file)
+                kanban_file = board_dir / "kanban.md"
+                if kanban_file.exists():
+                    board = self.load_board_from_file(kanban_file)
                     if board:
                         boards.append(board)
 
         return boards
 
-    def load_board_from_file(self, board_file: Path) -> Optional[Board]:
-        """Load a single board from its markdown file."""
-        if not board_file.exists():
+    def load_board_from_file(self, kanban_file: Path) -> Optional[Board]:
+        """Load a single board from its kanban.md file."""
+        if not kanban_file.exists():
             return None
 
-        with open(board_file, 'r', encoding='utf-8') as f:
+        with open(kanban_file, 'r', encoding='utf-8') as f:
             post = frontmatter.load(f)
 
         # Handle frontmatter structure
@@ -54,14 +55,9 @@ class MarkdownStorage:
             metadata=metadata.get('board_metadata', {})
         )
 
-        # Load columns
-        for col_data in metadata.get('columns', []):
-            column = Column(
-                id=col_data['id'],
-                name=col_data['name'],
-                position=col_data['position']
-            )
-            board.columns.append(column)
+        # Load columns from column links
+        self._parse_columns_from_content(
+            board, post.content, kanban_file.parent)
 
         # Load parents
         for parent_data in metadata.get('parents', []):
@@ -76,76 +72,42 @@ class MarkdownStorage:
             )
             board.parents.append(parent)
 
-        # Parse items from markdown content
-        self._parse_items_from_content(board, post.content)
-
         return board
 
-    def _parse_items_from_content(self, board: Board, content: str) -> None:
-        """Parse items from markdown content with links."""
+    def _parse_columns_from_content(self, board: Board, content: str, board_dir: Path) -> None:
+        """Parse columns from kanban.md content with links to column.md files."""
         import re
 
-        current_column = None
         lines = content.split('\n')
-        board_dir = self._get_board_directory(board)
 
         for line in lines:
             line = line.strip()
 
-            # Find column headers (## Column Name)
-            column_match = re.match(r'^## (.+)$', line)
+            # Find column links - format: [Column Name](column-folder/column.md)
+            column_match = re.match(r'^- \[(.+?)\]\((.+?)/column\.md\)$', line)
             if column_match:
                 column_name = column_match.group(1).strip()
-                # Find matching column
-                current_column = None
-                for col in board.columns:
-                    if col.name == column_name:
-                        current_column = col
-                        break
-                continue
+                column_folder = column_match.group(2).strip()
 
-            # Find item links - support multiple path formats
-            # New format: column-folder/item.md
-            # Legacy formats: ../items/item.md, items/item.md
-            item_match = re.match(
-                r'^- \[(.+?)\]\((.+?)/(.+?)\.md\)(?:\s*\*\((.+?)\)\*)?', line)
-            if item_match and current_column:
-                title = item_match.group(1)
-                folder_path = item_match.group(2)
-                item_id = item_match.group(3)
-                parent_name = item_match.group(
-                    4) if item_match.group(4) else None
-
-                # Load the item file from appropriate location
-                item = None
-                if folder_path in ['../items', 'items']:
-                    # Legacy format
-                    item = self.load_item(item_id)
-                else:
-                    # New format - item in column folder
-                    item = self.load_item_from_column(
-                        board, current_column, item_id)
-
-                if item:
-                    item.column_id = current_column.id
-
-                    # Find parent ID by name
-                    if parent_name:
-                        for parent in board.parents:
-                            if parent.name == parent_name:
-                                item.parent_id = parent.id
-                                break
-
-                    board.items.append(item)
+                # Load column from its column.md file
+                column_file = board_dir / column_folder / "column.md"
+                if column_file.exists():
+                    column = self.load_column_from_file(
+                        column_file, column_name, len(board.columns))
+                    if column:
+                        board.columns.append(column)
+                        # Load items for this column
+                        self._load_items_for_column(
+                            board, column, board_dir / column_folder)
 
     def load_board(self, board_id: str) -> Optional[Board]:
         """Load a specific board by ID."""
         # Try to find board in folders first (new structure)
         for board_dir in self.boards_dir.iterdir():
             if board_dir.is_dir():
-                board_file = board_dir / "board.md"
-                if board_file.exists():
-                    board = self.load_board_from_file(board_file)
+                kanban_file = board_dir / "kanban.md"
+                if kanban_file.exists():
+                    board = self.load_board_from_file(kanban_file)
                     if board and board.id == board_id:
                         return board
 
@@ -159,18 +121,64 @@ class MarkdownStorage:
                 return board
         return None
 
-    def load_item(self, item_id: str) -> Optional[Item]:
-        """Load an item from its individual markdown file (legacy location)."""
-        # Legacy method - items are now stored in column folders
-        return None
+    def load_column_from_file(self, column_file: Path, column_name: str, position: int) -> Optional[Column]:
+        """Load a column from its column.md file."""
+        if not column_file.exists():
+            return None
 
-    def load_item_from_column(self, board: Board, column: Column, item_id: str) -> Optional[Item]:
-        """Load an item from a column folder."""
-        board_dir = self._get_board_directory(board)
-        column_safe_name = self._get_safe_name(column.name)
-        column_dir = board_dir / column_safe_name
-        item_file = column_dir / f"{item_id}.md"
+        with open(column_file, 'r', encoding='utf-8') as f:
+            post = frontmatter.load(f)
 
+        # Handle frontmatter structure
+        metadata = post.metadata.get('metadata', post.metadata)
+
+        column = Column(
+            id=metadata.get('id', str(uuid4())),
+            name=column_name,
+            position=position
+        )
+        return column
+
+    def _load_items_for_column(self, board: Board, column: Column, column_dir: Path) -> None:
+        """Load all items for a column from its items/ subfolder."""
+        import re
+
+        # First load items from column.md links
+        column_file = column_dir / "column.md"
+        if column_file.exists():
+            with open(column_file, 'r', encoding='utf-8') as f:
+                post = frontmatter.load(f)
+
+            lines = post.content.split('\n')
+            for line in lines:
+                line = line.strip()
+
+                # Find item links - format: [Item Title](items/uuid.md)
+                item_match = re.match(
+                    r'^- \[(.+?)\]\(items/(.+?)\.md\)(?:\s*\*\((.+?)\)\*)?$', line)
+                if item_match:
+                    item_title = item_match.group(1).strip()
+                    item_uuid = item_match.group(2).strip()
+                    parent_name = item_match.group(
+                        3) if item_match.group(3) else None
+
+                    # Load the item file
+                    item_file = column_dir / "items" / f"{item_uuid}.md"
+                    if item_file.exists():
+                        item = self.load_item_from_uuid_file(
+                            item_file, column.id)
+                        if item:
+                            # Find parent ID by name
+                            if parent_name:
+                                for parent in board.parents:
+                                    if parent.name == parent_name:
+                                        item.parent_id = parent.id
+                                        break
+
+                            column.items.append(item)
+
+    def load_item_from_uuid_file(self, item_file: Path, column_id: str) -> Optional[Item]:
+        """Load an item from a UUID-named file in items/ folder."""
         if not item_file.exists():
             return None
 
@@ -180,10 +188,10 @@ class MarkdownStorage:
         # Handle frontmatter structure - it may add a 'metadata' wrapper
         item_metadata = post.metadata.get('metadata', post.metadata)
         return Item(
-            id=item_metadata['id'],
+            id=item_metadata.get('id', item_file.stem),
             title=item_metadata['title'],
             description=post.content.strip(),
-            column_id=item_metadata['column_id'],
+            column_id=column_id,
             parent_id=item_metadata.get('parent_id'),
             created_at=item_metadata.get('created_at', datetime.now()),
             updated_at=item_metadata.get('updated_at', datetime.now()),
@@ -201,8 +209,8 @@ class MarkdownStorage:
         board_dir = self._get_board_directory(board)
         board_dir.mkdir(exist_ok=True)
 
-        # Board file is always board.md inside the board directory
-        board_file = board_dir / "board.md"
+        # Board file is always kanban.md inside the board directory
+        kanban_file = board_dir / "kanban.md"
 
         # Prepare board metadata
         board_data = {
@@ -212,18 +220,8 @@ class MarkdownStorage:
             'created_at': board.created_at,
             'updated_at': board.updated_at,
             'board_metadata': board.metadata,
-            'columns': [],
             'parents': []
         }
-
-        # Add columns
-        for column in sorted(board.columns, key=lambda c: c.position):
-            col_data = {
-                'id': column.id,
-                'name': column.name,
-                'position': column.position
-            }
-            board_data['columns'].append(col_data)
 
         # Add parents
         for parent in board.parents:
@@ -238,89 +236,91 @@ class MarkdownStorage:
             }
             board_data['parents'].append(parent_data)
 
-        # Generate markdown content with item links
+        # Generate markdown content with column links
         content_lines = [
             f"# {board.name}",
             "",
             board.description,
+            "",
+            "## Columns",
             ""
         ]
 
-        # Add columns with item links
+        # Add links to column files
         for column in sorted(board.columns, key=lambda c: c.position):
-            # Create column directory
             column_safe_name = self._get_safe_name(column.name)
-            column_dir = board_dir / column_safe_name
-            column_dir.mkdir(exist_ok=True)
+            content_lines.append(
+                f"- [{column.name}]({column_safe_name}/column.md)")
 
-            content_lines.extend([
-                f"## {column.name}",
-                ""
-            ])
+            # Save the column and its items
+            self.save_column_with_items(board, column)
 
-            # Get items for this column
-            column_items = board.get_column_items(column.id)
-
-            if not column_items:
-                content_lines.append("*No items*")
-            else:
-                for item in column_items:
-                    # Create markdown link to item file in column folder
-                    item_link = f"[{item.title}]({
-                        column_safe_name}/{item.id}.md)"
-
-                    # Add parent indicator if present
-                    if item.parent_id:
-                        parent_name = "Unknown Parent"
-                        for parent in board.parents:
-                            if parent.id == item.parent_id:
-                                parent_name = parent.name
-                                break
-                        item_link += f" *({parent_name})*"
-
-                    content_lines.append(f"- {item_link}")
-
-            content_lines.append("")
-
-        # Save individual item files in their column folders
-        for item in board.items:
-            self.save_item_in_column(board, item)
-
-        # Save board file
+        # Save kanban.md file
         post = frontmatter.Post(content="\n".join(
             content_lines), metadata=board_data)
 
-        with open(board_file, 'w', encoding='utf-8') as f:
+        with open(kanban_file, 'w', encoding='utf-8') as f:
             f.write(frontmatter.dumps(post))
 
-    def save_item(self, item: Item) -> None:
-        """Save an item to its individual markdown file (legacy location)."""
-        # Legacy method - items are now saved in column folders via save_item_in_column
-        pass
-
-    def delete_item(self, item_id: str) -> bool:
-        """Delete an item from legacy location (backwards compatibility)."""
-        # Legacy method - items are now deleted via delete_item_from_column
-        return False
-
-    def save_item_in_column(self, board: Board, item: Item) -> None:
-        """Save an item to its column folder."""
-        # Find the column for this item
-        column = None
-        for col in board.columns:
-            if col.id == item.column_id:
-                column = col
-                break
-
-        if not column:
-            return
-
+    def save_column_with_items(self, board: Board, column: Column) -> None:
+        """Save a column to its own folder with column.md and items/ subfolder."""
         board_dir = self._get_board_directory(board)
         column_safe_name = self._get_safe_name(column.name)
         column_dir = board_dir / column_safe_name
         column_dir.mkdir(exist_ok=True)
 
-        item_file = column_dir / f"{item.id}.md"
+        # Create items subfolder
+        items_dir = column_dir / "items"
+        items_dir.mkdir(exist_ok=True)
+
+        # Prepare column metadata
+        column_data = {
+            'id': column.id,
+            'name': column.name,
+            'position': column.position
+        }
+
+        # Generate column.md content with item links
+        content_lines = [
+            f"# {column.name}",
+            "",
+            "## Items",
+            ""
+        ]
+
+        if not column.items:
+            content_lines.append("*No items*")
+        else:
+            for item in column.items:
+                # Use UUID for item filename
+                item_uuid = item.id if item.id else str(uuid4())
+                item_link = f"[{item.title}](items/{item_uuid}.md)"
+
+                # Add parent indicator if present
+                if item.parent_id:
+                    parent_name = "Unknown Parent"
+                    for parent in board.parents:
+                        if parent.id == item.parent_id:
+                            parent_name = parent.name
+                            break
+                    item_link += f" *({parent_name})*"
+
+                content_lines.append(f"- {item_link}")
+
+                # Save individual item file
+                self.save_item_with_uuid(items_dir, item, item_uuid)
+
+        # Save column.md file
+        post = frontmatter.Post(content="\n".join(
+            content_lines), metadata=column_data)
+
+        column_file = column_dir / "column.md"
+        with open(column_file, 'w', encoding='utf-8') as f:
+            f.write(frontmatter.dumps(post))
+
+    def save_item_with_uuid(self, items_dir: Path, item: Item, item_uuid: str) -> None:
+        """Save an item to the items/ subfolder with UUID filename."""
+        item_file = items_dir / f"{item_uuid}.md"
 
         item_metadata = {
             'id': item.id,
@@ -332,14 +332,21 @@ class MarkdownStorage:
             'metadata': item.metadata
         }
 
+        # Content includes title as H1 and description
+        content_lines = [
+            f"# {item.title}",
+            "",
+            item.description or ""
+        ]
+
         post = frontmatter.Post(
-            content=item.description or "", metadata=item_metadata)
+            content="\n".join(content_lines), metadata=item_metadata)
 
         with open(item_file, 'w', encoding='utf-8') as f:
             f.write(frontmatter.dumps(post))
 
     def delete_item_from_column(self, board: Board, item: Item) -> bool:
-        """Delete an item's markdown file from its column folder."""
+        """Delete an item's markdown file from its column's items/ folder."""
         # Find the column for this item
         column = None
         for col in board.columns:
@@ -353,7 +360,8 @@ class MarkdownStorage:
         board_dir = self._get_board_directory(board)
         column_safe_name = self._get_safe_name(column.name)
         column_dir = board_dir / column_safe_name
-        item_file = column_dir / f"{item.id}.md"
+        items_dir = column_dir / "items"
+        item_file = items_dir / f"{item.id}.md"
 
         if item_file.exists():
             item_file.unlink()
@@ -387,12 +395,11 @@ class MarkdownStorage:
         done_col = board.add_column("Done", 2)
 
         # Add sample parent
-        feature_parent = board.add_parent("Feature Development", "green")
 
         # Add sample items
-        board.add_item("Create project structure", todo_col.id)
-        board.add_item("Implement data models",
-                       progress_col.id, feature_parent.id)
-        board.add_item("Setup development environment", done_col.id)
+        todo_col.add_item("Create project structure", todo_col.id)
+        progress_col.add_item("Implement data models",
+                              progress_col.id)
+        done_col.add_item("Setup development environment", done_col.id)
 
         return board
