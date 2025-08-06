@@ -1,4 +1,5 @@
 from typing import Optional
+from pathlib import Path
 from textual.containers import Horizontal, Vertical
 from textual.widget import Widget
 from textual.reactive import reactive
@@ -76,8 +77,7 @@ class BoardWidget(Widget):
                         if parent:
                             parent_name = parent.name
 
-                    markdown_content = updated_item.description or f"# {
-                        updated_item.title}\n\nNo content available."
+                    markdown_content = updated_item.title
                     if parent_name:
                         markdown_content += f"\n\n*Parent: {parent_name}*"
 
@@ -204,24 +204,30 @@ class BoardWidget(Widget):
         if not target_column:
             return
 
-        def on_save(title: str, content: str):
-            focused_widget.item_controller.update_item(
-                selected.id, title=title, description=content)
+        # Get the item file path
+        item_file_path = self._get_item_file_path(selected)
+        if not item_file_path or not item_file_path.exists():
+            self.app.notify("Item file not found", severity="error")
+            return
+
+        # Suspend the app and open Neovim
+        import subprocess
+        import os
+        
+        try:
+            with self.app.suspend():
+                result = subprocess.run(['nvim', str(item_file_path)], 
+                                      check=True, 
+                                      env=os.environ.copy())
+            
+            # App automatically resumes here
+            # Refresh the board after editing
             self.refresh_board()
-
-        def on_cancel():
-            self.refresh_board()
-
-        parent = focused_widget.parent
-        if parent:
-            editable_widget = EditableItemWidget(
-                item=selected,
-                on_save=on_save,
-                on_cancel=on_cancel
-            )
-
-            focused_widget.remove()
-            parent.mount(editable_widget)
+            
+        except subprocess.CalledProcessError:
+            self.app.notify("Error opening Neovim", severity="error")
+        except FileNotFoundError:
+            self.app.notify("Neovim not found. Please install nvim", severity="error")
 
     async def move_right(self) -> None:
         selected = self.get_selected_item()
@@ -424,6 +430,29 @@ class BoardWidget(Widget):
 
     def _get_column_for_item(self, item: Item) -> Optional[str]:
         return item.column_id if item else None
+
+    def _get_item_file_path(self, item: Item) -> Optional[Path]:
+        """Get the file path for an item"""
+        if not item or not self.board:
+            return None
+        
+        # Find the column containing this item
+        column = None
+        for col in self.board.columns:
+            if col.id == item.column_id:
+                column = col
+                break
+        
+        if not column:
+            return None
+        
+        # Get the storage instance to access paths
+        storage = self.app.storage
+        board_dir = storage._get_board_directory(self.board)
+        column_safe_name = storage._get_safe_name(column.name)
+        
+        item_file_path = board_dir / column_safe_name / "items" / f"{item.id}.md"
+        return item_file_path
 
     def call_after_refresh(self, callback, *args) -> None:
         self.set_timer(0.01, lambda: callback(*args))

@@ -9,8 +9,7 @@ class MarkDownWidget(Markdown):
         self.item = item
         self.parent_name = parent_name
 
-        markdown_content = self.item.description or f"# {
-            self.item.title}\n\nNo content available."
+        markdown_content = self.item.title
 
         if self.parent_name:
             markdown_content += f"\n\n*Parent: {self.parent_name}*"

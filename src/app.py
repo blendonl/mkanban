@@ -9,8 +9,6 @@ from .storage.markdown_storage import MarkdownStorage
 from .models.board import Board
 from .ui.widgets.board_widget import BoardWidget
 from .controllers.board_controller import BoardController
-from .controllers.item_controller import ItemController
-from .controllers.column_controller import ColumnController
 from .utils.config import Config
 
 
@@ -62,8 +60,6 @@ class MKanbanApp(App):
         self.board_view: Optional[BoardWidget] = None
 
     def compose(self) -> ComposeResult:
-        yield Header()
-
         with Vertical(classes="main-container"):
             with Horizontal(classes="board-container"):
                 self.board_view = BoardWidget()

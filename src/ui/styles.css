@@ -39,11 +39,11 @@ BoardView {
 
 /* Column styling */
 .column {
-  border: solid #89b4fa;
+  border: blank white;
   margin: 0 1;
   padding: 1;
   height: 99%;
-  min-width: 30;
+  min-width: 27;
   background: #000000;
 }
 
@@ -57,15 +57,17 @@ BoardView {
 
 /* Item styling */
 .item {
-  padding: 1;
+  margin: 0;
+  padding: 1 0 0 1;
   margin-bottom: 1;
   color: #cdd6f4;
+  background: #111111;
   min-height: 3;
-  max-height: 15;
+  max-height: 7;
 }
 
 .item:focus {
-  background: #313244;
+  background: #222222;
 }
 
 .focused {
@@ -73,6 +75,7 @@ BoardView {
 }
 
 .item-content:focus {
+  border: round;
   background: white;
 }
 
@@ -143,10 +146,18 @@ BoardView {
   background: #000000;
   color: #000000;
 }
+.items-container {
+  padding: 0;
+  scrollbar-color: #000000;
+  scrollbar-size: 0 0;
+  overflow: scroll;
+  color: #000000;
+}
 
 .items-scroll {
+  padding: 0;
   scrollbar-color: #000000;
-  scrollbar-size: 1 1;
+  scrollbar-size: 0 0;
   overflow: scroll;
   color: #000000;
 }
@@ -264,18 +275,13 @@ Label {
   margin-top: 1;
 }
 
-/* Markdown in help dialog */
-Markdown {
-  background: #000000;
-  color: red;
-}
-
 .item-content MarkdownH1 {
   display: block;
   color: #cba6f7;
   text-style: bold;
   text-align: left;
-  margin: 0;
+  margin-top: 0;
+  margin-bottom: 2;
   padding: 0;
   height: 1;
 }
