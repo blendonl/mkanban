@@ -9,5 +9,4 @@ metadata:
 
 ## Items
 
-- [Create your first board](items/4fcfcc91-8a67-4728-be3f-05b4287c1676.md)
 - [Learn keyboard shortcuts](items/17926fc5-2b6a-4a98-87b3-6415c66840c2.md)

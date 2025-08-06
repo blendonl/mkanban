@@ -12,7 +12,6 @@ from .parent import Parent
 
 
 class Board(BaseModel):
-    """Represents a kanban board."""
 
     id: str = Field(default_factory=lambda: str(uuid4()))
     name: str
@@ -60,3 +59,17 @@ class Board(BaseModel):
             items.extend(
                 [item for item in column.items if item.parent_id is None])
         return items
+
+    def add_parent(self, name: str, color: str = "blue") -> Parent:
+        parent = Parent(name=name, color=color)
+        self.parents.append(parent)
+        self.updated_at = datetime.now()
+        return parent
+
+    def remove_parent(self, parent_id: str) -> bool:
+        original_count = len(self.parents)
+        self.parents = [parent for parent in self.parents if parent.id != parent_id]
+        if len(self.parents) < original_count:
+            self.updated_at = datetime.now()
+            return True
+        return False

@@ -55,3 +55,4 @@ class Column(BaseModel):
     def get_column_items(self, column_id: str) -> List[Item]:
         """Get all items in a specific column."""
         return [item for item in self.items if item.column_id == column_id]
+

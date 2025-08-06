@@ -7,7 +7,7 @@ from textual.binding import Binding
 
 from .storage.markdown_storage import MarkdownStorage
 from .models.board import Board
-from .ui.board_view import BoardView
+from .ui.widgets.board_widget import BoardWidget
 from .controllers.board_controller import BoardController
 from .controllers.item_controller import ItemController
 from .controllers.column_controller import ColumnController
@@ -59,17 +59,14 @@ class MKanbanApp(App):
         self.storage = MarkdownStorage(self.data_dir)
         self.initial_board = initial_board
         self.current_board: Optional[Board] = None
-        self.board_controller: Optional[BoardController] = None
-        self.column_controller: Optional[ColumnController] = None
-        self.item_ontroller: Optional[ItemController] = None
-        self.board_view: Optional[BoardView] = None
+        self.board_view: Optional[BoardWidget] = None
 
     def compose(self) -> ComposeResult:
         yield Header()
 
         with Vertical(classes="main-container"):
             with Horizontal(classes="board-container"):
-                self.board_view = BoardView()
+                self.board_view = BoardWidget()
                 yield self.board_view
 
     def on_mount(self) -> None:

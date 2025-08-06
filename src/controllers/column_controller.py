@@ -26,6 +26,13 @@ class ColumnController:
 
         return item
 
+    def get_item_by_id(self, id: str) -> Item:
+        for item in self.column.items:
+            if item.id == id:
+                return item
+
+        return None
+
     def delete_item(self, item: Item) -> bool:
         self.storage.delete_item_from_column(self.board, item)
 

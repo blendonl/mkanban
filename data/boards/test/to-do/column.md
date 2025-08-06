@@ -9,4 +9,4 @@ metadata:
 
 ## Items
 
-- [Explore markdown files](items/05834331-2dc1-4329-900c-3a0a9b0a427e.md)
+- [Create your first board](items/4fcfcc91-8a67-4728-be3f-05b4287c1676.md)

@@ -15,23 +15,21 @@ class ItemController:
         self.storage.save_board(self.board)
 
     def update_item(self, item_id: str, **kwargs) -> bool:
-        for item in self.board.items:
-            if item.id == item_id:
-                item.update(**kwargs)
-
-                self.storage.save_board(self.board)
-
-                return True
+        for column in self.board.columns:
+            for item in column.items:
+                if item.id == item_id:
+                    item.update(**kwargs)
+                    self.storage.save_board(self.board)
+                    return True
         return False
 
     def set_item_parent(self, item_id: str, parent_id: Optional[str]) -> bool:
-        for item in self.board.items:
-            if item.id == item_id:
-                item.set_parent(parent_id)
-
-                self.storage.save_board(self.board)
-
-                return True
+        for column in self.board.columns:
+            for item in column.items:
+                if item.id == item_id:
+                    item.set_parent(parent_id)
+                    self.storage.save_board(self.board)
+                    return True
         return False
 
     def add_parent(self, name: str, color: str = "blue") -> Parent:
