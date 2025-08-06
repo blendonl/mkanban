@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 
 from .column import Column
 from .item import Item
+from .parent import Parent
 
 
 class Board(BaseModel):
@@ -15,8 +16,10 @@ class Board(BaseModel):
 
     id: str = Field(default_factory=lambda: str(uuid4()))
     name: str
+    description: str = ""
     file_path: Optional[Path] = None
     columns: List[Column] = Field(default_factory=list)
+    parents: List[Parent] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
     metadata: Dict[str, Any] = Field(default_factory=dict)

@@ -368,6 +368,52 @@ class MarkdownStorage:
             return True
         return False
 
+    def move_item_between_columns(self, board: Board, item: Item, old_column_id: str, new_column_id: str) -> bool:
+        """Move an item's file from one column's items/ folder to another."""
+        # Find the columns
+        old_column = None
+        new_column = None
+        
+        for col in board.columns:
+            if col.id == old_column_id:
+                old_column = col
+            elif col.id == new_column_id:
+                new_column = col
+        
+        if not old_column or not new_column:
+            return False
+        
+        board_dir = self._get_board_directory(board)
+        
+        # Source file path
+        old_column_safe_name = self._get_safe_name(old_column.name)
+        old_column_dir = board_dir / old_column_safe_name
+        old_items_dir = old_column_dir / "items"
+        old_item_file = old_items_dir / f"{item.id}.md"
+        
+        # Target file path
+        new_column_safe_name = self._get_safe_name(new_column.name)
+        new_column_dir = board_dir / new_column_safe_name
+        new_items_dir = new_column_dir / "items"
+        new_items_dir.mkdir(exist_ok=True)  # Ensure target directory exists
+        new_item_file = new_items_dir / f"{item.id}.md"
+        
+        # Move the file if it exists
+        if old_item_file.exists():
+            # Update the item's column_id before saving
+            item.column_id = new_column_id
+            item.updated_at = datetime.now()
+            
+            # Save the item with updated metadata to the new location
+            self.save_item_with_uuid(new_items_dir, item, item.id)
+            
+            # Remove the old file
+            old_item_file.unlink()
+            
+            return True
+        
+        return False
+
     def _get_board_directory(self, board: Board) -> Path:
         """Get the directory path for a board."""
         safe_name = self._get_safe_name(board.name)
@@ -385,21 +431,51 @@ class MarkdownStorage:
         boards = self.load_boards()
         return [board.name for board in boards]
 
-    def create_sample_board(self, name: str = "sample") -> Board:
-        """Create a sample board for testing."""
-        board = Board(name=name.title())
+    def create_sample_board(self, name: str = "Sample Board") -> Board:
+        """Create a sample board with example content."""
+        board = Board(
+            name=name,
+            description="Welcome to MKanban! This is a sample board to help you get started. "
+                       "You can edit items by pressing 'i', create new items with 'o', "
+                       "and delete items with 'd'. Use vim motions (h/j/k/l) to navigate."
+        )
 
         # Add default columns
         todo_col = board.add_column("To Do", 0)
         progress_col = board.add_column("In Progress", 1)
-        done_col = board.add_column("Done", 2)
+        review_col = board.add_column("Review", 2)
+        done_col = board.add_column("Done", 3)
 
-        # Add sample parent
+        # Add sample items with descriptions (without parents for now)
+        item1 = todo_col.add_item("Learn keyboard shortcuts", todo_col.id)
+        item1.description = ("Press 'g?' to view help dialog with all available shortcuts.\n\n"
+                            "Basic navigation:\n"
+                            "- h/j/k/l: Navigate left/down/up/right\n"
+                            "- o: Create new item\n"
+                            "- i: Edit selected item\n"
+                            "- d: Delete selected item\n"
+                            "- p: Toggle parent grouping\n"
+                            "- H/L: Move item between columns")
 
-        # Add sample items
-        todo_col.add_item("Create project structure", todo_col.id)
-        progress_col.add_item("Implement data models",
-                              progress_col.id)
-        done_col.add_item("Setup development environment", done_col.id)
+        item2 = todo_col.add_item("Explore markdown files", todo_col.id)
+        item2.description = ("Your boards are stored as markdown files in the data/boards/ directory.\n\n"
+                            "Each board has its own folder with:\n"
+                            "- kanban.md: Board structure and metadata\n"
+                            "- Column folders with column.md files\n"
+                            "- Item files in items/ subfolders")
+
+        item3 = progress_col.add_item("Create your first board", progress_col.id)
+        item3.description = ("Try creating a new board by:\n"
+                            "1. Exiting MKanban (press 'q')\n"
+                            "2. Creating a new markdown file in data/boards/\n"
+                            "3. Or modify this sample board to suit your needs")
+
+        item4 = review_col.add_item("Organize with parents", review_col.id)
+        item4.description = ("Parents help organize related items across columns.\n\n"
+                            "Toggle parent grouping with 'p' to see items grouped by their parent.\n"
+                            "Items with the same parent are shown together regardless of column.")
+
+        item5 = done_col.add_item("Install MKanban", done_col.id)
+        item5.description = "Great! You've successfully installed and launched MKanban."
 
         return board

@@ -387,13 +387,11 @@ class BoardView(Widget):
 
                 await item.remove()
                 items_container.children[0].children[0].mount(item)
+                items_container.items.append(item)
+                item.focus()
 
                 controller = self.app.controller
-                controller.delete_item(selected)
-                controller.move_item(selected, target_column_id)
-
-                self.refresh_board(focus_item_id=selected.id,
-                                   refresh_type=RefreshType.COLUMNS)
+                controller.move_item(selected.id, target_column_id)
 
         column = None
 
@@ -416,14 +414,13 @@ class BoardView(Widget):
                     f"#column_{target_column_id.replace("-", "_")}", Vertical)
 
                 item = self.query_one(f"#item_{selected.id.replace("-", "_")}")
-
                 await item.remove()
                 items_container.children[0].children[0].mount(item)
-                item.focus()
 
                 controller = self.app.controller
-                controller.delete_item(selected)
-                controller.move_item(selected, target_column_id)
+                controller.move_item(selected.id, target_column_id)
+
+                item.focus()
 
         column = None
 

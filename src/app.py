@@ -81,7 +81,6 @@ class MKanbanApp(App):
 
     def load_initial_board(self) -> None:
         if self.initial_board:
-            # Load specific board by name
             boards = self.storage.load_boards()
             board_found = None
             for board in boards:
@@ -91,10 +90,20 @@ class MKanbanApp(App):
 
             if board_found:
                 self.current_board = board_found
+            else:
+                sample_board = self.storage.create_sample_board(
+                    self.initial_board)
+                self.storage.save_board(sample_board)
+                self.current_board = sample_board
         else:
             boards = self.storage.load_boards()
             if boards:
                 self.current_board = boards[0]
+            else:
+                sample_board = self.storage.create_sample_board(
+                    "Welcome Board 1")
+                self.storage.save_board(sample_board)
+                self.current_board = sample_board
 
         if self.current_board:
             self.controller = BoardController(

@@ -1,5 +1,6 @@
 """Board controller for managing board operations."""
 
+from datetime import datetime
 from typing import Optional, List
 from ..models import Board, Item, Column, Parent
 from ..storage import MarkdownStorage
@@ -40,20 +41,54 @@ class BoardController:
         return success
 
     def move_item(self, item_id: str, target_column_id: str) -> bool:
-        column = self.board.get_column_by_id(target_column_id)
-        success = column.move_item_to_end_of_column(item_id)
+        """Move an item from its current column to a target column."""
+        # Find the item and its current column
+        item_to_move = None
+        old_column_id = None
 
-        if success:
-            moved_item = None
+        for column in self.board.columns:
             for item in column.items:
                 if item.id == item_id:
-                    moved_item = item
+                    item_to_move = item
+                    old_column_id = column.id
                     break
+            if item_to_move:
+                break
 
-            if moved_item:
-                self.storage.save_board(self.board)
+        if not item_to_move or not old_column_id:
+            return False
 
-        return success
+        # Don't move if already in target column
+        if old_column_id == target_column_id:
+            return False
+
+        # Get target column
+        target_column = self.board.get_column_by_id(target_column_id)
+        if not target_column:
+            return False
+
+        # Move the file on disk first
+        file_moved = self.storage.move_item_between_columns(
+            self.board, item_to_move, old_column_id, target_column_id
+        )
+
+        if not file_moved:
+            return False
+
+        # Update the in-memory data structures
+        # Remove from old column
+        old_column = self.board.get_column_by_id(old_column_id)
+        if old_column:
+            old_column.remove_item(item_id)
+
+        # Add to new column (item's column_id already updated by storage layer)
+        target_column.items.append(item_to_move)
+        target_column.updated_at = datetime.now()
+
+        # Save the board to update column.md files with new item links
+        self.storage.save_board(self.board)
+
+        return True
 
     def update_item(self, item_id: str, **kwargs) -> bool:
         """Update an item's properties."""
