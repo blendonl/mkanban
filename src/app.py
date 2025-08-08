@@ -16,7 +16,7 @@ class MKanbanApp(App):
     CSS_PATH = "ui/styles.css"
     TITLE = "MKanban"
     SUB_TITLE = "Terminal Kanban Board"
-    
+
     terminal_width: reactive[int] = reactive(80)
     terminal_height: reactive[int] = reactive(24)
 
@@ -96,7 +96,7 @@ class MKanbanApp(App):
             if boards:
                 self.current_board = boards[0]
             else:
-                sample_board = self.storage.create_sample_board("Welcome Board 1")
+                sample_board = self.storage.create_sample_board("default")
                 self.storage.save_board(sample_board)
                 self.current_board = sample_board
 

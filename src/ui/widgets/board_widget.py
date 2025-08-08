@@ -130,7 +130,7 @@ class BoardWidget(Widget):
                 ColumnController(self.board, column, self.app.storage),
             )
             columns_container.mount(column_widget)
-        
+
         # Apply responsive layout after mounting
         self.call_after_refresh(self.update_responsive_layout)
 
@@ -222,7 +222,7 @@ class BoardWidget(Widget):
 
         try:
             with self.app.suspend():
-                subprocess.run(['nvim', str(item_file_path)], check=True)
+                subprocess.run(["neovide", str(item_file_path)], check=True)
             self.refresh_board()
 
         except subprocess.CalledProcessError:
@@ -497,37 +497,37 @@ class BoardWidget(Widget):
     def update_responsive_layout(self) -> None:
         if not self.board:
             return
-        
-        terminal_width = getattr(self.app, 'terminal_width', 80)
-        terminal_height = getattr(self.app, 'terminal_height', 24)
-        
+
+        terminal_width = getattr(self.app, "terminal_width", 80)
+        terminal_height = getattr(self.app, "terminal_height", 24)
+
         num_columns = len(self.board.columns)
         if num_columns == 0:
             return
-        
+
         # Handle very small terminals by switching to vertical layout
         if terminal_width < 60 and num_columns > 2:
             self._switch_to_compact_layout()
             return
-        
+
         # Calculate responsive column width
         available_width = terminal_width - 6  # Account for padding and margins
         column_width = max(20, min(50, available_width // num_columns))
-        
+
         # Ensure minimum usable width
         if column_width < 20 and num_columns > 1:
             column_width = max(18, available_width // min(num_columns, 3))
-        
+
         # Update column widths if changed
         if column_width != self._current_column_width:
             self._current_column_width = column_width
             self._update_column_styles(column_width)
-        
+
         # Calculate responsive item heights based on terminal height
         available_height = terminal_height - 8  # Account for headers, borders, footer
         max_items_per_column = max(1, available_height // 4)  # 4 lines per item minimum
         item_height = max(3, min(12, available_height // max(max_items_per_column, 3)))
-        
+
         self._update_item_styles(item_height)
 
     def _switch_to_compact_layout(self) -> None:

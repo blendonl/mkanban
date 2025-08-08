@@ -80,8 +80,9 @@ def create_new_task(
     storage = MarkdownStorage(data_dir)
 
     board = storage.load_board_by_name(board_name)
+    click.echo(storage.list_board_names())
     if not board:
-        click.echo(f"Error: Board '{board_name}' not found")
+        click.echo(f"Error: Board asdfasfsf '{board_name}' not found")
         return
 
     target_column = None
@@ -116,9 +117,14 @@ def create_new_item_with_editor(data_dir: Path, board_name: str, column_name: st
     storage = MarkdownStorage(data_dir)
 
     board = storage.load_board_by_name(board_name)
-    if not board:
-        click.echo(f"Error: Board '{board_name}' not found")
-        return
+
+    boards = storage.load_boards()
+    if boards:
+        board = boards[0]
+    else:
+        sample_board = storage.create_sample_board("default")
+        storage.save_board(sample_board)
+        board = sample_board
 
     target_column = None
     if column_name == "to-do" and not any(
@@ -145,19 +151,16 @@ def create_new_item_with_editor(data_dir: Path, board_name: str, column_name: st
         title="New Task",
         column_id=column.id,
     )
-    template_content = f"""
----
+    template_content = f"""---
 metadata:
-  column_id: {column.id}
-  created_at: {item.created_at} 
-  id: {item.id} 
-  parent_id: null
-  updated_at: {item.updated_at} 
+    column_id: {column.id}
+    created_at: {item.created_at} 
+    id: {item.id} 
+    parent_id: null
+    updated_at: {item.updated_at} 
 ---
 
-# New Item
-
-## Description
+# 
 """
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as temp_file:
@@ -165,7 +168,7 @@ metadata:
         temp_file_path = temp_file.name
 
     try:
-        subprocess.run(["nvim", temp_file_path], check=True)
+        subprocess.run(["neovide", temp_file_path, "+10"], check=True)
 
         with open(temp_file_path, "r") as f:
             edited_content = f.read()

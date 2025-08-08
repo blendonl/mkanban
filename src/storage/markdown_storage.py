@@ -1,3 +1,4 @@
+import click
 import frontmatter
 from pathlib import Path
 from datetime import datetime
@@ -104,6 +105,7 @@ class MarkdownStorage:
         for board in boards:
             if board.name.lower() == board_name.lower():
                 return board
+
         return None
 
     def load_column_from_file(
