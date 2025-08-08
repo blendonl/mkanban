@@ -3,18 +3,20 @@
 from setuptools import setup, find_packages
 
 with open("requirements.txt", "r") as f:
-    requirements = [line.strip() for line in f if line.strip() and not line.startswith("#")]
+    requirements = [
+        line.strip() for line in f if line.strip() and not line.startswith("#")
+    ]
 
 setup(
     name="mkanban",
-    version="1.0.0",
+    version="0.0.1",
     description="A Terminal User Interface Kanban Board",
     long_description="MKanban is a TUI Kanban board application for managing tasks in a terminal interface.",
-    author="Your Name",
-    author_email="your.email@example.com",
-    url="https://github.com/yourusername/mkanban",
+    author="blendonl",
+    author_email="blendonluta@gmail.com",
+    url="https://github.com/blendonl/mkanban",
     packages=find_packages(),
-    py_modules=['main'],
+    py_modules=["main"],
     include_package_data=True,
     install_requires=requirements,
     entry_points={
@@ -35,3 +37,4 @@ setup(
     ],
     python_requires=">=3.8",
 )
+

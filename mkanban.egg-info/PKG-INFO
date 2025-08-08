@@ -1,10 +1,10 @@
 Metadata-Version: 2.4
 Name: mkanban
-Version: 1.0.0
+Version: 0.0.1
 Summary: A Terminal User Interface Kanban Board
-Home-page: https://github.com/yourusername/mkanban
-Author: Your Name
-Author-email: your.email@example.com
+Home-page: https://github.com/blendonl/mkanban
+Author: blendonl 
+Author-email: blendonl@example.com
 Classifier: Development Status :: 4 - Beta
 Classifier: Intended Audience :: Developers
 Classifier: License :: OSI Approved :: MIT License

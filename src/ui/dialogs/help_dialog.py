@@ -5,7 +5,9 @@ from textual.app import ComposeResult
 
 
 class HelpDialog(ModalScreen):
-    def __init__(self, help_text: str = """
+    def __init__(
+        self,
+        help_text: str = """
 # MKanban - Vim Keybindings
 
 ## Navigation
@@ -77,7 +79,8 @@ class HelpDialog(ModalScreen):
 ## Other
 - g?        : Show this help
 - q/Escape  : Quit
-- Ctrl+C    : Force quit"""):
+- Ctrl+C    : Force quit""",
+    ):
         super().__init__()
         self.help_text = help_text
 

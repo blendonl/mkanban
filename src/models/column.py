@@ -1,5 +1,3 @@
-"""Column model for kanban columns."""
-
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 from uuid import uuid4
@@ -27,7 +25,9 @@ class Column(BaseModel):
                 setattr(self, key, value)
         self.updated_at = datetime.now()
 
-    def add_item(self, title: str, column_id: str, parent_id: Optional[str] = None) -> Item:
+    def add_item(
+        self, title: str, column_id: str, parent_id: Optional[str] = None
+    ) -> Item:
         """Add a new item to the board."""
         item = Item(title=title, column_id=column_id, parent_id=parent_id)
         self.items.append(item)
@@ -55,4 +55,3 @@ class Column(BaseModel):
     def get_column_items(self, column_id: str) -> List[Item]:
         """Get all items in a specific column."""
         return [item for item in self.items if item.column_id == column_id]
-

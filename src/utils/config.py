@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Dict,  Optional
+from typing import Dict, Optional
 from dataclasses import dataclass, asdict
 
 
@@ -28,23 +28,20 @@ class Config:
                 "focus_right": "l",
                 "focus_first": "gg",
                 "focus_last": "G",
-
                 "new_item": "o",
                 "edit_item": "i",
                 "delete_item": "d",
                 "move_left": "ctrl+h",
                 "move_right": "ctrl+l",
-
                 "toggle_parents": "p",
                 "save": "w",
                 "refresh": "r",
-
                 "help": "g?",
-                "quit": "q"
+                "quit": "q",
             }
 
     @classmethod
-    def load(cls, config_path: Optional[Path] = None) -> 'Config':
+    def load(cls, config_path: Optional[Path] = None) -> "Config":
         if config_path is None:
             config_path = Path.home() / ".mkanban" / "config.json"
 
@@ -52,7 +49,7 @@ class Config:
             return cls()
 
         try:
-            with open(config_path, 'r') as f:
+            with open(config_path, "r") as f:
                 data = json.load(f)
 
             return cls(**data)
@@ -66,7 +63,7 @@ class Config:
 
         config_path.parent.mkdir(parents=True, exist_ok=True)
 
-        with open(config_path, 'w') as f:
+        with open(config_path, "w") as f:
             json.dump(asdict(self), f, indent=2)
 
     def get_data_dir(self) -> Path:

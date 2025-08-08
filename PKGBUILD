@@ -1,10 +1,9 @@
-# Maintainer: Your Name <your.email@example.com>
 pkgname=mkanban
-pkgver=1.0.0
+pkgver=0.0.1
 pkgrel=1
 pkgdesc="A Terminal User Interface Kanban Board"
 arch=('any')
-url="https://github.com/yourusername/mkanban"
+url="https://github.com/blendonl/mkanban"
 license=('MIT')
 depends=('python' 'python-textual' 'python-pydantic' 'python-frontmatter' 'python-click')
 makedepends=('python-setuptools')

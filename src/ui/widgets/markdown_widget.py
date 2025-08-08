@@ -4,7 +4,6 @@ from ...models.item import Item
 
 
 class MarkDownWidget(Markdown):
-
     def __init__(self, item: Item, parent_name: Optional[str] = None):
         self.item = item
         self.parent_name = parent_name

@@ -9,7 +9,6 @@ from ..refresh_type import RefreshType
 from .markdown_widget import MarkDownWidget
 from .item_widget import ItemWidget
 from .column_widget import ColumnWidget
-from .editable_item_widget import EditableItemWidget
 from ...controllers.column_controller import ColumnController
 
 from ..dialogs.help_dialog import HelpDialog
@@ -27,8 +26,11 @@ class BoardWidget(Widget):
         self.board = board
         self.refresh_board()
 
-    def refresh_board(self, focus_item_id: Optional[str] = None,
-                      refresh_type: RefreshType = RefreshType.FULL) -> None:
+    def refresh_board(
+        self,
+        focus_item_id: Optional[str] = None,
+        refresh_type: RefreshType = RefreshType.FULL,
+    ) -> None:
         if not self.board:
             return
 
@@ -73,7 +75,13 @@ class BoardWidget(Widget):
                     parent_name = None
                     if updated_item.parent_id:
                         parent = next(
-                            (p for p in self.board.columns[0].parents if p.id == updated_item.parent_id), None)
+                            (
+                                p
+                                for p in self.board.columns[0].parents
+                                if p.id == updated_item.parent_id
+                            ),
+                            None,
+                        )
                         if parent:
                             parent_name = parent.name
 
@@ -96,11 +104,11 @@ class BoardWidget(Widget):
 
             if updated_column:
                 column_widget.column = updated_column
-                items = self.board.get_column_by_id(
-                    updated_column.id).get_column_items(updated_column.id)
+                items = self.board.get_column_by_id(updated_column.id).get_column_items(
+                    updated_column.id
+                )
                 column_widget.items = items
-                column_widget.border_title = f"{
-                    updated_column.name} ({len(items)})"
+                column_widget.border_title = f"{updated_column.name} ({len(items)})"
 
     def _refresh_layout_only(self) -> None:
         pass
@@ -113,15 +121,14 @@ class BoardWidget(Widget):
         self.mount(columns_container)
 
         for column in sorted(self.board.columns, key=lambda c: c.position):
-            items = self.board.get_column_by_id(
-                column.id).get_column_items(column.id)
-            columns_container.mount(ColumnWidget(
-                column, items, ColumnController(
-                    self.board,
+            items = self.board.get_column_by_id(column.id).get_column_items(column.id)
+            columns_container.mount(
+                ColumnWidget(
                     column,
-                    self.app.storage
+                    items,
+                    ColumnController(self.board, column, self.app.storage),
                 )
-            ))
+            )
 
     def _render_parent_grouped_view(self) -> None:
         if not self.board:
@@ -171,8 +178,7 @@ class BoardWidget(Widget):
         if target_column:
             target_column.add_new_item_inline()
         else:
-            self.app.notify("No column available for new item",
-                            severity="error")
+            self.app.notify("No column available for new item", severity="error")
 
     def _find_column_for_item(self, item: Item) -> Optional[ColumnWidget]:
         for column_widget in self.query(ColumnWidget):
@@ -186,8 +192,7 @@ class BoardWidget(Widget):
             return
 
         column = self.board.get_column_by_id(selected.column_id)
-        column_controller = ColumnController(
-            self.board, column, self.app.storage)
+        column_controller = ColumnController(self.board, column, self.app.storage)
         if column_controller.delete_item(selected):
             self.refresh_board()
 
@@ -204,26 +209,16 @@ class BoardWidget(Widget):
         if not target_column:
             return
 
-        # Get the item file path
         item_file_path = self._get_item_file_path(selected)
         if not item_file_path or not item_file_path.exists():
             self.app.notify("Item file not found", severity="error")
             return
 
-        # Suspend the app and open Neovim
         import subprocess
-        import os
-        
+
         try:
-            with self.app.suspend():
-                result = subprocess.run(['nvim', str(item_file_path)], 
-                                      check=True, 
-                                      env=os.environ.copy())
-            
-            # App automatically resumes here
-            # Refresh the board after editing
             self.refresh_board()
-            
+
         except subprocess.CalledProcessError:
             self.app.notify("Error opening Neovim", severity="error")
         except FileNotFoundError:
@@ -236,9 +231,10 @@ class BoardWidget(Widget):
 
         async def move_item(target_column_id: str) -> None:
             items_container = self.query_one(
-                f"#column_{target_column_id.replace("-", "_")}", Vertical)
+                f"#column_{target_column_id.replace('-', '_')}", Vertical
+            )
 
-            item = self.query_one(f"#item_{selected.id.replace("-", "_")}")
+            item = self.query_one(f"#item_{selected.id.replace('-', '_')}")
 
             await item.remove()
             items_container.children[0].children[0].mount(item)
@@ -265,9 +261,10 @@ class BoardWidget(Widget):
 
         async def move_item(target_column_id: str) -> None:
             items_container = self.query_one(
-                f"#column_{target_column_id.replace("-", "_")}", Vertical)
+                f"#column_{target_column_id.replace('-', '_')}", Vertical
+            )
 
-            item = self.query_one(f"#item_{selected.id.replace("-", "_")}")
+            item = self.query_one(f"#item_{selected.id.replace('-', '_')}")
             await item.remove()
             items_container.children[0].children[0].mount(item)
 
@@ -290,16 +287,16 @@ class BoardWidget(Widget):
         focused = self.app.focused
         if not isinstance(focused, ItemWidget):
             all_items = self.query(".item")
-            focusable = [w for w in all_items if hasattr(
-                w, 'can_focus') and w.can_focus]
+            focusable = [
+                w for w in all_items if hasattr(w, "can_focus") and w.can_focus
+            ]
             if focusable:
                 focusable[0].focus()
                 self._ensure_item_visible(focusable[0])
             return
 
         all_items = self.query(".item")
-        focusable = [w for w in all_items if hasattr(
-            w, 'can_focus') and w.can_focus]
+        focusable = [w for w in all_items if hasattr(w, "can_focus") and w.can_focus]
         if not focusable:
             return
 
@@ -316,16 +313,16 @@ class BoardWidget(Widget):
         focused = self.app.focused
         if not isinstance(focused, ItemWidget):
             all_items = self.query(".item")
-            focusable = [w for w in all_items if hasattr(
-                w, 'can_focus') and w.can_focus]
+            focusable = [
+                w for w in all_items if hasattr(w, "can_focus") and w.can_focus
+            ]
             if focusable:
                 focusable[0].focus()
                 self._ensure_item_visible(focusable[0])
             return
 
         all_items = self.query(".item")
-        focusable = [w for w in all_items if hasattr(
-            w, 'can_focus') and w.can_focus]
+        focusable = [w for w in all_items if hasattr(w, "can_focus") and w.can_focus]
         if not focusable:
             return
 
@@ -344,8 +341,7 @@ class BoardWidget(Widget):
             return
 
         all_items = self.query(".item")
-        focusable = [w for w in all_items if hasattr(
-            w, 'can_focus') and w.can_focus]
+        focusable = [w for w in all_items if hasattr(w, "can_focus") and w.can_focus]
         if not focusable:
             return
 
@@ -367,8 +363,7 @@ class BoardWidget(Widget):
             return
 
         all_items = self.query(".item")
-        focusable = [w for w in all_items if hasattr(
-            w, 'can_focus') and w.can_focus]
+        focusable = [w for w in all_items if hasattr(w, "can_focus") and w.can_focus]
         if not focusable:
             return
 
@@ -386,16 +381,14 @@ class BoardWidget(Widget):
 
     def move_focus_first(self) -> None:
         all_items = self.query(".item")
-        focusable = [w for w in all_items if hasattr(
-            w, 'can_focus') and w.can_focus]
+        focusable = [w for w in all_items if hasattr(w, "can_focus") and w.can_focus]
         if focusable:
             focusable[0].focus()
             self._ensure_item_visible(focusable[0])
 
     def move_focus_last(self) -> None:
         all_items = self.query(".item")
-        focusable = [w for w in all_items if hasattr(
-            w, 'can_focus') and w.can_focus]
+        focusable = [w for w in all_items if hasattr(w, "can_focus") and w.can_focus]
         if focusable:
             focusable[-1].focus()
             self._ensure_item_visible(focusable[-1])
@@ -416,7 +409,7 @@ class BoardWidget(Widget):
 
         scroll_view = scroll_containers[0]
 
-        if not hasattr(scroll_view, 'scroll_to_widget'):
+        if not hasattr(scroll_view, "scroll_to_widget"):
             return
 
         try:
@@ -435,22 +428,22 @@ class BoardWidget(Widget):
         """Get the file path for an item"""
         if not item or not self.board:
             return None
-        
+
         # Find the column containing this item
         column = None
         for col in self.board.columns:
             if col.id == item.column_id:
                 column = col
                 break
-        
+
         if not column:
             return None
-        
+
         # Get the storage instance to access paths
         storage = self.app.storage
         board_dir = storage._get_board_directory(self.board)
         column_safe_name = storage._get_safe_name(column.name)
-        
+
         item_file_path = board_dir / column_safe_name / "items" / f"{item.id}.md"
         return item_file_path
 
@@ -459,11 +452,10 @@ class BoardWidget(Widget):
 
     def _restore_focus_to_item(self, item_id: str) -> None:
         all_items = self.query(".item")
-        focusable = [w for w in all_items if hasattr(
-            w, 'can_focus') and w.can_focus]
+        focusable = [w for w in all_items if hasattr(w, "can_focus") and w.can_focus]
 
         for widget in focusable:
-            if hasattr(widget, 'item') and widget.item.id == item_id:
+            if hasattr(widget, "item") and widget.item.id == item_id:
                 widget.focus()
                 self._ensure_item_visible(widget)
                 break

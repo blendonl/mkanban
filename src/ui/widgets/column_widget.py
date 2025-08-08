@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import List
 from textual.containers import Vertical, VerticalScroll
 from ...models.column import Column
 from ...models.item import Item
@@ -9,16 +9,15 @@ from ...controllers.item_controller import ItemController
 
 
 class ColumnWidget(Vertical):
-
-    def __init__(self, column: Column, items: List[Item],
-                 column_controller: ColumnController):
+    def __init__(
+        self, column: Column, items: List[Item], column_controller: ColumnController
+    ):
         self.column = column
         self.items = items
         self.column_controller = column_controller
         self.editing_widget = None
 
-        super().__init__(classes="column", id=f"column_{
-            column.id.replace("-", "_")}")
+        super().__init__(classes="column", id=f"column_{column.id.replace('-', '_')}")
         self.border_title = f"{column.name} ({len(items)})"
         self.can_focus = True
 
@@ -31,7 +30,8 @@ class ColumnWidget(Vertical):
                         item_controller=ItemController(
                             self.column_controller.board,
                             item,
-                            self.column_controller.storage)
+                            self.column_controller.storage,
+                        ),
                     )
 
     def add_new_item_inline(self) -> None:
@@ -47,9 +47,7 @@ class ColumnWidget(Vertical):
             self._finish_editing()
 
         self.editing_widget = EditableItemWidget(
-            is_new=True,
-            on_save=on_save,
-            on_cancel=on_cancel
+            is_new=True, on_save=on_save, on_cancel=on_cancel
         )
 
         # Add to items container

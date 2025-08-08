@@ -16,9 +16,16 @@ class ColumnController:
     def save(self) -> None:
         self.storage.save_board(self.board)
 
-    def add_item(self, title: str, column_id: str, parent_id: Optional[str] = None, description: str = "") -> Item:
-        item = self.board.get_column_by_id(
-            column_id).add_item(title, column_id, parent_id)
+    def add_item(
+        self,
+        title: str,
+        column_id: str,
+        parent_id: Optional[str] = None,
+        description: str = "",
+    ) -> Item:
+        item = self.board.get_column_by_id(column_id).add_item(
+            title, column_id, parent_id
+        )
         if description:
             item.description = description
 
@@ -36,8 +43,7 @@ class ColumnController:
     def delete_item(self, item: Item) -> bool:
         self.storage.delete_item_from_column(self.board, item)
 
-        success = self.board.get_column_by_id(
-            item.column_id).remove_item(item.id)
+        success = self.board.get_column_by_id(item.column_id).remove_item(item.id)
 
         if success:
             self.storage.save_board(self.board)
@@ -85,9 +91,10 @@ class ColumnController:
 
         return True
 
-    def get_column_items(self, column_id: str, grouped_by_parent: bool = False) -> List[Item]:
-        items = self.board.get_column_by_id(
-            column_id).get_column_items(column_id)
+    def get_column_items(
+        self, column_id: str, grouped_by_parent: bool = False
+    ) -> List[Item]:
+        items = self.board.get_column_by_id(column_id).get_column_items(column_id)
 
         if not grouped_by_parent:
             return items

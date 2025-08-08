@@ -1,5 +1,3 @@
-"""Board model for kanban boards."""
-
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 from uuid import uuid4
@@ -12,7 +10,6 @@ from .parent import Parent
 
 
 class Board(BaseModel):
-
     id: str = Field(default_factory=lambda: str(uuid4()))
     name: str
     description: str = ""
@@ -56,8 +53,7 @@ class Board(BaseModel):
     def get_orphaned_items(self) -> List[Item]:
         items = []
         for column in self.columns:
-            items.extend(
-                [item for item in column.items if item.parent_id is None])
+            items.extend([item for item in column.items if item.parent_id is None])
         return items
 
     def add_parent(self, name: str, color: str = "blue") -> Parent:
