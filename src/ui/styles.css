@@ -1,12 +1,9 @@
-/* MKanban TUI Styles - Catppuccin Mocha Theme with Black Background */
-
 /* Catppuccin Mocha color palette */
 /* Backgrounds: base = #1e1e2e, mantle = #181825, crust = #11111b, black = #000000 */
 /* Text: text = #cdd6f4, subtext1 = #bac2de, subtext0 = #a6adc8 */
 /* Accents: mauve = #cba6f7, pink = #f5c2e7, red = #f38ba8, peach = #fab387 */
 /* Nature: green = #a6e3a1, yellow = #f9e2af, blue = #89b4fa, sapphire = #74c7ec */
 
-/* Main layout with pure black background */
 Screen {
   layout: vertical;
   background: #000000;
@@ -17,7 +14,6 @@ Markdown:focus {
   background: white;
 }
 
-/* Main container for centering */
 .main-container {
   height: 1fr;
   align: center middle;
@@ -29,7 +25,6 @@ Markdown:focus {
   background: #000000;
 }
 
-/* Board view */
 BoardView {
   height: auto;
   width: auto;
@@ -37,7 +32,6 @@ BoardView {
   background: #000000;
 }
 
-/* Column styling */
 .column {
   border: blank white;
   margin: 0 1;
@@ -55,7 +49,6 @@ BoardView {
   margin-bottom: 1;
 }
 
-/* Item styling */
 .item {
   margin: 0;
   padding: 1 0 0 1;

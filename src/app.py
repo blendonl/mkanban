@@ -2,7 +2,6 @@ from pathlib import Path
 from typing import Optional
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
-from textual.widgets import Header
 from textual.binding import Binding
 
 from .storage.markdown_storage import MarkdownStorage
@@ -24,23 +23,17 @@ class MKanbanApp(App):
         Binding("l", "focus_right", "Right", show=False),
         Binding("g,g", "focus_first", "First", show=False),
         Binding("G", "focus_last", "Last", show=False),
-
         Binding("ctrl+d", "scroll_down", "Scroll Down", show=False),
         Binding("ctrl+u", "scroll_up", "Scroll Up", show=False),
-        Binding("shift+j", "column_scroll_down",
-                "Column Scroll Down", show=False),
-        Binding("H", action="move_left",
-                description="Column Scroll Down"),
+        Binding("shift+j", "column_scroll_down", "Column Scroll Down", show=False),
+        Binding("H", action="move_left", description="Column Scroll Down"),
         ("L", "move_right", "Move Left"),
-
         Binding("o", "new_item", "New Item", show=False),
         Binding("d", "delete_item", "Delete", show=True),
         Binding("i", "edit_item", "Edit", show=False),
-
         Binding("p", "toggle_parents", "Toggle Parents", show=False),
         Binding("w", "save", "Save", show=False),
         Binding("r", "refresh", "Refresh", show=False),
-
         Binding("g,question_mark", "show_help", "Help", show=False),
         Binding("q", "quit", "Quit", show=False),
         ("ctrl+c", "quit", "Quit"),
@@ -80,8 +73,7 @@ class MKanbanApp(App):
             if board_found:
                 self.current_board = board_found
             else:
-                sample_board = self.storage.create_sample_board(
-                    self.initial_board)
+                sample_board = self.storage.create_sample_board(self.initial_board)
                 self.storage.save_board(sample_board)
                 self.current_board = sample_board
         else:
@@ -89,14 +81,12 @@ class MKanbanApp(App):
             if boards:
                 self.current_board = boards[0]
             else:
-                sample_board = self.storage.create_sample_board(
-                    "Welcome Board 1")
+                sample_board = self.storage.create_sample_board("Welcome Board 1")
                 self.storage.save_board(sample_board)
                 self.current_board = sample_board
 
         if self.current_board:
-            self.controller = BoardController(
-                self.current_board, self.storage)
+            self.controller = BoardController(self.current_board, self.storage)
             if self.board_view:
                 self.board_view.set_board(self.current_board)
 
@@ -135,6 +125,7 @@ class MKanbanApp(App):
     def action_refresh(self) -> None:
         if self.board_view and self.current_board:
             from .ui.board_view import RefreshType
+
             self.board_view.refresh_board(refresh_type=RefreshType.FULL)
 
     # Vim-style navigation actions
