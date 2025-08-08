@@ -22,6 +22,7 @@ class BoardWidget(Widget):
         super().__init__(classes="board-view")
         self.board: Optional[Board] = None
         self.selected_item: Optional[Item] = None
+        self._current_column_width = 27
 
     def set_board(self, board: Board) -> None:
         self.board = board
@@ -123,13 +124,15 @@ class BoardWidget(Widget):
 
         for column in sorted(self.board.columns, key=lambda c: c.position):
             items = self.board.get_column_by_id(column.id).get_column_items(column.id)
-            columns_container.mount(
-                ColumnWidget(
-                    column,
-                    items,
-                    ColumnController(self.board, column, self.app.storage),
-                )
+            column_widget = ColumnWidget(
+                column,
+                items,
+                ColumnController(self.board, column, self.app.storage),
             )
+            columns_container.mount(column_widget)
+        
+        # Apply responsive layout after mounting
+        self.call_after_refresh(self.update_responsive_layout)
 
     def _render_parent_grouped_view(self) -> None:
         if not self.board:
@@ -490,3 +493,58 @@ class BoardWidget(Widget):
     def show_help_dialog(self) -> None:
         dialog = HelpDialog()
         self.app.push_screen(dialog)
+
+    def update_responsive_layout(self) -> None:
+        if not self.board:
+            return
+        
+        terminal_width = getattr(self.app, 'terminal_width', 80)
+        terminal_height = getattr(self.app, 'terminal_height', 24)
+        
+        num_columns = len(self.board.columns)
+        if num_columns == 0:
+            return
+        
+        # Handle very small terminals by switching to vertical layout
+        if terminal_width < 60 and num_columns > 2:
+            self._switch_to_compact_layout()
+            return
+        
+        # Calculate responsive column width
+        available_width = terminal_width - 6  # Account for padding and margins
+        column_width = max(20, min(50, available_width // num_columns))
+        
+        # Ensure minimum usable width
+        if column_width < 20 and num_columns > 1:
+            column_width = max(18, available_width // min(num_columns, 3))
+        
+        # Update column widths if changed
+        if column_width != self._current_column_width:
+            self._current_column_width = column_width
+            self._update_column_styles(column_width)
+        
+        # Calculate responsive item heights based on terminal height
+        available_height = terminal_height - 8  # Account for headers, borders, footer
+        max_items_per_column = max(1, available_height // 4)  # 4 lines per item minimum
+        item_height = max(3, min(12, available_height // max(max_items_per_column, 3)))
+        
+        self._update_item_styles(item_height)
+
+    def _switch_to_compact_layout(self) -> None:
+        # For very narrow terminals, make columns stack or show fewer at once
+        for i, column_widget in enumerate(self.query(ColumnWidget)):
+            if i < 2:  # Show only first 2 columns
+                column_widget.display = True
+                column_widget.styles.min_width = 15
+                column_widget.styles.max_width = 25
+            else:
+                column_widget.display = False
+
+    def _update_column_styles(self, width: int) -> None:
+        for column_widget in self.query(ColumnWidget):
+            column_widget.styles.min_width = width
+            column_widget.styles.max_width = width + 10
+
+    def _update_item_styles(self, height: int) -> None:
+        for item_widget in self.query(ItemWidget):
+            item_widget.styles.max_height = height

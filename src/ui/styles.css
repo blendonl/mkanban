@@ -37,7 +37,9 @@ BoardView {
   margin: 0 1;
   padding: 1;
   height: 99%;
-  min-width: 27;
+  min-width: 20;
+  max-width: 40;
+  width: 1fr;
   background: #000000;
 }
 
@@ -56,7 +58,8 @@ BoardView {
   color: #cdd6f4;
   background: #111111;
   min-height: 3;
-  max-height: 7;
+  max-height: 10;
+  height: auto;
 }
 
 .item:focus {
@@ -145,6 +148,8 @@ BoardView {
   scrollbar-size: 0 0;
   overflow: scroll;
   color: #000000;
+  height: auto;
+  max-height: 90vh;
 }
 
 .items-scroll {
@@ -153,6 +158,8 @@ BoardView {
   scrollbar-size: 0 0;
   overflow: scroll;
   color: #000000;
+  height: auto;
+  max-height: 85vh;
 }
 
 .help-dialog {

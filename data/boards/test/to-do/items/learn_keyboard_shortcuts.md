@@ -5,7 +5,7 @@ metadata:
   id: 17926fc5-2b6a-4a98-87b3-6415c66840c2
   parent_id: null
   title: Learn keyboard shortcuts
-  updated_at: 2025-08-08 08:43:31.228958
+  updated_at: 2025-08-08 08:52:52.304218
 ---
 
 # Learn keyboard shortcuts

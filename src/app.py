@@ -3,6 +3,7 @@ from typing import Optional
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.binding import Binding
+from textual.reactive import reactive
 
 from .storage.markdown_storage import MarkdownStorage
 from .models.board import Board
@@ -15,6 +16,9 @@ class MKanbanApp(App):
     CSS_PATH = "ui/styles.css"
     TITLE = "MKanban"
     SUB_TITLE = "Terminal Kanban Board"
+    
+    terminal_width: reactive[int] = reactive(80)
+    terminal_height: reactive[int] = reactive(24)
 
     BINDINGS = [
         Binding("j", "focus_next", "Next", show=False),
@@ -59,7 +63,18 @@ class MKanbanApp(App):
                 yield self.board_view
 
     def on_mount(self) -> None:
+        self.update_terminal_dimensions()
         self.load_initial_board()
+
+    def on_resize(self, event) -> None:
+        self.update_terminal_dimensions()
+        if self.board_view:
+            self.board_view.update_responsive_layout()
+
+    def update_terminal_dimensions(self) -> None:
+        size = self.console.size
+        self.terminal_width = size.width
+        self.terminal_height = size.height
 
     def load_initial_board(self) -> None:
         if self.initial_board:

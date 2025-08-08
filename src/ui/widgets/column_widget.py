@@ -16,6 +16,7 @@ class ColumnWidget(Vertical):
         self.items = items
         self.column_controller = column_controller
         self.editing_widget = None
+        self._max_items_visible = None
 
         super().__init__(classes="column", id=f"column_{column.id.replace('-', '_')}")
         self.border_title = f"{column.name} ({len(items)})"
