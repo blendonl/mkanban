@@ -1,7 +1,6 @@
-from typing import Optional
 from ..models.board import Board
-from ..models.board import Parent
-from ..models.board import Item
+from ..models.parent import Parent
+from ..models.item import Item
 from ..storage.markdown_storage import MarkdownStorage
 
 
@@ -23,7 +22,7 @@ class ItemController:
                     return True
         return False
 
-    def set_item_parent(self, item_id: str, parent_id: Optional[str]) -> bool:
+    def set_item_parent(self, item_id: str, parent_id: str | None) -> bool:
         for column in self.board.columns:
             for item in column.items:
                 if item.id == item_id:

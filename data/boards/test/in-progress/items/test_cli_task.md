@@ -1,0 +1,13 @@
+---
+metadata:
+  column_id: 806ac584-66fc-43f3-852a-9e0a3d01cc5d
+  created_at: 2025-08-06 07:54:58.179511
+  id: bc5b54cf-a5d9-416a-b206-625b02174213
+  parent_id: null
+  title: Test CLI Task
+  updated_at: 2025-08-08 06:25:07.021795
+---
+
+# Test CLI Task
+
+This task was created via CLI

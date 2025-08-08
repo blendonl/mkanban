@@ -218,6 +218,8 @@ class BoardWidget(Widget):
         import subprocess
 
         try:
+            with self.app.suspend():
+                subprocess.run(['nvim', str(item_file_path)], check=True)
             self.refresh_board()
 
         except subprocess.CalledProcessError:
@@ -466,8 +468,10 @@ class BoardWidget(Widget):
         storage = self.app.storage
         board_dir = storage._get_board_directory(self.board)
         column_safe_name = storage._get_safe_name(column.name)
+        items_dir = board_dir / column_safe_name / "items"
 
-        item_file_path = board_dir / column_safe_name / "items" / f"{item.id}.md"
+        # Find the item file by scanning metadata for the ID
+        item_file_path = storage._find_item_file_by_id(items_dir, item.id)
         return item_file_path
 
     def call_after_refresh(self, callback, *args) -> None:

@@ -9,5 +9,4 @@ metadata:
 
 ## Items
 
-- [Learn keyboard shortcuts](items/17926fc5-2b6a-4a98-87b3-6415c66840c2.md)
-- [This is my new note](items/75e7f9da-2e3d-4f77-9ac3-4dcb59c37b29.md)
+- [Learn keyboard shortcuts](items/learn_keyboard_shortcuts.md)

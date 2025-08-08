@@ -1,0 +1,14 @@
+---
+metadata:
+  column_id: ff9ed901-9987-4ecb-9abb-bc28bb5b87a4
+  created_at: 2025-08-06 04:15:07.002173
+  id: 43448dd0-32d8-48f7-a39c-3b07cd204f10
+  parent_id: null
+  title: Install MKanban
+  updated_at: 2025-08-06 04:15:07.002173
+---
+
+# Install MKanban
+
+
+Great! You've successfully installed and launched MKanban.

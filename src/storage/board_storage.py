@@ -9,7 +9,7 @@ from ..models.item import Item
 from ..models.parent import Parent
 
 
-class MarkdownStorage:
+class BoardStorage:
     def __init__(self, data_dir: Path):
         self.data_dir = Path(data_dir)
         self.data_dir.mkdir(exist_ok=True)
@@ -183,7 +183,6 @@ class MarkdownStorage:
             parent_id=item_metadata.get("parent_id"),
             created_at=item_metadata.get("created_at", datetime.now()),
             updated_at=item_metadata.get("updated_at", datetime.now()),
-            metadata=item_metadata.get("metadata", {}),
         )
 
     def save_boards(self, boards: list[Board]) -> None:
@@ -202,6 +201,7 @@ class MarkdownStorage:
             "description": board.description,
             "created_at": board.created_at,
             "updated_at": board.updated_at,
+            "board_metadata": board.metadata,
             "parents": [],
         }
 

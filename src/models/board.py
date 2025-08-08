@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import List, Dict, Any, Optional
 from uuid import uuid4
 from pathlib import Path
 from pydantic import BaseModel, Field
@@ -13,15 +12,11 @@ class Board(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid4()))
     name: str
     description: str = ""
-    file_path: Optional[Path] = None
-    columns: List[Column] = Field(default_factory=list)
-    parents: List[Parent] = Field(default_factory=list)
+    file_path: Path | None = None
+    columns: list[Column] = Field(default_factory=list)
+    parents: list[Parent] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
-    metadata: Dict[str, Any] = Field(default_factory=dict)
-
-    class Config:
-        arbitrary_types_allowed = True
 
     def update(self, **kwargs) -> None:
         for key, value in kwargs.items():
@@ -29,7 +24,7 @@ class Board(BaseModel):
                 setattr(self, key, value)
         self.updated_at = datetime.now()
 
-    def add_column(self, name: str, position: Optional[int] = None) -> Column:
+    def add_column(self, name: str, position: int | None = None) -> Column:
         if position is None:
             position = len(self.columns)
 
@@ -44,14 +39,14 @@ class Board(BaseModel):
         self.updated_at = datetime.now()
         return True
 
-    def get_column_by_id(self, column_id: str) -> Optional[Column]:
+    def get_column_by_id(self, column_id: str) -> Column | None:
         for column in self.columns:
             if column.id == column_id:
                 return column
         return None
 
-    def get_orphaned_items(self) -> List[Item]:
-        items = []
+    def get_orphaned_items(self) -> list[Item]:
+        items: list[Item] = []
         for column in self.columns:
             items.extend([item for item in column.items if item.parent_id is None])
         return items

@@ -7,6 +7,7 @@ import tempfile
 from pathlib import Path
 from src.app import MKanbanApp
 from src.storage.markdown_storage import MarkdownStorage
+from src.models.item import Item
 
 
 @click.command()
@@ -140,48 +141,60 @@ def create_new_item_with_editor(data_dir: Path, board_name: str, column_name: st
             f"Available columns: {', '.join([col.name for col in board.columns])}"
         )
         return
+    item = Item(
+        title="New Task",
+        column_id=column.id,
+    )
+    template_content = f"""
+---
+metadata:
+  column_id: {column.id}
+  created_at: {item.created_at} 
+  id: {item.id} 
+  parent_id: null
+  updated_at: {item.updated_at} 
+---
 
-    template_content = f"""# New Item
+# New Item
 
 ## Description
-
-Add your description here...
-
-## Tags
-
-
-## Notes
-
 """
 
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.md', delete=False) as temp_file:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as temp_file:
         temp_file.write(template_content)
         temp_file_path = temp_file.name
 
     try:
-        subprocess.run(['nvim', temp_file_path], check=True)
-        
-        with open(temp_file_path, 'r') as f:
+        subprocess.run(["nvim", temp_file_path], check=True)
+
+        with open(temp_file_path, "r") as f:
             edited_content = f.read()
-        
-        title_line = next((line for line in edited_content.split('\n') if line.strip().startswith('# ')), None)
-        title = title_line.replace('# ', '').strip() if title_line else "New Item"
-        
+
+        title_line = next(
+            (
+                line
+                for line in edited_content.split("\n")
+                if line.strip().startswith("# ")
+            ),
+            None,
+        )
+        title = title_line.replace("# ", "").strip() if title_line else "New Item"
+
         description = edited_content.strip()
-        
+
         if not title or title == "New Item":
             click.echo("No title specified. Aborting item creation.")
             return
-        
+
         new_item = target_column.add_item(title, target_column.id)
         new_item.description = description
-        
+
         storage.save_board(board)
-        
+
         click.echo(
             f"Successfully created item '{title}' in column '{target_column.name}' of board '{board_name}'"
         )
-        
+
     except subprocess.CalledProcessError:
         click.echo("Error: Failed to open neovim editor")
     except KeyboardInterrupt:
@@ -189,7 +202,7 @@ Add your description here...
     finally:
         try:
             Path(temp_file_path).unlink()
-        except:
+        except Exception:
             pass
 
 

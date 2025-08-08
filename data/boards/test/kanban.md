@@ -1,6 +1,5 @@
 ---
 metadata:
-  board_metadata: {}
   created_at: 2025-08-06 04:15:07.002096
   description: Welcome to MKanban! This is a sample board to help you get started.
     You can edit items by pressing 'i', create new items with 'o', and delete items

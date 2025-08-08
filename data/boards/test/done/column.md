@@ -9,4 +9,4 @@ metadata:
 
 ## Items
 
-- [Install MKanban](items/43448dd0-32d8-48f7-a39c-3b07cd204f10.md)
+- [Install MKanban](items/install_mkanban.md)

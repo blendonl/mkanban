@@ -3,10 +3,9 @@ metadata:
   column_id: 552e2b9f-31ea-4a5d-af22-3f241234ce0d
   created_at: 2025-08-06 04:15:07.002143
   id: 17926fc5-2b6a-4a98-87b3-6415c66840c2
-  metadata: {}
   parent_id: null
   title: Learn keyboard shortcuts
-  updated_at: 2025-08-08 06:26:48.669128
+  updated_at: 2025-08-08 08:43:31.228958
 ---
 
 # Learn keyboard shortcuts
