@@ -10,6 +10,7 @@ from .markdown_widget import MarkDownWidget
 from .item_widget import ItemWidget
 from .column_widget import ColumnWidget
 from ...controllers.column_controller import ColumnController
+from ...controllers.item_controller import ItemController
 
 from ..dialogs.help_dialog import HelpDialog
 
@@ -235,11 +236,19 @@ class BoardWidget(Widget):
             )
 
             item = self.query_one(f"#item_{selected.id.replace('-', '_')}")
+            new_item = ItemWidget(
+                item.item,
+                item_controller=ItemController(
+                    items_container.column_controller.board,
+                    item,
+                    items_container.column_controller.storage,
+                ),
+            )
 
             await item.remove()
-            items_container.children[0].children[0].mount(item)
+            items_container.children[0].children[0].mount(new_item)
             items_container.items.append(item)
-            item.focus()
+            new_item.focus()
 
             controller = items_container.column_controller
             controller.move_item(selected.id, target_column_id)
@@ -266,12 +275,26 @@ class BoardWidget(Widget):
 
             item = self.query_one(f"#item_{selected.id.replace('-', '_')}")
             await item.remove()
-            items_container.children[0].children[0].mount(item)
+
+            new_item = ItemWidget(
+                item.item,
+                item_controller=ItemController(
+                    items_container.column_controller.board,
+                    item,
+                    items_container.column_controller.storage,
+                ),
+            )
+
+            await item.remove()
+            items_container.children[0].children[0].mount(new_item)
+            items_container.items.append(item)
+
+            items_container.items.append(item)
 
             controller = items_container.column_controller
             controller.move_item(selected.id, target_column_id)
 
-            item.focus()
+            new_item.focus()
 
         column = None
 
