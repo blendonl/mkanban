@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
-
-all_sessions=$()
+all_sessions=$(tmux list-sessions 2>/dev/null)
 
 attached_sessions=$(tmux list-sessions | grep "(attached)" | cut -d':' -f1)
 
@@ -21,7 +20,6 @@ else
         if [ -n "$selected_session" ]; then
             selected_name=$(tmux run  "tmux -t $selected_session display-message -p '#S'")
             selected_path=$(tmux run -t "$selected_session.1" "tmux display-message -p '#{pane_current_path}'")
-
 
         else
             echo "No session selected"
@@ -43,7 +41,7 @@ fi
 path="$selected";
 
 mkdir -p $path
-ghostty --title="mkanban" -e "/mnt/data/personal/mkanban/dist/mkanban --data-dir $path"
+/mnt/data/personal/mkanban/dist/mkanban --data-dir $path --new-item --board "default"
 
 
 
