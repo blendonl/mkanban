@@ -13,7 +13,7 @@ from .utils.config import Config
 
 
 class MKanbanApp(App):
-    CSS_PATH = "ui/styles.css"
+    CSS_PATH = Path(__file__).parent / "ui" / "styles.css"
     TITLE = "MKanban"
     SUB_TITLE = "Terminal Kanban Board"
 

@@ -18,6 +18,9 @@ setup(
     packages=find_packages() + ["src", "src.controllers", "src.models", "src.storage", "src.ui", "src.ui.dialogs", "src.ui.widgets", "src.utils"],
     py_modules=["main"],
     include_package_data=True,
+    package_data={
+        "src.ui": ["*.css"],
+    },
     install_requires=requirements,
     entry_points={
         "console_scripts": [
