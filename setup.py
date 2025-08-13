@@ -15,7 +15,7 @@ setup(
     author="blendonl",
     author_email="blendonluta@gmail.com",
     url="https://github.com/blendonl/mkanban",
-    packages=find_packages(),
+    packages=find_packages() + ["src", "src.controllers", "src.models", "src.storage", "src.ui", "src.ui.dialogs", "src.ui.widgets", "src.utils"],
     py_modules=["main"],
     include_package_data=True,
     install_requires=requirements,
