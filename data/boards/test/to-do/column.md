@@ -10,3 +10,4 @@ metadata:
 ## Items
 
 - [Learn keyboard shortcuts](items/learn_keyboard_shortcuts.md)
+- [Organize with parents](items/organize_with_parents.md)

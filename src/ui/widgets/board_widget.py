@@ -368,44 +368,54 @@ class BoardWidget(Widget):
         if not isinstance(focused, ItemWidget):
             return
 
-        all_items = self.query(".item")
-        focusable = [w for w in all_items if hasattr(w, "can_focus") and w.can_focus]
-        if not focusable:
+        current_column = self._get_column_for_item(focused.item)
+        if not current_column:
             return
 
-        try:
-            current_idx = focusable.index(focused)
-            current_column = self._get_column_for_item(focused.item)
-            for i in range(current_idx - 1, -1, -1):
-                item_column = self._get_column_for_item(focusable[i].item)
-                if item_column != current_column:
-                    focusable[i].focus()
-                    self._ensure_item_visible(focusable[i])
-                    break
-        except (ValueError, AttributeError):
-            pass
+        # Get the current item's position within its column
+        current_position = self._get_item_position_in_column(focused.item)
+        if current_position is None:
+            return
+
+        # Find the target column (previous non-empty column)
+        target_column_id = self._get_previous_non_empty_column_id(current_column)
+        if not target_column_id:
+            return
+
+        # Get items in the target column and try to focus the item at the same position
+        target_item = self._get_item_at_position_in_column(
+            target_column_id, current_position
+        )
+        if target_item:
+            target_item.focus()
+            self._ensure_item_visible(target_item)
 
     def move_focus_right(self) -> None:
         focused = self.app.focused
         if not isinstance(focused, ItemWidget):
             return
 
-        all_items = self.query(".item")
-        focusable = [w for w in all_items if hasattr(w, "can_focus") and w.can_focus]
-        if not focusable:
+        current_column = self._get_column_for_item(focused.item)
+        if not current_column:
             return
 
-        try:
-            current_idx = focusable.index(focused)
-            current_column = self._get_column_for_item(focused.item)
-            for i in range(current_idx + 1, len(focusable)):
-                item_column = self._get_column_for_item(focusable[i].item)
-                if item_column != current_column:
-                    focusable[i].focus()
-                    self._ensure_item_visible(focusable[i])
-                    break
-        except (ValueError, AttributeError):
-            pass
+        # Get the current item's position within its column
+        current_position = self._get_item_position_in_column(focused.item)
+        if current_position is None:
+            return
+
+        # Find the target column (next non-empty column)
+        target_column_id = self._get_next_non_empty_column_id(current_column)
+        if not target_column_id:
+            return
+
+        # Get items in the target column and try to focus the item at the same position
+        target_item = self._get_item_at_position_in_column(
+            target_column_id, current_position
+        )
+        if target_item:
+            target_item.focus()
+            self._ensure_item_visible(target_item)
 
     def move_focus_first(self) -> None:
         all_items = self.query(".item")
@@ -420,6 +430,119 @@ class BoardWidget(Widget):
         if focusable:
             focusable[-1].focus()
             self._ensure_item_visible(focusable[-1])
+
+    def _get_item_position_in_column(self, item: Item) -> Optional[int]:
+        """Get the position (index) of an item within its column"""
+        if not item or not self.board:
+            return None
+
+        column_widgets = self.query(ColumnWidget)
+        for column_widget in column_widgets:
+            if column_widget.column.id == item.column_id:
+                item_widgets = column_widget.query(ItemWidget)
+                for i, item_widget in enumerate(item_widgets):
+                    if item_widget.item.id == item.id:
+                        return i
+        return None
+
+    def _get_previous_column_id(self, current_column_id: str) -> Optional[str]:
+        """Get the ID of the column to the left of the current column"""
+        if not self.board:
+            return None
+
+        sorted_columns = sorted(self.board.columns, key=lambda c: c.position)
+        for i, column in enumerate(sorted_columns):
+            if column.id == current_column_id and i > 0:
+                return sorted_columns[i - 1].id
+        return None
+
+    def _get_next_column_id(self, current_column_id: str) -> Optional[str]:
+        """Get the ID of the column to the right of the current column"""
+        if not self.board:
+            return None
+
+        sorted_columns = sorted(self.board.columns, key=lambda c: c.position)
+        for i, column in enumerate(sorted_columns):
+            if column.id == current_column_id and i < len(sorted_columns) - 1:
+                return sorted_columns[i + 1].id
+        return None
+
+    def _get_item_at_position_in_column(
+        self, column_id: str, position: int
+    ) -> Optional[ItemWidget]:
+        """Get the item widget at a specific position in a column"""
+        column_widgets = self.query(ColumnWidget)
+        for column_widget in column_widgets:
+            if column_widget.column.id == column_id:
+                item_widgets = list(column_widget.query(ItemWidget))
+                # If the position exists in the target column, use it
+                if position < len(item_widgets):
+                    return item_widgets[position]
+                # If the target column has fewer items, focus the last item
+                elif item_widgets:
+                    return item_widgets[-1]
+        return None
+
+    def _get_previous_non_empty_column_id(
+        self, current_column_id: str
+    ) -> Optional[str]:
+        """Get the ID of the previous column that has items, skipping empty columns"""
+        if not self.board:
+            return None
+
+        sorted_columns = sorted(self.board.columns, key=lambda c: c.position)
+        current_index = None
+
+        # Find current column index
+        for i, column in enumerate(sorted_columns):
+            if column.id == current_column_id:
+                current_index = i
+                break
+
+        if current_index is None:
+            return None
+
+        # Look backwards for a non-empty column
+        for i in range(current_index - 1, -1, -1):
+            column = sorted_columns[i]
+            if self._column_has_items(column.id):
+                return column.id
+
+        return None
+
+    def _get_next_non_empty_column_id(self, current_column_id: str) -> Optional[str]:
+        """Get the ID of the next column that has items, skipping empty columns"""
+        if not self.board:
+            return None
+
+        sorted_columns = sorted(self.board.columns, key=lambda c: c.position)
+        current_index = None
+
+        # Find current column index
+        for i, column in enumerate(sorted_columns):
+            if column.id == current_column_id:
+                current_index = i
+                break
+
+        if current_index is None:
+            return None
+
+        # Look forwards for a non-empty column
+        for i in range(current_index + 1, len(sorted_columns)):
+            column = sorted_columns[i]
+            if self._column_has_items(column.id):
+                return column.id
+
+        return None
+
+    def _column_has_items(self, column_id: str) -> bool:
+        """Check if a column has any items"""
+        column_widgets = self.query(ColumnWidget)
+        for column_widget in column_widgets:
+            if column_widget.column.id == column_id:
+                item_widgets = list(column_widget.query(ItemWidget))
+                return len(item_widgets) > 0
+        return False
 
     def _ensure_item_visible(self, item_widget: ItemWidget) -> None:
         if not item_widget:
