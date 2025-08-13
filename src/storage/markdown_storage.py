@@ -2,7 +2,7 @@ import click
 import frontmatter
 from pathlib import Path
 from datetime import datetime
-from uuid import uuid4
+import re
 
 from ..models.board import Board
 from ..models.column import Column
@@ -119,8 +119,12 @@ class MarkdownStorage:
 
         metadata = post.metadata.get("metadata", post.metadata)
 
+        column_id = metadata.get("id")
+        if not column_id:
+            column_id = self._generate_id_from_name(column_name)
+        
         column = Column(
-            id=metadata.get("id", str(uuid4())), name=column_name, position=position
+            id=column_id, name=column_name, position=position
         )
         return column
 
@@ -177,15 +181,18 @@ class MarkdownStorage:
             post = frontmatter.load(f)
 
         item_metadata = post.metadata.get("metadata", post.metadata)
+        item_id = item_metadata.get("id")
+        if not item_id:
+            item_id = self._generate_id_from_name(item_metadata["title"])
+        
         return Item(
-            id=item_metadata.get("id", str(uuid4())),
+            id=item_id,
             title=item_metadata["title"],
             description=post.content.strip(),
             column_id=column_id,
             parent_id=item_metadata.get("parent_id"),
             created_at=item_metadata.get("created_at", datetime.now()),
             updated_at=item_metadata.get("updated_at", datetime.now()),
-            metadata=item_metadata.get("metadata", {}),
         )
 
     def save_boards(self, boards: list[Board]) -> None:
@@ -378,9 +385,12 @@ class MarkdownStorage:
         safe_name = self._get_safe_name(board.name)
         return self.boards_dir / safe_name
 
+    def _generate_id_from_name(self, name: str) -> str:
+        safe_name = re.sub(r'[^a-zA-Z0-9\s-]', '', name.lower())
+        safe_name = re.sub(r'\s+', '_', safe_name.strip())
+        return safe_name or 'unnamed'
+    
     def _get_safe_name(self, name: str) -> str:
-        import re
-
         safe_name = re.sub(r"[^a-zA-Z0-9\s-]", "", name.lower())
         safe_name = re.sub(r"\s+", "-", safe_name.strip())
         return safe_name or "unnamed"

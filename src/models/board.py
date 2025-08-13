@@ -1,7 +1,7 @@
 from datetime import datetime
-from uuid import uuid4
 from pathlib import Path
 from pydantic import BaseModel, Field
+import re
 
 from .column import Column
 from .item import Item
@@ -9,14 +9,24 @@ from .parent import Parent
 
 
 class Board(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid4()))
+    id: str = Field(default="")
     name: str
     description: str = ""
     file_path: Path | None = None
     columns: list[Column] = Field(default_factory=list)
     parents: list[Parent] = Field(default_factory=list)
+    metadata: dict = Field(default_factory=dict)
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
+
+    def model_post_init(self, __context) -> None:
+        if not self.id:
+            self.id = self._generate_id_from_name(self.name)
+    
+    def _generate_id_from_name(self, name: str) -> str:
+        safe_name = re.sub(r'[^a-zA-Z0-9\s-]', '', name.lower())
+        safe_name = re.sub(r'\s+', '_', safe_name.strip())
+        return safe_name or 'unnamed_board'
 
     def update(self, **kwargs) -> None:
         for key, value in kwargs.items():

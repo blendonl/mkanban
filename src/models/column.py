@@ -1,18 +1,27 @@
 from datetime import datetime
-from uuid import uuid4
+from pydantic import BaseModel, Field
+import re
 
 from .item import Item
-from pydantic import BaseModel, Field
 
 
 class Column(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid4()))
+    id: str = Field(default="")
     name: str
     position: int = 0
     limit: int | None = None
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
     items: list[Item] = Field(default_factory=list)
+
+    def model_post_init(self, __context) -> None:
+        if not self.id:
+            self.id = self._generate_id_from_name(self.name)
+    
+    def _generate_id_from_name(self, name: str) -> str:
+        safe_name = re.sub(r'[^a-zA-Z0-9\s-]', '', name.lower())
+        safe_name = re.sub(r'\s+', '_', safe_name.strip())
+        return safe_name or 'unnamed_column'
 
     def update(self, **kwargs) -> None:
         for key, value in kwargs.items():
