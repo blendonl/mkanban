@@ -19,11 +19,10 @@ class ColumnController:
     def add_item(
         self,
         title: str,
-        column_id: str,
         parent_id: str | None = None,
         description: str = "",
     ) -> Item:
-        item = self.column.add_item(title, column_id, parent_id)
+        item = self.column.add_item(title, parent_id)
         if description:
             item.description = description
 
@@ -39,7 +38,7 @@ class ColumnController:
         return None
 
     def delete_item(self, item: Item) -> bool:
-        if not self.storage.delete_item_from_column(self.board, item):
+        if not self.storage.delete_item_from_column(self.board, item, self.column):
             raise Error("Delete failed")
 
         success = self.column.remove_item(item.id)
@@ -72,18 +71,19 @@ class ColumnController:
         if not target_column:
             return False
 
+        old_column = self.board.get_column_by_id(old_column_id)
         file_moved = self.storage.move_item_between_columns(
-            self.board, item_to_move, old_column_id, target_column_id
+            self.board, item_to_move, old_column, target_column
         )
 
         if not file_moved:
             return False
 
-        old_column = self.board.get_column_by_id(old_column_id)
         if old_column:
             if not old_column.remove_item(item_id):
                 raise Error()
 
+        item_to_move.column_id = target_column_id
         target_column.items.append(item_to_move)
         target_column.updated_at = datetime.now()
 
@@ -94,7 +94,7 @@ class ColumnController:
     def get_column_items(
         self, column_id: str, grouped_by_parent: bool = False
     ) -> list[Item]:
-        items = self.column.get_column_items(column_id)
+        items = self.column.get_all_items()
 
         if not grouped_by_parent:
             return items

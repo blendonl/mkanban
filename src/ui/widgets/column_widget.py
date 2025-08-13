@@ -41,7 +41,7 @@ class ColumnWidget(Vertical):
 
         def on_save(title: str, content: str):
             controller = self.column_controller
-            controller.add_item(title, self.column.id, None, content)
+            controller.add_item(title, None, content)
             self._finish_editing()
 
         def on_cancel():

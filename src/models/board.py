@@ -15,12 +15,16 @@ class Board(BaseModel):
     file_path: Path | None = None
     columns: list[Column] = Field(default_factory=list)
     parents: list[Parent] = Field(default_factory=list)
-    metadata: dict = Field(default_factory=dict)
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
 
     def model_post_init(self, __context) -> None:
-        if not self.id:
+        # For boards, if we have a file_path, use the directory name as both id and name
+        if self.file_path and not self.id:
+            dir_name = self.file_path.parent.name
+            self.id = dir_name
+            self.name = dir_name
+        elif not self.id:
             self.id = self._generate_id_from_name(self.name)
     
     def _generate_id_from_name(self, name: str) -> str:

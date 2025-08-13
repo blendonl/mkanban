@@ -106,9 +106,7 @@ class BoardWidget(Widget):
 
             if updated_column:
                 column_widget.column = updated_column
-                items = self.board.get_column_by_id(updated_column.id).get_column_items(
-                    updated_column.id
-                )
+                items = self.board.get_column_by_id(updated_column.id).get_all_items()
                 column_widget.items = items
                 column_widget.border_title = f"{updated_column.name} ({len(items)})"
 
@@ -123,7 +121,7 @@ class BoardWidget(Widget):
         self.mount(columns_container)
 
         for column in sorted(self.board.columns, key=lambda c: c.position):
-            items = self.board.get_column_by_id(column.id).get_column_items(column.id)
+            items = self.board.get_column_by_id(column.id).get_all_items()
             column_widget = ColumnWidget(
                 column,
                 items,
@@ -186,7 +184,7 @@ class BoardWidget(Widget):
 
     def _find_column_for_item(self, item: Item) -> Optional[ColumnWidget]:
         for column_widget in self.query(ColumnWidget):
-            if column_widget.column.id == item.column_id:
+            if item in column_widget.column.items:
                 return column_widget
         return None
 
@@ -195,7 +193,8 @@ class BoardWidget(Widget):
         if not selected:
             return
 
-        column = self.board.get_column_by_id(selected.column_id)
+        column_widget = self._find_column_for_item(selected)
+        column = column_widget.column if column_widget else None
         column_controller = ColumnController(self.board, column, self.app.storage)
         if column_controller.delete_item(selected):
             self.refresh_board()
@@ -235,37 +234,17 @@ class BoardWidget(Widget):
         if not selected or not self.board:
             return
 
-        async def move_item(target_column_id: str) -> None:
-            items_container = self.query_one(
-                f"#column_{target_column_id.replace('-', '_')}", Vertical
-            )
-
-            item = self.query_one(f"#item_{selected.id.replace('-', '_')}")
-            new_item = ItemWidget(
-                item.item,
-                item_controller=ItemController(
-                    items_container.column_controller.board,
-                    item,
-                    items_container.column_controller.storage,
-                ),
-            )
-
-            await item.remove()
-            items_container.children[0].children[0].mount(new_item)
-            items_container.items.append(item)
-            new_item.focus()
-
-            controller = items_container.column_controller
-            controller.move_item(selected.id, target_column_id)
-
-        column = None
-
         for index, value in enumerate(self.board.columns):
             if value.id == selected.column_id:
                 if index == len(self.board.columns) - 1:
                     return
-                column = self.board.columns[index + 1]
-                await move_item(column.id)
+                target_column = self.board.columns[index + 1]
+                
+                column_widget = self._find_column_for_item(selected)
+                column_controller = ColumnController(self.board, column_widget.column, self.app.storage)
+                
+                if column_controller.move_item(selected.id, target_column.id):
+                    self.refresh_board(focus_item_id=selected.id)
                 return
 
     async def move_left(self) -> None:
@@ -273,42 +252,17 @@ class BoardWidget(Widget):
         if not selected or not self.board:
             return
 
-        async def move_item(target_column_id: str) -> None:
-            items_container = self.query_one(
-                f"#column_{target_column_id.replace('-', '_')}", Vertical
-            )
-
-            item = self.query_one(f"#item_{selected.id.replace('-', '_')}")
-            await item.remove()
-
-            new_item = ItemWidget(
-                item.item,
-                item_controller=ItemController(
-                    items_container.column_controller.board,
-                    item,
-                    items_container.column_controller.storage,
-                ),
-            )
-
-            await item.remove()
-            items_container.children[0].children[0].mount(new_item)
-            items_container.items.append(item)
-
-            items_container.items.append(item)
-
-            controller = items_container.column_controller
-            controller.move_item(selected.id, target_column_id)
-
-            new_item.focus()
-
-        column = None
-
         for index, value in enumerate(self.board.columns):
             if value.id == selected.column_id:
                 if index == 0:
                     return
-                column = self.board.columns[index - 1]
-                await move_item(column.id)
+                target_column = self.board.columns[index - 1]
+                
+                column_widget = self._find_column_for_item(selected)
+                column_controller = ColumnController(self.board, column_widget.column, self.app.storage)
+                
+                if column_controller.move_item(selected.id, target_column.id):
+                    self.refresh_board(focus_item_id=selected.id)
                 return
 
     def move_focus_up(self) -> None:
@@ -436,13 +390,12 @@ class BoardWidget(Widget):
         if not item or not self.board:
             return None
 
-        column_widgets = self.query(ColumnWidget)
-        for column_widget in column_widgets:
-            if column_widget.column.id == item.column_id:
-                item_widgets = column_widget.query(ItemWidget)
-                for i, item_widget in enumerate(item_widgets):
-                    if item_widget.item.id == item.id:
-                        return i
+        column_widget = self._find_column_for_item(item)
+        if column_widget:
+            item_widgets = column_widget.query(ItemWidget)
+            for i, item_widget in enumerate(item_widgets):
+                if item_widget.item.id == item.id:
+                    return i
         return None
 
     def _get_previous_column_id(self, current_column_id: str) -> Optional[str]:
@@ -573,7 +526,8 @@ class BoardWidget(Widget):
                 pass
 
     def _get_column_for_item(self, item: Item) -> Optional[str]:
-        return item.column_id if item else None
+        column_widget = self._find_column_for_item(item)
+        return column_widget.column.id if column_widget else None
 
     def _get_item_file_path(self, item: Item) -> Optional[Path]:
         """Get the file path for an item"""
@@ -581,14 +535,11 @@ class BoardWidget(Widget):
             return None
 
         # Find the column containing this item
-        column = None
-        for col in self.board.columns:
-            if col.id == item.column_id:
-                column = col
-                break
-
-        if not column:
+        column_widget = self._find_column_for_item(item)
+        if not column_widget:
             return None
+
+        column = column_widget.column
 
         # Get the storage instance to access paths
         storage = self.app.storage

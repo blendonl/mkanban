@@ -101,7 +101,7 @@ def create_new_task(
         )
         return
 
-    new_item = target_column.add_item(title, target_column.id)
+    new_item = target_column.add_item(title)
     new_item.description = description
 
     storage.save_board(board)
@@ -149,15 +149,13 @@ def create_new_item_with_editor(data_dir: Path, board_name: str, column_name: st
         return
     item = Item(
         title="New Task",
-        column_id=column.id,
     )
     template_content = f"""---
-metadata:
-    column_id: {column.id}
-    created_at: {item.created_at} 
-    id: {item.id} 
-    parent_id: null
-    updated_at: {item.updated_at} 
+created_at: {item.created_at}
+id: {item.id}
+parent_id: null
+updated_at: {item.updated_at}
+title: New Task
 ---
 
 # 
@@ -189,7 +187,7 @@ metadata:
             click.echo("No title specified. Aborting item creation.")
             return
 
-        new_item = target_column.add_item(title, target_column.id)
+        new_item = target_column.add_item(title)
         new_item.description = description
 
         storage.save_board(board)

@@ -1,5 +1,6 @@
 import click
 import frontmatter
+import yaml
 from pathlib import Path
 from datetime import datetime
 import re
@@ -38,19 +39,20 @@ class MarkdownStorage:
         with open(kanban_file, "r", encoding="utf-8") as f:
             post = frontmatter.load(f)
 
-        metadata = post.metadata.get("metadata", post.metadata)
+        metadata = post.metadata
 
         board = Board(
-            id=metadata["id"],
-            name=metadata["name"],
+            id=metadata.get("id", ""),
+            name=metadata.get("name", kanban_file.parent.name),
             description=metadata.get("description", ""),
             created_at=metadata.get("created_at", datetime.now()),
             updated_at=metadata.get("updated_at", datetime.now()),
+            file_path=kanban_file,
         )
 
         self._parse_columns_from_content(board, post.content, kanban_file.parent)
 
-        for parent_data in metadata.get("parents", []):
+        for parent_data in metadata.get("parents") or []:
             parent = Parent(
                 id=parent_data["id"],
                 name=parent_data["name"],
@@ -117,14 +119,17 @@ class MarkdownStorage:
         with open(column_file, "r", encoding="utf-8") as f:
             post = frontmatter.load(f)
 
-        metadata = post.metadata.get("metadata", post.metadata)
+        metadata = post.metadata
 
         column_id = metadata.get("id")
         if not column_id:
-            column_id = self._generate_id_from_name(column_name)
-        
+            column_id = column_file.parent.name
+
         column = Column(
-            id=column_id, name=column_name, position=position
+            id=column_id,
+            name=column_file.parent.name,
+            position=position,
+            file_path=str(column_file),
         )
         return column
 
@@ -150,19 +155,19 @@ class MarkdownStorage:
                 )
                 if item_match:
                     item_title = item_match.group(1).strip()
+                    item_filename = item_match.group(2).strip()
                     parent_name = item_match.group(3) if item_match.group(3) else None
 
                     items_dir = column_dir / "items"
                     if items_dir.exists():
-                        for item_file in items_dir.glob("*.md"):
+                        item_file = items_dir / f"{item_filename}.md"
+                        if item_file.exists():
                             item = self.load_item_from_title_file(item_file, column.id)
-                            if item and item.title == item_title:
-                                if item.id not in referenced_items:
-                                    referenced_items.add(item.id)
-                                    if parent_name:
-                                        parent_info[item.id] = parent_name
-                                    column.items.append(item)
-                                break
+                            if item and item.id not in referenced_items:
+                                referenced_items.add(item.id)
+                                if parent_name:
+                                    parent_info[item.id] = parent_name
+                                column.items.append(item)
 
             # Set parent IDs based on parent names
             for item in column.items:
@@ -180,19 +185,21 @@ class MarkdownStorage:
         with open(item_file, "r", encoding="utf-8") as f:
             post = frontmatter.load(f)
 
-        item_metadata = post.metadata.get("metadata", post.metadata)
+        item_metadata = post.metadata
+
         item_id = item_metadata.get("id")
         if not item_id:
-            item_id = self._generate_id_from_name(item_metadata["title"])
-        
+            item_id = item_file.stem
+
         return Item(
             id=item_id,
-            title=item_metadata["title"],
-            description=post.content.strip(),
             column_id=column_id,
+            title=item_metadata.get("title", item_file.stem),
+            description=post.content.strip(),
             parent_id=item_metadata.get("parent_id"),
             created_at=item_metadata.get("created_at", datetime.now()),
             updated_at=item_metadata.get("updated_at", datetime.now()),
+            file_path=str(item_file),
         )
 
     def save_boards(self, boards: list[Board]) -> None:
@@ -207,7 +214,6 @@ class MarkdownStorage:
 
         board_data = {
             "id": board.id,
-            "name": board.name,
             "description": board.description,
             "created_at": board.created_at,
             "updated_at": board.updated_at,
@@ -233,10 +239,11 @@ class MarkdownStorage:
 
             self.save_column_with_items(board, column)
 
-        post = frontmatter.Post(content="\n".join(content_lines), metadata=board_data)
+        yaml_str = yaml.dump(board_data, default_flow_style=False, sort_keys=False)
+        full_content = f"---\n{yaml_str}---\n\n{'\n'.join(content_lines)}"
 
         with open(kanban_file, "w", encoding="utf-8") as f:
-            f.write(frontmatter.dumps(post))
+            f.write(full_content)
 
     def save_column_with_items(self, board: Board, column: Column) -> None:
         board_dir = self._get_board_directory(board)
@@ -249,7 +256,6 @@ class MarkdownStorage:
 
         column_data = {
             "id": column.id,
-            "name": column.name,
             "position": column.position,
         }
 
@@ -259,7 +265,7 @@ class MarkdownStorage:
             content_lines.append("*No items*")
         else:
             for item in column.items:
-                item_filename = self._get_unique_filename(items_dir, item)
+                item_filename = item.id
                 item_link = f"[{item.title}](items/{item_filename}.md)"
 
                 if item.parent_id:
@@ -275,11 +281,12 @@ class MarkdownStorage:
                 # Save individual item file
                 self.save_item_with_title(items_dir, item, item_filename)
 
-        post = frontmatter.Post(content="\n".join(content_lines), metadata=column_data)
+        yaml_str = yaml.dump(column_data, default_flow_style=False, sort_keys=False)
+        full_content = f"---\n{yaml_str}---\n\n{'\n'.join(content_lines)}"
 
         column_file = column_dir / "column.md"
         with open(column_file, "w", encoding="utf-8") as f:
-            f.write(frontmatter.dumps(post))
+            f.write(full_content)
 
     def save_item_with_title(
         self, items_dir: Path, item: Item, item_filename: str
@@ -288,8 +295,6 @@ class MarkdownStorage:
 
         item_metadata = {
             "id": item.id,
-            "title": item.title,
-            "column_id": item.column_id,
             "parent_id": item.parent_id,
             "created_at": item.created_at,
             "updated_at": item.updated_at,
@@ -309,23 +314,13 @@ class MarkdownStorage:
         else:
             content_lines = [f"# {item.title}", "", description]
 
-        post = frontmatter.Post(
-            content="\n".join(content_lines), metadata=item_metadata
-        )
+        yaml_str = yaml.dump(item_metadata, default_flow_style=False, sort_keys=False)
+        full_content = f"---\n{yaml_str}---\n\n{'\n'.join(content_lines)}"
 
         with open(item_file, "w", encoding="utf-8") as f:
-            f.write(frontmatter.dumps(post))
+            f.write(full_content)
 
-    def delete_item_from_column(self, board: Board, item: Item) -> bool:
-        column = None
-        for col in board.columns:
-            if col.id == item.column_id:
-                column = col
-                break
-
-        if not column:
-            return False
-
+    def delete_item_from_column(self, board: Board, item: Item, column: Column) -> bool:
         board_dir = self._get_board_directory(board)
         column_safe_name = self._get_safe_name(column.name)
         column_dir = board_dir / column_safe_name
@@ -339,20 +334,8 @@ class MarkdownStorage:
         return False
 
     def move_item_between_columns(
-        self, board: Board, item: Item, old_column_id: str, new_column_id: str
+        self, board: Board, item: Item, old_column: Column, new_column: Column
     ) -> bool:
-        old_column = None
-        new_column = None
-
-        for col in board.columns:
-            if col.id == old_column_id:
-                old_column = col
-            elif col.id == new_column_id:
-                new_column = col
-
-        if not old_column or not new_column:
-            return False
-
         board_dir = self._get_board_directory(board)
 
         old_column_safe_name = self._get_safe_name(old_column.name)
@@ -368,11 +351,10 @@ class MarkdownStorage:
         new_items_dir.mkdir(exist_ok=True)  # Ensure target directory exists
 
         if old_item_file and old_item_file.exists():
-            item.column_id = new_column_id
             item.updated_at = datetime.now()
 
             # Get unique filename for the new location
-            new_item_filename = self._get_unique_filename(new_items_dir, item)
+            new_item_filename = item.id
             self.save_item_with_title(new_items_dir, item, new_item_filename)
 
             old_item_file.unlink()
@@ -386,10 +368,10 @@ class MarkdownStorage:
         return self.boards_dir / safe_name
 
     def _generate_id_from_name(self, name: str) -> str:
-        safe_name = re.sub(r'[^a-zA-Z0-9\s-]', '', name.lower())
-        safe_name = re.sub(r'\s+', '_', safe_name.strip())
-        return safe_name or 'unnamed'
-    
+        safe_name = re.sub(r"[^a-zA-Z0-9\s-]", "", name.lower())
+        safe_name = re.sub(r"\s+", "_", safe_name.strip())
+        return safe_name or "unnamed"
+
     def _get_safe_name(self, name: str) -> str:
         safe_name = re.sub(r"[^a-zA-Z0-9\s-]", "", name.lower())
         safe_name = re.sub(r"\s+", "-", safe_name.strip())
@@ -411,7 +393,7 @@ class MarkdownStorage:
                 with open(item_file, "r", encoding="utf-8") as f:
                     post = frontmatter.load(f)
 
-                item_metadata = post.metadata.get("metadata", post.metadata)
+                item_metadata = post.metadata
                 if item_metadata.get("id") == item_id:
                     return item_file
             except Exception:
@@ -431,7 +413,7 @@ class MarkdownStorage:
             with open(potential_file, "r", encoding="utf-8") as f:
                 post = frontmatter.load(f)
 
-            existing_metadata = post.metadata.get("metadata", post.metadata)
+            existing_metadata = post.metadata
             if existing_metadata.get("id") == item.id:
                 # Same item, can reuse the filename
                 return base_filename
@@ -450,7 +432,7 @@ class MarkdownStorage:
                 with open(test_file, "r", encoding="utf-8") as f:
                     post = frontmatter.load(f)
 
-                existing_metadata = post.metadata.get("metadata", post.metadata)
+                existing_metadata = post.metadata
                 if existing_metadata.get("id") == item.id:
                     return test_filename
             except Exception:
@@ -465,19 +447,14 @@ class MarkdownStorage:
         return [board.name for board in boards]
 
     def create_sample_board(self, name: str = "Sample Board") -> Board:
-        board = Board(
-            name=name,
-            description="Welcome to MKanban! This is a sample board to help you get started. "
-            "You can edit items by pressing 'i', create new items with 'o', "
-            "and delete items with 'd'. Use vim motions (h/j/k/l) to navigate.",
-        )
+        board = Board(name=name)
 
         todo_col = board.add_column("To Do", 0)
         progress_col = board.add_column("In Progress", 1)
         review_col = board.add_column("Review", 2)
         done_col = board.add_column("Done", 3)
 
-        item1 = todo_col.add_item("Learn keyboard shortcuts", todo_col.id)
+        item1 = todo_col.add_item("Learn keyboard shortcuts")
         item1.description = (
             "Press 'g?' to view help dialog with all available shortcuts.\n\n"
             "Basic navigation:\n"
@@ -489,7 +466,7 @@ class MarkdownStorage:
             "- H/L: Move item between columns"
         )
 
-        item2 = todo_col.add_item("Explore markdown files", todo_col.id)
+        item2 = todo_col.add_item("Explore markdown files")
         item2.description = (
             "Your boards are stored as markdown files in the data/boards/ directory.\n\n"
             "Each board has its own folder with:\n"
@@ -498,7 +475,7 @@ class MarkdownStorage:
             "- Item files in items/ subfolders"
         )
 
-        item3 = progress_col.add_item("Create your first board", progress_col.id)
+        item3 = progress_col.add_item("Create your first board")
         item3.description = (
             "Try creating a new board by:\n"
             "1. Exiting MKanban (press 'q')\n"
@@ -506,14 +483,14 @@ class MarkdownStorage:
             "3. Or modify this sample board to suit your needs"
         )
 
-        item4 = review_col.add_item("Organize with parents", review_col.id)
+        item4 = review_col.add_item("Organize with parents")
         item4.description = (
             "Parents help organize related items across columns.\n\n"
             "Toggle parent grouping with 'p' to see items grouped by their parent.\n"
             "Items with the same parent are shown together regardless of column."
         )
 
-        item5 = done_col.add_item("Install MKanban", done_col.id)
+        item5 = done_col.add_item("Install MKanban")
         item5.description = "Great! You've successfully installed and launched MKanban."
 
         return board
