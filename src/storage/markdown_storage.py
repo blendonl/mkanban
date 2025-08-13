@@ -75,7 +75,11 @@ class MarkdownStorage:
         for line in lines:
             line = line.strip()
 
-            column_match = re.match(r"^- \[(.+?)\]\((.+?)/column\.md\)$", line)
+            # Support both old format (- [name](path)) and new format (## [name](path))
+            column_match = re.match(r"^## \[(.+?)\]\((.+?)/column\.md\)$", line)
+            if not column_match:
+                column_match = re.match(r"^- \[(.+?)\]\((.+?)/column\.md\)$", line)
+            
             if column_match:
                 column_name = column_match.group(1).strip()
                 column_folder = column_match.group(2).strip()
@@ -214,7 +218,6 @@ class MarkdownStorage:
 
         board_data = {
             "id": board.id,
-            "description": board.description,
             "created_at": board.created_at,
             "updated_at": board.updated_at,
             "parents": [],
@@ -231,11 +234,11 @@ class MarkdownStorage:
             }
             board_data["parents"].append(parent_data)
 
-        content_lines = [f"# {board.name}", "", board.description, "", "## Columns", ""]
+        content_lines = [f"# {board.name}", ""]
 
         for column in sorted(board.columns, key=lambda c: c.position):
             column_safe_name = self._get_safe_name(column.name)
-            content_lines.append(f"- [{column.name}]({column_safe_name}/column.md)")
+            content_lines.append(f"## [{column.name}]({column_safe_name}/column.md)")
 
             self.save_column_with_items(board, column)
 
