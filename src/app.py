@@ -5,11 +5,14 @@ from textual.containers import Horizontal, Vertical
 from textual.binding import Binding
 from textual.reactive import reactive
 
-from .storage.markdown_storage import MarkdownStorage
-from .models.board import Board
+from .infrastructure.storage.markdown_storage_impl import MarkdownStorageImpl
+from .domain.entities.board import Board
 from .ui.widgets.board_widget import BoardWidget
 from .controllers.board_controller import BoardController
-from .utils.config import Config
+from .services.board_service import BoardService
+from .services.item_service import ItemService
+from .services.validation_service import ValidationService
+from .config.settings import Settings
 
 
 class MKanbanApp(App):
@@ -30,8 +33,8 @@ class MKanbanApp(App):
         Binding("ctrl+d", "scroll_down", "Scroll Down", show=False),
         Binding("ctrl+u", "scroll_up", "Scroll Up", show=False),
         Binding("shift+j", "column_scroll_down", "Column Scroll Down", show=False),
-        Binding("H", action="move_left", description="Column Scroll Down"),
-        ("L", "move_right", "Move Left"),
+        Binding("H", action="move_left", description="Move Left"),
+        ("L", "move_right", "Move Right"),
         Binding("o", "new_item", "New Item", show=False),
         Binding("a", "new_item_editor", "New Item (Editor)", show=False),
         Binding("d", "delete_item", "Delete", show=True),
@@ -46,18 +49,30 @@ class MKanbanApp(App):
 
     def __init__(self, data_dir: Path, initial_board: Optional[str] = None):
         super().__init__()
-        self.config = Config.load()
+        self.settings = Settings.load()
 
         if data_dir != Path("./data"):
-            self.config.data_dir = str(data_dir)
+            self.settings.data_dir = str(data_dir)
 
-        self.data_dir = Path(self.config.data_dir).expanduser().resolve()
-        self.storage = MarkdownStorage(self.data_dir)
+        self.data_dir = Path(self.settings.data_dir).expanduser().resolve()
+        
+        self._setup_services()
+        
         self.initial_board = initial_board
         self.current_board: Optional[Board] = None
         self.board_view: Optional[BoardWidget] = None
         self.controller: Optional[BoardController] = None
         self.auto_save_timer = None
+
+    def _setup_services(self):
+        self._storage = MarkdownStorageImpl(self.data_dir)
+        self._validator = ValidationService()
+        self._board_service = BoardService(self._storage, self._validator)
+        self._item_service = ItemService(self._storage, self._validator)
+
+    @property
+    def storage(self):
+        return self._storage
 
     def compose(self) -> ComposeResult:
         with Vertical(classes="main-container"):
@@ -82,30 +97,19 @@ class MKanbanApp(App):
 
     def load_initial_board(self) -> None:
         if self.initial_board:
-            boards = self.storage.load_boards()
-            board_found = None
-            for board in boards:
-                if board.name.lower() == self.initial_board.lower():
-                    board_found = board
-                    break
-
-            if board_found:
-                self.current_board = board_found
-            else:
-                sample_board = self.storage.create_sample_board(self.initial_board)
-                self.storage.save_board(sample_board)
-                self.current_board = sample_board
+            try:
+                self.current_board = self._board_service.get_board_by_name(self.initial_board)
+            except Exception:
+                self.current_board = self._board_service.get_or_create_sample_board(self.initial_board)
         else:
-            boards = self.storage.load_boards()
+            boards = self._board_service.get_all_boards()
             if boards:
                 self.current_board = boards[0]
             else:
-                sample_board = self.storage.create_sample_board("default")
-                self.storage.save_board(sample_board)
-                self.current_board = sample_board
+                self.current_board = self._board_service.get_or_create_sample_board("default")
 
         if self.current_board:
-            self.controller = BoardController(self.current_board, self.storage)
+            self.controller = BoardController(self.current_board, self._board_service)
             if self.board_view:
                 self.board_view.set_board(self.current_board)
 
@@ -147,11 +151,9 @@ class MKanbanApp(App):
 
     def action_refresh(self) -> None:
         if self.board_view and self.current_board:
-            from .ui.board_view import RefreshType
-
+            from .core.types import RefreshType
             self.board_view.refresh_board(refresh_type=RefreshType.FULL)
 
-    # Vim-style navigation actions
     def action_focus_next(self) -> None:
         if self.board_view:
             self.board_view.move_focus_down()
@@ -185,23 +187,19 @@ class MKanbanApp(App):
             self.board_view.show_help_dialog()
 
     def start_auto_save_timer(self) -> None:
-        """Start the auto-save timer if auto-save is enabled"""
-        if self.config.auto_save and self.config.auto_save_interval > 0:
+        if self.settings.auto_save and self.settings.auto_save_interval > 0:
             self.auto_save_timer = self.set_interval(
-                self.config.auto_save_interval, self.auto_save_callback
+                self.settings.auto_save_interval, self.auto_save_callback
             )
 
     def auto_save_callback(self) -> None:
-        """Auto-save callback that runs periodically"""
         if self.controller and self.current_board:
             try:
                 self.controller.save()
-            except Exception as e:
-                # Log error but don't interrupt user experience
+            except Exception:
                 pass
 
     def on_unmount(self) -> None:
-        """Called when the app is about to exit - save before closing"""
         if self.controller and self.current_board:
             try:
                 self.controller.save()
@@ -212,7 +210,6 @@ class MKanbanApp(App):
             self.auto_save_timer.stop()
 
     def action_quit(self) -> None:
-        """Override quit action to save before exiting"""
         if self.controller and self.current_board:
             try:
                 self.controller.save()

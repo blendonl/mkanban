@@ -4,15 +4,21 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from src.storage.markdown_storage import MarkdownStorage
+from src.infrastructure.storage.markdown_storage_impl import MarkdownStorageImpl
 from src.controllers.column_controller import ColumnController
+from src.services.board_service import BoardService
+from src.services.item_service import ItemService
+from src.services.validation_service import ValidationService
 
 def test_move_operation():
     print("Testing move operation...")
     
     # Load the board
-    storage = MarkdownStorage(Path('data'))
-    board = storage.load_board_by_name('default')
+    storage = MarkdownStorageImpl(Path('data'))
+    validator = ValidationService()
+    board_service = BoardService(storage, validator)
+    item_service = ItemService(storage, validator)
+    board = board_service.get_board('default')
 
     if not board:
         print('Failed to load board')
@@ -56,7 +62,7 @@ def test_move_operation():
             print(f"    - {item.title}")
     
     # Create column controller and move the item
-    column_controller = ColumnController(board, source_column, storage)
+    column_controller = ColumnController(board, source_column, board_service, item_service)
     success = column_controller.move_item(item_to_move.id, target_column.id)
     
     if success:

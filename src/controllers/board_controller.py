@@ -1,18 +1,19 @@
-from ..models.board import Board
-from ..models.column import Column
-from ..storage.markdown_storage import MarkdownStorage
+from ..domain.entities.board import Board
+from ..domain.entities.column import Column
+from ..services.board_service import BoardService
+from ..core.types import ColumnId
 
 
 class BoardController:
-    def __init__(self, board: Board, storage: MarkdownStorage):
+    def __init__(self, board: Board, board_service: BoardService):
         self.board = board
-        self.storage = storage
+        self._board_service = board_service
 
     def save(self) -> None:
-        self.storage.save_board(self.board)
+        self._board_service.save_board(self.board)
 
     def add_column(self, name: str, position: int | None = None) -> Column:
-        return self.board.add_column(name, position)
+        return self._board_service.add_column_to_board(self.board, name, position)
 
-    def delete_column(self, column_id: str) -> bool:
-        return self.board.remove_column(column_id)
+    def delete_column(self, column_id: ColumnId) -> bool:
+        return self._board_service.remove_column_from_board(self.board, column_id)

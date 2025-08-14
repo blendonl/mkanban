@@ -1,38 +1,35 @@
-from ..models.board import Board
-from ..models.parent import Parent
-from ..models.item import Item
-from ..storage.markdown_storage import MarkdownStorage
+from ..domain.entities.board import Board
+from ..domain.entities.parent import Parent
+from ..domain.entities.item import Item
+from ..services.board_service import BoardService
+from ..services.item_service import ItemService
+from ..core.types import ItemId, ParentId
 
 
 class ItemController:
-    def __init__(self, board: Board, item: Item, storage: MarkdownStorage):
+    def __init__(
+        self, 
+        board: Board, 
+        item: Item, 
+        board_service: BoardService, 
+        item_service: ItemService
+    ):
         self.board = board
         self.item = item
-        self.storage = storage
+        self._board_service = board_service
+        self._item_service = item_service
 
     def save(self) -> None:
-        self.storage.save_board(self.board)
+        self._board_service.save_board(self.board)
 
-    def update_item(self, item_id: str, **kwargs) -> bool:
-        for column in self.board.columns:
-            for item in column.items:
-                if item.id == item_id:
-                    item.update(**kwargs)
-                    self.storage.save_board(self.board)
-                    return True
-        return False
+    def update_item(self, item_id: ItemId, **kwargs) -> bool:
+        return self._item_service.update_item(self.board, item_id, **kwargs)
 
-    def set_item_parent(self, item_id: str, parent_id: str | None) -> bool:
-        for column in self.board.columns:
-            for item in column.items:
-                if item.id == item_id:
-                    item.set_parent(parent_id)
-                    self.storage.save_board(self.board)
-                    return True
-        return False
+    def set_item_parent(self, item_id: ItemId, parent_id: ParentId | None) -> bool:
+        return self._item_service.set_item_parent(self.board, item_id, parent_id)
 
     def add_parent(self, name: str, color: str = "blue") -> Parent:
         return self.board.add_parent(name, color)
 
-    def delete_parent(self, parent_id: str) -> bool:
+    def delete_parent(self, parent_id: ParentId) -> bool:
         return self.board.remove_parent(parent_id)

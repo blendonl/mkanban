@@ -1,7 +1,7 @@
 from typing import List
 from textual.containers import Vertical, VerticalScroll
-from ...models.column import Column
-from ...models.item import Item
+from ...domain.entities.column import Column
+from ...domain.entities.item import Item
 from .item_widget import ItemWidget
 from .editable_item_widget import EditableItemWidget
 from ...controllers.column_controller import ColumnController
@@ -31,7 +31,8 @@ class ColumnWidget(Vertical):
                         item_controller=ItemController(
                             self.column_controller.board,
                             item,
-                            self.column_controller.storage,
+                            self.column_controller.board_service,
+                            self.column_controller.item_service,
                         ),
                     )
 

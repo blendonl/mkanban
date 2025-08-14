@@ -1,6 +1,6 @@
 from typing import Optional
 from textual.widgets import Markdown
-from ...models.item import Item
+from ...domain.entities.item import Item
 
 
 class MarkDownWidget(Markdown):

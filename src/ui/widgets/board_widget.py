@@ -4,9 +4,9 @@ import subprocess
 from textual.containers import Horizontal, Vertical
 from textual.widget import Widget
 from textual.reactive import reactive
-from ...models.board import Board
-from ...models.item import Item
-from ..refresh_type import RefreshType
+from ...domain.entities.board import Board
+from ...domain.entities.item import Item
+from ...core.types import RefreshType
 from .markdown_widget import MarkDownWidget
 from .item_widget import ItemWidget
 from .column_widget import ColumnWidget
@@ -127,7 +127,7 @@ class BoardWidget(Widget):
             column_widget = ColumnWidget(
                 column,
                 items,
-                ColumnController(self.board, column, self.app.storage),
+                ColumnController(self.board, column, self.app._board_service, self.app._item_service),
             )
             columns_container.mount(column_widget)
 
@@ -202,7 +202,7 @@ class BoardWidget(Widget):
 
         column_widget = self._find_column_for_item(selected)
         column = column_widget.column if column_widget else None
-        column_controller = ColumnController(self.board, column, self.app.storage)
+        column_controller = ColumnController(self.board, column, self.app._board_service, self.app._item_service)
         if column_controller.delete_item(selected):
             self.refresh_board()
 
@@ -231,7 +231,7 @@ class BoardWidget(Widget):
             self.app.notify("No column available for new item", severity="error")
             return
 
-        from ...models.item import Item
+        from ...domain.entities.item import Item
         import tempfile
 
         # Create a new item template
@@ -346,7 +346,7 @@ updated_at: {item.updated_at}
 
                 column_widget = self._find_column_for_item(selected)
                 column_controller = ColumnController(
-                    self.board, column_widget.column, self.app.storage
+                    self.board, column_widget.column, self.app._board_service, self.app._item_service
                 )
 
                 if column_controller.move_item(selected.id, target_column.id):
@@ -366,7 +366,7 @@ updated_at: {item.updated_at}
 
                 column_widget = self._find_column_for_item(selected)
                 column_controller = ColumnController(
-                    self.board, column_widget.column, self.app.storage
+                    self.board, column_widget.column, self.app._board_service, self.app._item_service
                 )
 
                 if column_controller.move_item(selected.id, target_column.id):
