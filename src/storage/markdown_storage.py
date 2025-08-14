@@ -41,10 +41,19 @@ class MarkdownStorage:
 
         metadata = post.metadata
 
+        # Extract name from content (# heading) or fallback to metadata or folder name
+        board_name = metadata.get("name", kanban_file.parent.name)
+        content_lines = post.content.strip().split("\n")
+        for line in content_lines:
+            stripped = line.strip()
+            if stripped.startswith("# "):
+                board_name = stripped[2:].strip()
+                break
+        
         board = Board(
-            id=metadata.get("id", ""),
-            name=metadata.get("name", kanban_file.parent.name),
-            description=metadata.get("description", ""),
+            id=metadata.get("id", kanban_file.parent.name),
+            name=board_name,
+            description=metadata.get("description") or "",
             created_at=metadata.get("created_at", datetime.now()),
             updated_at=metadata.get("updated_at", datetime.now()),
             file_path=kanban_file,
@@ -68,32 +77,22 @@ class MarkdownStorage:
     def _parse_columns_from_content(
         self, board: Board, content: str, board_dir: Path
     ) -> None:
-        import re
-
-        lines = content.split("\n")
-
-        for line in lines:
-            line = line.strip()
-
-            # Support both old format (- [name](path)) and new format (## [name](path))
-            column_match = re.match(r"^## \[(.+?)\]\((.+?)/column\.md\)$", line)
-            if not column_match:
-                column_match = re.match(r"^- \[(.+?)\]\((.+?)/column\.md\)$", line)
-            
-            if column_match:
-                column_name = column_match.group(1).strip()
-                column_folder = column_match.group(2).strip()
-
-                column_file = board_dir / column_folder / "column.md"
-                if column_file.exists():
-                    column = self.load_column_from_file(
-                        column_file, column_name, len(board.columns)
-                    )
-                    if column:
-                        board.columns.append(column)
-                        self._load_items_for_column(
-                            board, column, board_dir / column_folder
-                        )
+        # Load columns directly from folders in the board directory
+        position = 0
+        for folder_path in sorted(board_dir.iterdir()):
+            if folder_path.is_dir() and folder_path.name != "items":
+                column_name = folder_path.name.replace("-", " ").replace("_", " ").title()
+                column_id = self._generate_id_from_name(column_name)
+                
+                column = Column(
+                    id=column_id,
+                    name=column_name,
+                    position=position,
+                    file_path=str(folder_path)
+                )
+                board.columns.append(column)
+                self._load_items_for_column(board, column, folder_path)
+                position += 1
 
     def load_board(self, board_id: str) -> Board | None:
         for board_dir in self.boards_dir.iterdir():
@@ -114,73 +113,16 @@ class MarkdownStorage:
 
         return None
 
-    def load_column_from_file(
-        self, column_file: Path, column_name: str, position: int
-    ) -> Column | None:
-        if not column_file.exists():
-            return None
-
-        with open(column_file, "r", encoding="utf-8") as f:
-            post = frontmatter.load(f)
-
-        metadata = post.metadata
-
-        column_id = metadata.get("id")
-        if not column_id:
-            column_id = column_file.parent.name
-
-        column = Column(
-            id=column_id,
-            name=column_file.parent.name,
-            position=position,
-            file_path=str(column_file),
-        )
-        return column
 
     def _load_items_for_column(
         self, board: Board, column: Column, column_dir: Path
     ) -> None:
-        import re
-
-        column_file = column_dir / "column.md"
-        if column_file.exists():
-            with open(column_file, "r", encoding="utf-8") as f:
-                post = frontmatter.load(f)
-
-            referenced_items = set()
-            parent_info = {}
-
-            lines = post.content.split("\n")
-            for line in lines:
-                line = line.strip()
-
-                item_match = re.match(
-                    r"^- \[(.+?)\]\(items/(.+?)\.md\)(?:\s*\*\((.+?)\)\*)?$", line
-                )
-                if item_match:
-                    item_title = item_match.group(1).strip()
-                    item_filename = item_match.group(2).strip()
-                    parent_name = item_match.group(3) if item_match.group(3) else None
-
-                    items_dir = column_dir / "items"
-                    if items_dir.exists():
-                        item_file = items_dir / f"{item_filename}.md"
-                        if item_file.exists():
-                            item = self.load_item_from_title_file(item_file, column.id)
-                            if item and item.id not in referenced_items:
-                                referenced_items.add(item.id)
-                                if parent_name:
-                                    parent_info[item.id] = parent_name
-                                column.items.append(item)
-
-            # Set parent IDs based on parent names
-            for item in column.items:
-                if item.id in parent_info:
-                    parent_name = parent_info[item.id]
-                    for parent in board.parents:
-                        if parent.name == parent_name:
-                            item.parent_id = parent.id
-                            break
+        # Load all .md files directly from the column folder
+        for item_file in column_dir.glob("*.md"):
+            if item_file.name != "column.md":  # Skip column.md if it exists
+                item = self.load_item_from_title_file(item_file, column.id)
+                if item:
+                    column.items.append(item)
 
     def load_item_from_title_file(self, item_file: Path, column_id: str) -> Item | None:
         if not item_file.exists():
@@ -195,10 +137,29 @@ class MarkdownStorage:
         if not item_id:
             item_id = item_file.stem
 
+        # Check if the item's metadata column_id matches the expected column
+        # If not, this item is in the wrong directory and should be skipped
+        item_metadata_column_id = item_metadata.get("column_id")
+        if item_metadata_column_id and item_metadata_column_id != column_id:
+            # Item is in wrong directory, skip loading it here
+            return None
+
+        # Extract title from first # heading in content, fallback to metadata or filename
+        title = item_metadata.get("title", item_file.stem)
+        content_lines = post.content.strip().split("\n")
+        for line in content_lines:
+            stripped = line.strip()
+            if stripped.startswith("# "):
+                title = stripped[2:].strip()  # Remove "# " prefix
+                break
+
+        # Use the actual column_id from metadata if available, otherwise use the passed column_id
+        actual_column_id = item_metadata_column_id or column_id
+
         return Item(
             id=item_id,
-            column_id=column_id,
-            title=item_metadata.get("title", item_file.stem),
+            column_id=actual_column_id,
+            title=title,
             description=post.content.strip(),
             parent_id=item_metadata.get("parent_id"),
             created_at=item_metadata.get("created_at", datetime.now()),
@@ -218,6 +179,7 @@ class MarkdownStorage:
 
         board_data = {
             "id": board.id,
+            "kanban-plugin": "board",
             "created_at": board.created_at,
             "updated_at": board.updated_at,
             "parents": [],
@@ -237,9 +199,6 @@ class MarkdownStorage:
         content_lines = [f"# {board.name}", ""]
 
         for column in sorted(board.columns, key=lambda c: c.position):
-            column_safe_name = self._get_safe_name(column.name)
-            content_lines.append(f"## [{column.name}]({column_safe_name}/column.md)")
-
             self.save_column_with_items(board, column)
 
         yaml_str = yaml.dump(board_data, default_flow_style=False, sort_keys=False)
@@ -254,71 +213,179 @@ class MarkdownStorage:
         column_dir = board_dir / column_safe_name
         column_dir.mkdir(exist_ok=True)
 
-        items_dir = column_dir / "items"
-        items_dir.mkdir(exist_ok=True)
+        # Get current item IDs that should be in this column
+        current_item_ids = {item.id for item in column.items}
 
-        column_data = {
-            "id": column.id,
-            "position": column.position,
-        }
+        # Save items directly in the column folder
+        for item in column.items:
+            item_filename = self._get_unique_filename(column_dir, item)
+            self.save_item_with_title(column_dir, item, item_filename)
 
-        content_lines = [f"# {column.name}", "", "## Items", ""]
-
-        if not column.items:
-            content_lines.append("*No items*")
-        else:
-            for item in column.items:
-                item_filename = item.id
-                item_link = f"[{item.title}](items/{item_filename}.md)"
-
-                if item.parent_id:
-                    parent_name = "Unknown Parent"
-                    for parent in board.parents:
-                        if parent.id == item.parent_id:
-                            parent_name = parent.name
-                            break
-                    item_link += f" *({parent_name})*"
-
-                content_lines.append(f"- {item_link}")
-
-                # Save individual item file
-                self.save_item_with_title(items_dir, item, item_filename)
-
-        yaml_str = yaml.dump(column_data, default_flow_style=False, sort_keys=False)
-        full_content = f"---\n{yaml_str}---\n\n{'\n'.join(content_lines)}"
-
-        column_file = column_dir / "column.md"
-        with open(column_file, "w", encoding="utf-8") as f:
-            f.write(full_content)
+        # Remove any .md files that don't belong to current column items
+        # Also remove duplicate files for the same item ID
+        item_id_to_files = {}
+        for item_file in column_dir.glob("*.md"):
+            if item_file.name != "column.md":  # Skip column.md if it exists
+                try:
+                    with open(item_file, "r", encoding="utf-8") as f:
+                        post = frontmatter.load(f)
+                    
+                    item_metadata = post.metadata
+                    file_item_id = item_metadata.get("id")
+                    
+                    if file_item_id:
+                        # If this file's item ID is not in current column items, delete it
+                        if file_item_id not in current_item_ids:
+                            item_file.unlink()
+                        else:
+                            # Track files by item ID to handle duplicates
+                            if file_item_id not in item_id_to_files:
+                                item_id_to_files[file_item_id] = []
+                            item_id_to_files[file_item_id].append(item_file)
+                except Exception:
+                    # Skip files that can't be read or processed
+                    continue
+        
+        # Remove duplicate files for the same item ID (keep the most recently modified)
+        for item_id, files in item_id_to_files.items():
+            if len(files) > 1:
+                # Sort by modification time, keep the newest
+                files.sort(key=lambda f: f.stat().st_mtime, reverse=True)
+                # Delete all but the newest file
+                for old_file in files[1:]:
+                    old_file.unlink()
 
     def save_item_with_title(
-        self, items_dir: Path, item: Item, item_filename: str
+        self, column_dir: Path, item: Item, item_filename: str
     ) -> None:
-        item_file = items_dir / f"{item_filename}.md"
+        # Generate filename from current title
+        new_filename = self._get_title_filename(item.title)
+        old_item_file = column_dir / f"{item_filename}.md"
+        new_item_file = column_dir / f"{new_filename}.md"
 
+        # Check if we need to rename the file
+        if old_item_file.exists() and item_filename != new_filename:
+            # Make sure the new filename doesn't conflict with an existing file
+            if new_item_file.exists() and new_item_file != old_item_file:
+                # If conflict exists, find a unique name
+                counter = 1
+                while new_item_file.exists():
+                    test_filename = f"{new_filename}_{counter}"
+                    new_item_file = column_dir / f"{test_filename}.md"
+                    counter += 1
+                    if counter > 100:  # Safety valve
+                        new_filename = f"{new_filename}_{item.id[:8]}"
+                        new_item_file = column_dir / f"{new_filename}.md"
+                        break
+                new_filename = new_item_file.stem
+
+            # Rename the file
+            try:
+                old_item_file.rename(new_item_file)
+            except Exception:
+                # If rename fails, use the new file path anyway
+                pass
+
+        # Use the determined filename
+        item_file = column_dir / f"{new_filename}.md"
+
+        # New metadata to be written
         item_metadata = {
             "id": item.id,
+            "title": item.title,
+            "column_id": item.column_id,
             "parent_id": item.parent_id,
             "created_at": item.created_at,
             "updated_at": item.updated_at,
         }
 
-        description = item.description or ""
-        description_lines = description.split("\n")
+        # Check if file already exists and has content
+        existing_content = ""
+        if item_file.exists():
+            try:
+                with open(item_file, "r", encoding="utf-8") as f:
+                    post = frontmatter.load(f)
+                existing_content = post.content
+
+                # Create new post with updated metadata and existing content
+                new_post = frontmatter.Post(existing_content, **item_metadata)
+
+                # Handle title header in content
+                description_lines = existing_content.split("\n")
+                has_title_header = False
+
+                # Check if description already has a title header
+                for line in description_lines:
+                    stripped = line.strip()
+                    if stripped.startswith("# "):
+                        has_title_header = True
+                        break
+
+                if has_title_header:
+                    # Update the existing title header to match current title
+                    updated_lines = []
+                    title_updated = False
+                    for line in description_lines:
+                        stripped = line.strip()
+                        if stripped.startswith("# ") and not title_updated:
+                            updated_lines.append(f"# {item.title}")
+                            title_updated = True
+                        else:
+                            updated_lines.append(line)
+                    new_post.content = "\n".join(updated_lines)
+                else:
+                    if existing_content:
+                        new_post.content = f"# {item.title}\n\n{existing_content}"
+                    else:
+                        new_post.content = f"# {item.title}"
+
+                # Write the post with frontmatter handling the metadata replacement
+                with open(item_file, "w", encoding="utf-8") as f:
+                    f.write(frontmatter.dumps(new_post))
+                return
+
+            except Exception:
+                # If we can't read the existing file, fall back to description
+                existing_content = item.description or ""
+        else:
+            existing_content = item.description or ""
+
+        # Fallback for new files or when frontmatter reading fails
+        description_lines = existing_content.split("\n")
         has_title_header = False
 
-        if description_lines and description_lines[0].strip().startswith(
-            f"# {item.title}"
-        ):
-            has_title_header = True
+        # Check if description already has a title header
+        for line in description_lines:
+            stripped = line.strip()
+            if stripped.startswith("# "):
+                has_title_header = True
+                break
 
         if has_title_header:
-            content_lines = [description]
+            # Update the existing title header to match current title
+            updated_lines = []
+            title_updated = False
+            for line in description_lines:
+                stripped = line.strip()
+                if stripped.startswith("# ") and not title_updated:
+                    updated_lines.append(f"# {item.title}")
+                    title_updated = True
+                else:
+                    updated_lines.append(line)
+            content_lines = updated_lines
         else:
-            content_lines = [f"# {item.title}", "", description]
+            content_lines = (
+                [f"# {item.title}", "", existing_content]
+                if existing_content
+                else [f"# {item.title}"]
+            )
 
         yaml_str = yaml.dump(item_metadata, default_flow_style=False, sort_keys=False)
-        full_content = f"---\n{yaml_str}---\n\n{'\n'.join(content_lines)}"
+
+        content_to_write = content_lines
+        if content_lines and content_lines[0].strip().startswith("---"):
+            content_to_write = content_lines[7:]
+        full_content = f"---\n{yaml_str}---\n\n{'\n'.join(content_to_write)}"
 
         with open(item_file, "w", encoding="utf-8") as f:
             f.write(full_content)
@@ -327,10 +394,9 @@ class MarkdownStorage:
         board_dir = self._get_board_directory(board)
         column_safe_name = self._get_safe_name(column.name)
         column_dir = board_dir / column_safe_name
-        items_dir = column_dir / "items"
 
         # Find the item file by scanning metadata for the ID
-        item_file = self._find_item_file_by_id(items_dir, item.id)
+        item_file = self._find_item_file_by_id(column_dir, item.id)
         if item_file and item_file.exists():
             item_file.unlink()
             return True
@@ -343,22 +409,20 @@ class MarkdownStorage:
 
         old_column_safe_name = self._get_safe_name(old_column.name)
         old_column_dir = board_dir / old_column_safe_name
-        old_items_dir = old_column_dir / "items"
 
         # Find the item file by scanning metadata for the ID
-        old_item_file = self._find_item_file_by_id(old_items_dir, item.id)
+        old_item_file = self._find_item_file_by_id(old_column_dir, item.id)
 
         new_column_safe_name = self._get_safe_name(new_column.name)
         new_column_dir = board_dir / new_column_safe_name
-        new_items_dir = new_column_dir / "items"
-        new_items_dir.mkdir(exist_ok=True)  # Ensure target directory exists
+        new_column_dir.mkdir(exist_ok=True)  # Ensure target directory exists
 
         if old_item_file and old_item_file.exists():
             item.updated_at = datetime.now()
 
             # Get unique filename for the new location
-            new_item_filename = item.id
-            self.save_item_with_title(new_items_dir, item, new_item_filename)
+            new_item_filename = self._get_unique_filename(new_column_dir, item)
+            self.save_item_with_title(new_column_dir, item, new_item_filename)
 
             old_item_file.unlink()
 
@@ -387,11 +451,11 @@ class MarkdownStorage:
         safe_title = re.sub(r"\s+", "_", safe_title.strip())
         return safe_title or "unnamed"
 
-    def _find_item_file_by_id(self, items_dir: Path, item_id: str) -> Path | None:
-        if not items_dir.exists():
+    def _find_item_file_by_id(self, column_dir: Path, item_id: str) -> Path | None:
+        if not column_dir.exists():
             return None
 
-        for item_file in items_dir.glob("*.md"):
+        for item_file in column_dir.glob("*.md"):
             try:
                 with open(item_file, "r", encoding="utf-8") as f:
                     post = frontmatter.load(f)
@@ -405,9 +469,9 @@ class MarkdownStorage:
 
         return None
 
-    def _get_unique_filename(self, items_dir: Path, item: Item) -> str:
+    def _get_unique_filename(self, column_dir: Path, item: Item) -> str:
         base_filename = self._get_title_filename(item.title)
-        potential_file = items_dir / f"{base_filename}.md"
+        potential_file = column_dir / f"{base_filename}.md"
 
         if not potential_file.exists():
             return base_filename
@@ -426,7 +490,7 @@ class MarkdownStorage:
         counter = 1
         while True:
             test_filename = f"{base_filename}_{counter}"
-            test_file = items_dir / f"{test_filename}.md"
+            test_file = column_dir / f"{test_filename}.md"
 
             if not test_file.exists():
                 return test_filename

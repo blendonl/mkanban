@@ -33,6 +33,7 @@ class MKanbanApp(App):
         Binding("H", action="move_left", description="Column Scroll Down"),
         ("L", "move_right", "Move Left"),
         Binding("o", "new_item", "New Item", show=False),
+        Binding("a", "new_item_editor", "New Item (Editor)", show=False),
         Binding("d", "delete_item", "Delete", show=True),
         Binding("i", "edit_item", "Edit", show=False),
         Binding("p", "toggle_parents", "Toggle Parents", show=False),
@@ -55,6 +56,8 @@ class MKanbanApp(App):
         self.initial_board = initial_board
         self.current_board: Optional[Board] = None
         self.board_view: Optional[BoardWidget] = None
+        self.controller: Optional[BoardController] = None
+        self.auto_save_timer = None
 
     def compose(self) -> ComposeResult:
         with Vertical(classes="main-container"):
@@ -65,6 +68,7 @@ class MKanbanApp(App):
     def on_mount(self) -> None:
         self.update_terminal_dimensions()
         self.load_initial_board()
+        self.start_auto_save_timer()
 
     def on_resize(self, event) -> None:
         self.update_terminal_dimensions()
@@ -108,6 +112,10 @@ class MKanbanApp(App):
     def action_new_item(self) -> None:
         if self.controller and self.board_view:
             self.board_view.show_new_item_dialog()
+
+    def action_new_item_editor(self) -> None:
+        if self.controller and self.board_view:
+            self.board_view.create_new_item_with_editor()
 
     def action_delete_item(self) -> None:
         if self.controller and self.board_view:
@@ -175,3 +183,39 @@ class MKanbanApp(App):
     def action_show_help(self) -> None:
         if self.board_view:
             self.board_view.show_help_dialog()
+
+    def start_auto_save_timer(self) -> None:
+        """Start the auto-save timer if auto-save is enabled"""
+        if self.config.auto_save and self.config.auto_save_interval > 0:
+            self.auto_save_timer = self.set_interval(
+                self.config.auto_save_interval, self.auto_save_callback
+            )
+
+    def auto_save_callback(self) -> None:
+        """Auto-save callback that runs periodically"""
+        if self.controller and self.current_board:
+            try:
+                self.controller.save()
+            except Exception as e:
+                # Log error but don't interrupt user experience
+                pass
+
+    def on_unmount(self) -> None:
+        """Called when the app is about to exit - save before closing"""
+        if self.controller and self.current_board:
+            try:
+                self.controller.save()
+            except Exception:
+                pass
+        
+        if self.auto_save_timer:
+            self.auto_save_timer.stop()
+
+    def action_quit(self) -> None:
+        """Override quit action to save before exiting"""
+        if self.controller and self.current_board:
+            try:
+                self.controller.save()
+            except Exception:
+                pass
+        self.exit()

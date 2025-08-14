@@ -1,3 +1,4 @@
+import re
 from typing import Optional
 from textual.widgets import Markdown
 from ...models.item import Item
@@ -20,8 +21,10 @@ class ItemWidget(Markdown):
         if self.parent_name:
             markdown_content += f"\n\n*Parent: {self.parent_name}*"
 
+        # Sanitize item ID for valid CSS identifier
+        safe_id = re.sub(r'[^a-zA-Z0-9_-]', '_', item.id)
         super().__init__(
-            markdown_content, classes="item", id=f"item_{item.id.replace('-', '_')}"
+            markdown_content, classes="item", id=f"item_{safe_id}"
         )
         self.can_focus = True
 

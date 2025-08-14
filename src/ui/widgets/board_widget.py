@@ -1,5 +1,6 @@
 from typing import Optional
 from pathlib import Path
+import subprocess
 from textual.containers import Horizontal, Vertical
 from textual.widget import Widget
 from textual.reactive import reactive
@@ -11,6 +12,7 @@ from .item_widget import ItemWidget
 from .column_widget import ColumnWidget
 from ...controllers.column_controller import ColumnController
 from ...controllers.item_controller import ItemController
+from ...utils.editor_utils import open_editor_for_app
 
 from ..dialogs.help_dialog import HelpDialog
 
@@ -199,6 +201,92 @@ class BoardWidget(Widget):
         if column_controller.delete_item(selected):
             self.refresh_board()
 
+    def create_new_item_with_editor(self) -> None:
+        if not self.board:
+            return
+
+        focused = self.app.focused
+        target_column = None
+
+        if isinstance(focused, ItemWidget):
+            target_column = self._find_column_for_item(focused.item)
+        elif isinstance(focused, ColumnWidget):
+            target_column = focused
+        else:
+            columns = list(self.query(ColumnWidget))
+            if columns:
+                target_column = columns[0]
+
+        if not target_column:
+            self.app.notify("No column available for new item", severity="error")
+            return
+
+        from ...models.item import Item
+        import tempfile
+
+        # Create a new item template
+        item = Item(title="New Task", column_id=target_column.column.id)
+        template_content = f"""--- 
+id: {item.id}
+parent_id: null
+title: {item.id} 
+created_at: {item.created_at}
+updated_at: {item.updated_at}
+---
+
+# 
+"""
+
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".md", delete=False
+            ) as temp_file:
+                temp_file.write(template_content)
+                temp_file_path = temp_file.name
+
+            open_editor_for_app(temp_file_path, self.app)
+
+            # Read the edited content
+            with open(temp_file_path, "r") as f:
+                edited_content = f.read()
+
+            # Extract title from the content
+            title_line = next(
+                (
+                    line
+                    for line in edited_content.split("\n")
+                    if line.strip().startswith("# ")
+                ),
+                None,
+            )
+            title = title_line.replace("# ", "").strip() if title_line else "New Item"
+
+            if not title or title == "New Item":
+                self.app.notify(
+                    "No title specified. Item creation cancelled.", severity="warning"
+                )
+                return
+
+            # Create the new item
+            new_item = target_column.column.add_item(title)
+            new_item.description = edited_content.strip()
+
+            # Save the board
+            self.app.storage.save_board(self.board)
+
+            # Refresh the board and focus the new item
+            self.refresh_board(focus_item_id=new_item.id)
+
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            pass  # Error messages already handled in open_editor_for_app
+        except Exception as e:
+            self.app.notify(f"Error creating item: {e}", severity="error")
+        finally:
+            try:
+                Path(temp_file_path).unlink()
+            except Exception:
+                pass
+
     def edit_selected_item(self) -> None:
         selected = self.get_selected_item()
         if not selected or not self.board:
@@ -217,17 +305,23 @@ class BoardWidget(Widget):
             self.app.notify("Item file not found", severity="error")
             return
 
-        import subprocess
-
         try:
-            with self.app.suspend():
-                subprocess.run(["neovide", str(item_file_path)], check=True)
-            self.refresh_board()
+            # Store the original item ID for focus restoration
+            original_item_id = selected.id
 
-        except subprocess.CalledProcessError:
-            self.app.notify("Error opening Neovim", severity="error")
-        except FileNotFoundError:
-            self.app.notify("Neovim not found. Please install nvim", severity="error")
+            open_editor_for_app(str(item_file_path), self.app)
+
+            # After editing, reload the item from file to get updated title
+            self._update_item_from_file(selected, item_file_path)
+
+            # Save the board to trigger filename update and persist changes
+            self.app.storage.save_board(self.board)
+
+            # Refresh the board to reflect all changes
+            self.refresh_board(focus_item_id=original_item_id)
+
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            pass  # Error messages already handled in open_editor_for_app
 
     async def move_right(self) -> None:
         selected = self.get_selected_item()
@@ -239,10 +333,12 @@ class BoardWidget(Widget):
                 if index == len(self.board.columns) - 1:
                     return
                 target_column = self.board.columns[index + 1]
-                
+
                 column_widget = self._find_column_for_item(selected)
-                column_controller = ColumnController(self.board, column_widget.column, self.app.storage)
-                
+                column_controller = ColumnController(
+                    self.board, column_widget.column, self.app.storage
+                )
+
                 if column_controller.move_item(selected.id, target_column.id):
                     self.refresh_board(focus_item_id=selected.id)
                 return
@@ -257,10 +353,12 @@ class BoardWidget(Widget):
                 if index == 0:
                     return
                 target_column = self.board.columns[index - 1]
-                
+
                 column_widget = self._find_column_for_item(selected)
-                column_controller = ColumnController(self.board, column_widget.column, self.app.storage)
-                
+                column_controller = ColumnController(
+                    self.board, column_widget.column, self.app.storage
+                )
+
                 if column_controller.move_item(selected.id, target_column.id):
                     self.refresh_board(focus_item_id=selected.id)
                 return
@@ -550,6 +648,22 @@ class BoardWidget(Widget):
         # Find the item file by scanning metadata for the ID
         item_file_path = storage._find_item_file_by_id(items_dir, item.id)
         return item_file_path
+
+    def _update_item_from_file(self, item: Item, item_file_path: Path) -> None:
+        """Update an item's properties by re-reading from its file"""
+        if not item_file_path.exists():
+            return
+
+        # Load the updated item from the file
+        updated_item = self.app.storage.load_item_from_title_file(
+            item_file_path, item.column_id
+        )
+        if updated_item:
+            # Update the existing item's properties
+            item.title = updated_item.title
+            item.description = updated_item.description
+            item.updated_at = updated_item.updated_at
+            item.parent_id = updated_item.parent_id
 
     def call_after_refresh(self, callback, *args) -> None:
         self.set_timer(0.01, lambda: callback(*args))
