@@ -47,29 +47,29 @@ def create_item_with_editor_cli(
         board = sample_board
 
     target_column = None
-    if column_name == "to-do" and not any(
-        col.name.lower().replace(" ", "-") == "to-do" or col.name.lower() == "to-do"
-        for col in board.columns
-    ):
-        target_column = board.columns[0] if board.columns else None
-    else:
-        for column in board.columns:
-            if (
-                column.name.lower().replace(" ", "-") == column_name.lower()
-                or column.name.lower() == column_name.lower()
-            ):
-                target_column = column
-                break
-
+    
+    # First, try to find the specified column
+    for column in board.columns:
+        if (
+            column.name.lower().replace(" ", "-") == column_name.lower()
+            or column.name.lower() == column_name.lower()
+        ):
+            target_column = column
+            break
+    
+    # If column not found and we have columns, use the first one as default
+    if not target_column and board.columns:
+        target_column = board.columns[0]
+        click.echo(f"Column '{column_name}' not found. Using first column '{target_column.name}' instead.")
+    
+    # If still no column found (empty board), create error
     if not target_column:
-        click.echo(f"Error: Column '{column_name}' not found in board '{board_name}'")
-        click.echo(
-            f"Available columns: {', '.join([col.name for col in board.columns])}"
-        )
+        click.echo(f"Error: No columns found in board '{board_name}'")
         return
 
     item = Item(
         title="New Task",
+        column_id=target_column.id,
     )
     template_content = f"""---
 id: {item.id}
