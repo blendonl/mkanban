@@ -75,20 +75,52 @@ class BoardStorage:
         self, board: Board, content: str, board_dir: Path
     ) -> None:
         # Load columns directly from folders in the board directory
-        position = 0
-        for folder_path in sorted(board_dir.iterdir()):
+        columns_data = []
+        
+        for folder_path in board_dir.iterdir():
             if folder_path.is_dir() and folder_path.name != "items":
                 column_name = folder_path.name.replace("-", " ").replace("_", " ").title()
                 column_id = self._generate_id_from_name(column_name)
+                position = None
                 
-                column = Column(
-                    id=column_id,
-                    name=column_name,
-                    position=position
-                )
-                board.columns.append(column)
-                self._load_items_for_column(board, column, folder_path)
-                position += 1
+                # Check for column.md metadata file
+                column_md_path = folder_path / "column.md"
+                if column_md_path.exists():
+                    try:
+                        with open(column_md_path, "r", encoding="utf-8") as f:
+                            post = frontmatter.load(f)
+                        
+                        metadata = post.metadata.get("metadata", post.metadata)
+                        column_id = metadata.get("id", column_id)
+                        position = metadata.get("position")
+                    except Exception:
+                        # If column.md can't be read, use defaults
+                        pass
+                
+                columns_data.append({
+                    'id': column_id,
+                    'name': column_name,
+                    'position': position,
+                    'folder_path': folder_path
+                })
+        
+        # Sort columns by position (None positions go last), then by name
+        def sort_key(col):
+            if col['position'] is None:
+                return (1, col['name'])  # Sort by name for None positions
+            return (0, col['position'])  # Sort by position for specified positions
+        
+        columns_data.sort(key=sort_key)
+        
+        # Create Column objects
+        for col_data in columns_data:
+            column = Column(
+                id=col_data['id'],
+                name=col_data['name'],
+                position=col_data['position'] if col_data['position'] is not None else len(board.columns)
+            )
+            board.columns.append(column)
+            self._load_items_for_column(board, column, col_data['folder_path'])
 
     def load_board(self, board_id: str) -> Board | None:
         for board_dir in self.boards_dir.iterdir():
@@ -196,6 +228,15 @@ class BoardStorage:
         column_dir = board_dir / column_safe_name
         column_dir.mkdir(exist_ok=True)
 
+        # Save column metadata if position is explicitly set or column has custom id
+        needs_metadata = (
+            column.position != 0 or  # Has explicit position
+            column.id != self._generate_id_from_name(column.name)  # Has custom id
+        )
+        
+        if needs_metadata:
+            self._save_column_metadata(column_dir, column)
+
         # Save items directly in the column folder
         for item in column.items:
             item_filename = self._get_unique_filename(column_dir, item)
@@ -275,6 +316,27 @@ class BoardStorage:
         )
 
         with open(item_file, "w", encoding="utf-8") as f:
+            f.write(frontmatter.dumps(post))
+
+    def _save_column_metadata(self, column_dir: Path, column: Column) -> None:
+        """Save column metadata to column.md file"""
+        column_md_path = column_dir / "column.md"
+        
+        column_metadata = {
+            "id": column.id,
+            "position": column.position,
+            "created_at": column.created_at,
+            "updated_at": column.updated_at,
+        }
+        
+        if column.limit is not None:
+            column_metadata["limit"] = column.limit
+        
+        content = f"# {column.name}\n\nColumn metadata and configuration."
+        
+        post = frontmatter.Post(content=content, metadata=column_metadata)
+        
+        with open(column_md_path, "w", encoding="utf-8") as f:
             f.write(frontmatter.dumps(post))
 
     def delete_item_from_column(self, board: Board, item: Item) -> bool:

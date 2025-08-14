@@ -175,9 +175,14 @@ class BoardWidget(Widget):
         elif isinstance(focused, ColumnWidget):
             target_column = focused
         else:
-            columns = list(self.query(ColumnWidget))
-            if columns:
-                target_column = columns[0]
+            # Use the first column by position (lowest position number)
+            first_column = self.board.get_first_column()
+            if first_column:
+                columns = list(self.query(ColumnWidget))
+                target_column = next(
+                    (col for col in columns if col.column.id == first_column.id), 
+                    columns[0] if columns else None
+                )
 
         if target_column:
             target_column.add_new_item_inline()
@@ -213,9 +218,14 @@ class BoardWidget(Widget):
         elif isinstance(focused, ColumnWidget):
             target_column = focused
         else:
-            columns = list(self.query(ColumnWidget))
-            if columns:
-                target_column = columns[0]
+            # Use the first column by position (lowest position number)
+            first_column = self.board.get_first_column()
+            if first_column:
+                columns = list(self.query(ColumnWidget))
+                target_column = next(
+                    (col for col in columns if col.column.id == first_column.id), 
+                    columns[0] if columns else None
+                )
 
         if not target_column:
             self.app.notify("No column available for new item", severity="error")

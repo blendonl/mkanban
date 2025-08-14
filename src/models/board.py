@@ -59,6 +59,12 @@ class Board(BaseModel):
                 return column
         return None
 
+    def get_first_column(self) -> Column | None:
+        """Get the column with the lowest position (first position on the board)"""
+        if not self.columns:
+            return None
+        return min(self.columns, key=lambda c: c.position)
+
     def get_orphaned_items(self) -> list[Item]:
         items: list[Item] = []
         for column in self.columns:
