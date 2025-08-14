@@ -44,7 +44,7 @@ class Board(BaseModel):
 
         column = Column(name=name, position=position)
         self.columns.append(column)
-        self.columns.sort(key=lambda c: c.position)
+        self.columns.sort(key=lambda c: (c.position, c.name))
         self.updated_at = datetime.now()
         return column
 

@@ -113,11 +113,31 @@ class BoardStorage:
         columns_data.sort(key=sort_key)
         
         # Create Column objects
+        # First, collect all explicit positions to avoid conflicts
+        used_positions = set()
         for col_data in columns_data:
+            if col_data['position'] is not None:
+                used_positions.add(col_data['position'])
+        
+        # Find the next available position for columns without explicit positions
+        next_position = 0
+        while next_position in used_positions:
+            next_position += 1
+        
+        for col_data in columns_data:
+            if col_data['position'] is not None:
+                position = col_data['position']
+            else:
+                position = next_position
+                used_positions.add(next_position)
+                next_position += 1
+                while next_position in used_positions:
+                    next_position += 1
+            
             column = Column(
                 id=col_data['id'],
                 name=col_data['name'],
-                position=col_data['position'] if col_data['position'] is not None else len(board.columns)
+                position=position
             )
             board.columns.append(column)
             self._load_items_for_column(board, column, col_data['folder_path'])
@@ -214,7 +234,7 @@ class BoardStorage:
 
         content_lines = [f"# {board.name}", ""]
 
-        for column in sorted(board.columns, key=lambda c: c.position):
+        for column in sorted(board.columns, key=lambda c: (c.position, c.name)):
             self.save_column_with_items(board, column)
 
         post = frontmatter.Post(content="\n".join(content_lines), metadata=board_data)

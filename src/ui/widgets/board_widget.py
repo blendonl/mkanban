@@ -122,7 +122,7 @@ class BoardWidget(Widget):
         columns_container = Horizontal()
         self.mount(columns_container)
 
-        for column in sorted(self.board.columns, key=lambda c: c.position):
+        for column in sorted(self.board.columns, key=lambda c: (c.position, c.name)):
             items = self.board.get_column_by_id(column.id).get_all_items()
             column_widget = ColumnWidget(
                 column,
@@ -511,7 +511,7 @@ updated_at: {item.updated_at}
         if not self.board:
             return None
 
-        sorted_columns = sorted(self.board.columns, key=lambda c: c.position)
+        sorted_columns = sorted(self.board.columns, key=lambda c: (c.position, c.name))
         for i, column in enumerate(sorted_columns):
             if column.id == current_column_id and i > 0:
                 return sorted_columns[i - 1].id
@@ -522,7 +522,7 @@ updated_at: {item.updated_at}
         if not self.board:
             return None
 
-        sorted_columns = sorted(self.board.columns, key=lambda c: c.position)
+        sorted_columns = sorted(self.board.columns, key=lambda c: (c.position, c.name))
         for i, column in enumerate(sorted_columns):
             if column.id == current_column_id and i < len(sorted_columns) - 1:
                 return sorted_columns[i + 1].id
@@ -551,7 +551,7 @@ updated_at: {item.updated_at}
         if not self.board:
             return None
 
-        sorted_columns = sorted(self.board.columns, key=lambda c: c.position)
+        sorted_columns = sorted(self.board.columns, key=lambda c: (c.position, c.name))
         current_index = None
 
         # Find current column index
@@ -576,7 +576,7 @@ updated_at: {item.updated_at}
         if not self.board:
             return None
 
-        sorted_columns = sorted(self.board.columns, key=lambda c: c.position)
+        sorted_columns = sorted(self.board.columns, key=lambda c: (c.position, c.name))
         current_index = None
 
         # Find current column index

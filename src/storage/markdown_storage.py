@@ -78,21 +78,73 @@ class MarkdownStorage:
         self, board: Board, content: str, board_dir: Path
     ) -> None:
         # Load columns directly from folders in the board directory
-        position = 0
-        for folder_path in sorted(board_dir.iterdir()):
+        columns_data = []
+        
+        for folder_path in board_dir.iterdir():
             if folder_path.is_dir() and folder_path.name != "items":
                 column_name = folder_path.name.replace("-", " ").replace("_", " ").title()
                 column_id = self._generate_id_from_name(column_name)
+                position = None
                 
-                column = Column(
-                    id=column_id,
-                    name=column_name,
-                    position=position,
-                    file_path=str(folder_path)
-                )
-                board.columns.append(column)
-                self._load_items_for_column(board, column, folder_path)
-                position += 1
+                # Check for column.md metadata file
+                column_md_path = folder_path / "column.md"
+                if column_md_path.exists():
+                    try:
+                        with open(column_md_path, "r", encoding="utf-8") as f:
+                            post = frontmatter.load(f)
+                        
+                        metadata = post.metadata
+                        column_id = metadata.get("id", column_id)
+                        position = metadata.get("position")
+                    except Exception:
+                        # If column.md can't be read, use defaults
+                        pass
+                
+                columns_data.append({
+                    'id': column_id,
+                    'name': column_name,
+                    'position': position,
+                    'folder_path': folder_path
+                })
+        
+        # Sort columns by position (None positions go last), then by name
+        def sort_key(col):
+            if col['position'] is None:
+                return (1, col['name'])  # Sort by name for None positions
+            return (0, col['position'], col['name'])  # Sort by position then name for specified positions
+        
+        columns_data.sort(key=sort_key)
+        
+        # Create Column objects
+        # First, collect all explicit positions to avoid conflicts
+        used_positions = set()
+        for col_data in columns_data:
+            if col_data['position'] is not None:
+                used_positions.add(col_data['position'])
+        
+        # Find the next available position for columns without explicit positions
+        next_position = 0
+        while next_position in used_positions:
+            next_position += 1
+        
+        for col_data in columns_data:
+            if col_data['position'] is not None:
+                position = col_data['position']
+            else:
+                position = next_position
+                used_positions.add(next_position)
+                next_position += 1
+                while next_position in used_positions:
+                    next_position += 1
+            
+            column = Column(
+                id=col_data['id'],
+                name=col_data['name'],
+                position=position,
+                file_path=str(col_data['folder_path'])
+            )
+            board.columns.append(column)
+            self._load_items_for_column(board, column, col_data['folder_path'])
 
     def load_board(self, board_id: str) -> Board | None:
         for board_dir in self.boards_dir.iterdir():
@@ -198,7 +250,7 @@ class MarkdownStorage:
 
         content_lines = [f"# {board.name}", ""]
 
-        for column in sorted(board.columns, key=lambda c: c.position):
+        for column in sorted(board.columns, key=lambda c: (c.position, c.name)):
             self.save_column_with_items(board, column)
 
         yaml_str = yaml.dump(board_data, default_flow_style=False, sort_keys=False)
