@@ -2,5 +2,8 @@
 
 from src.infrastructure.cli.commands import main_command
 
-if __name__ == "__main__":
+def main():
     main_command()
+
+if __name__ == "__main__":
+    main()
