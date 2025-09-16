@@ -10,7 +10,7 @@ from ...domain.entities.parent import Parent
 from ...domain.repositories.board_repository import BoardRepository
 from ...domain.repositories.storage_repository import StorageRepository
 from ...utils.file_utils import find_files_by_pattern, ensure_directory_exists
-from ...utils.string_utils import generate_id_from_name
+from ...utils.string_utils import generate_id_from_name, get_safe_filename
 from ...utils.date_utils import now
 from .board_persistence import BoardPersistence
 from .markdown_parser import (
@@ -19,7 +19,7 @@ from .markdown_parser import (
     parse_column_metadata, 
     save_board_metadata
 )
-from .file_operations import get_board_directory_path
+from .file_operations import get_board_directory_path, find_item_file_by_id
 
 
 class MarkdownStorageImpl(BoardRepository, StorageRepository):
@@ -294,3 +294,19 @@ class MarkdownStorageImpl(BoardRepository, StorageRepository):
         
         self.persistence.save_column_metadata_if_needed(board.name, column.to_dict())
         self.persistence.cleanup_column(board.name, column.name, current_item_ids)
+
+    def _get_board_directory(self, board: Board) -> Path:
+        """Get the directory path for a board"""
+        return get_board_directory_path(self.boards_dir, board.name)
+
+    def _get_safe_name(self, name: str) -> str:
+        """Get a safe filename for the given name"""
+        return get_safe_filename(name)
+
+    def _find_item_file_by_id(self, items_dir: Path, item_id: str) -> Optional[Path]:
+        """Find an item file by its ID in the given directory"""
+        return find_item_file_by_id(items_dir, item_id)
+
+    def load_item_from_title_file(self, item_file: Path, column_id: str) -> Optional[Item]:
+        """Load an item from a file path"""
+        return self._load_item_from_file(item_file, column_id)

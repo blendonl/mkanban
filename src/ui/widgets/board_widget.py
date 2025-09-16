@@ -653,10 +653,10 @@ updated_at: {item.updated_at}
         storage = self.app.storage
         board_dir = storage._get_board_directory(self.board)
         column_safe_name = storage._get_safe_name(column.name)
-        items_dir = board_dir / column_safe_name / "items"
+        column_dir = board_dir / column_safe_name
 
         # Find the item file by scanning metadata for the ID
-        item_file_path = storage._find_item_file_by_id(items_dir, item.id)
+        item_file_path = storage._find_item_file_by_id(column_dir, item.id)
         return item_file_path
 
     def _update_item_from_file(self, item: Item, item_file_path: Path) -> None:
