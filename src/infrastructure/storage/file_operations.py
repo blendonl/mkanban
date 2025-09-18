@@ -17,7 +17,8 @@ def find_item_file_by_id(column_dir: Path, item_id: ItemId) -> Optional[Path]:
             
             try:
                 _, metadata = read_frontmatter_file(item_file)
-                if metadata.get("id") == item_id:
+                file_id = metadata.get("id", item_file.stem)
+                if file_id == item_id:
                     return item_file
             except Exception:
                 continue
@@ -52,7 +53,7 @@ def cleanup_column_files(column_dir: Path, current_item_ids: set[ItemId]) -> Non
         
         try:
             _, metadata = read_frontmatter_file(item_file)
-            file_item_id = metadata.get("id")
+            file_item_id = metadata.get("id", item_file.stem)
             
             if file_item_id:
                 if file_item_id not in current_item_ids:

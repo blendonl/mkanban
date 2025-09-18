@@ -4,6 +4,7 @@ import subprocess
 from textual.containers import Horizontal, Vertical
 from textual.widget import Widget
 from textual.reactive import reactive
+from ...core.exceptions import ValidationError
 from ...domain.entities.board import Board
 from ...domain.entities.item import Item
 from ...core.types import RefreshType
@@ -15,6 +16,7 @@ from ...controllers.item_controller import ItemController
 from ...utils.editor_utils import open_editor_for_app
 
 from ..dialogs.help_dialog import HelpDialog
+from ..dialogs.column_settings_dialog import ColumnSettingsDialog
 
 
 class BoardWidget(Widget):
@@ -110,7 +112,7 @@ class BoardWidget(Widget):
                 column_widget.column = updated_column
                 items = self.board.get_column_by_id(updated_column.id).get_all_items()
                 column_widget.items = items
-                column_widget.border_title = f"{updated_column.name} ({len(items)})"
+                column_widget.update_title()
 
     def _refresh_layout_only(self) -> None:
         pass
@@ -277,15 +279,19 @@ updated_at: {item.updated_at}
                 )
                 return
 
-            # Create the new item
-            new_item = target_column.column.add_item(title)
-            new_item.description = edited_content.strip()
+            try:
+                # Create the new item
+                new_item = target_column.column.add_item(title)
+                new_item.description = edited_content.strip()
 
-            # Save the board
-            self.app.storage.save_board(self.board)
+                # Save the board
+                self.app.storage.save_board(self.board)
 
-            # Refresh the board and focus the new item
-            self.refresh_board(focus_item_id=new_item.id)
+                # Refresh the board and focus the new item
+                self.refresh_board(focus_item_id=new_item.id)
+            except ValidationError as e:
+                self.app.notify(str(e), severity="error")
+                return
 
         except (subprocess.CalledProcessError, FileNotFoundError):
             pass  # Error messages already handled in open_editor_for_app
@@ -349,8 +355,11 @@ updated_at: {item.updated_at}
                     self.board, column_widget.column, self.app._board_service, self.app._item_service
                 )
 
-                if column_controller.move_item(selected.id, target_column.id):
-                    self.refresh_board(focus_item_id=selected.id)
+                try:
+                    if column_controller.move_item(selected.id, target_column.id):
+                        self.refresh_board(focus_item_id=selected.id)
+                except ValidationError as e:
+                    self.app.notify(str(e), severity="error")
                 return
 
     async def move_left(self) -> None:
@@ -369,8 +378,11 @@ updated_at: {item.updated_at}
                     self.board, column_widget.column, self.app._board_service, self.app._item_service
                 )
 
-                if column_controller.move_item(selected.id, target_column.id):
-                    self.refresh_board(focus_item_id=selected.id)
+                try:
+                    if column_controller.move_item(selected.id, target_column.id):
+                        self.refresh_board(focus_item_id=selected.id)
+                except ValidationError as e:
+                    self.app.notify(str(e), severity="error")
                 return
 
     def move_focus_up(self) -> None:
@@ -690,6 +702,37 @@ updated_at: {item.updated_at}
 
     def show_help_dialog(self) -> None:
         dialog = HelpDialog()
+        self.app.push_screen(dialog)
+
+    def show_column_settings_dialog(self) -> None:
+        if not self.board:
+            return
+
+        focused = self.app.focused
+        target_column = None
+
+        # Determine which column to configure
+        if isinstance(focused, ItemWidget):
+            target_column = self._find_column_for_item(focused.item)
+        elif isinstance(focused, ColumnWidget):
+            target_column = focused
+        else:
+            # Use the first column as default
+            columns = list(self.query(ColumnWidget))
+            target_column = columns[0] if columns else None
+
+        if not target_column:
+            self.app.notify("No column selected", severity="error")
+            return
+
+        def on_save(limit: Optional[int]):
+            target_column.column.limit = limit
+            target_column.column.update()
+            target_column.update_title()
+            self.app.storage.save_board(self.board)
+            self.app.notify(f"Column limit updated for '{target_column.column.name}'")
+
+        dialog = ColumnSettingsDialog(target_column.column, on_save)
         self.app.push_screen(dialog)
 
     def update_responsive_layout(self) -> None:

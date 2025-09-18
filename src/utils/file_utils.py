@@ -86,6 +86,6 @@ def get_unique_filename(base_path: Path, item_id: str, max_retries: int = 100) -
 def _get_item_id_from_file(file_path: Path) -> Optional[str]:
     try:
         _, metadata = read_frontmatter_file(file_path)
-        return metadata.get("id")
+        return metadata.get("id", file_path.stem)
     except Exception:
-        return None
+        return file_path.stem

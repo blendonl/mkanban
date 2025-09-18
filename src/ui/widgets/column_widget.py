@@ -1,5 +1,6 @@
 from typing import List
 from textual.containers import Vertical, VerticalScroll
+from ...core.exceptions import ValidationError
 from ...domain.entities.column import Column
 from ...domain.entities.item import Item
 from .item_widget import ItemWidget
@@ -19,8 +20,17 @@ class ColumnWidget(Vertical):
         self._max_items_visible = None
 
         super().__init__(classes="column", id=f"column_{column.id.replace('-', '_')}")
-        self.border_title = f"{column.name} ({len(items)})"
+        self.border_title = self._get_column_title(len(items))
         self.can_focus = True
+
+    def _get_column_title(self, item_count: int) -> str:
+        if self.column.limit is not None:
+            return f"{self.column.name} ({item_count}/{self.column.limit})"
+        return f"{self.column.name} ({item_count})"
+
+    def update_title(self) -> None:
+        current_count = len(self.column.get_all_items())
+        self.border_title = self._get_column_title(current_count)
 
     def compose(self):
         with Vertical(classes="items-container"):
@@ -41,9 +51,14 @@ class ColumnWidget(Vertical):
             return
 
         def on_save(title: str, content: str):
-            controller = self.column_controller
-            controller.add_item(title, None, content)
-            self._finish_editing()
+            try:
+                controller = self.column_controller
+                controller.add_item(title, None, content)
+                self.update_title()
+                self._finish_editing()
+            except ValidationError as e:
+                # TODO: Show error message to user (needs notification system)
+                self._finish_editing()
 
         def on_cancel():
             self._finish_editing()

@@ -49,9 +49,7 @@ class BoardPersistence:
                     new_item_file = old_item_file
         
         item_metadata = {
-            "id": item_data["id"],
             "title": item_data["title"],
-            "column_id": item_data["column_id"],
             "parent_id": item_data.get("parent_id"),
             "created_at": item_data.get("created_at", now()),
             "updated_at": item_data.get("updated_at", now()),
@@ -95,7 +93,7 @@ class BoardPersistence:
     def save_column_metadata_if_needed(self, board_name: str, column_data: dict) -> None:
         needs_metadata = (
             column_data.get("position", 0) != 0 or
-            column_data["id"] != generate_id_from_name(column_data["name"])
+            column_data.get("limit") is not None
         )
         
         if needs_metadata:
@@ -104,7 +102,6 @@ class BoardPersistence:
             column_metadata_file = column_dir / COLUMN_METADATA_FILENAME
             
             metadata = {
-                "id": column_data["id"],
                 "position": column_data.get("position"),
                 "created_at": column_data.get("created_at", now()),
                 "updated_at": column_data.get("updated_at", now()),

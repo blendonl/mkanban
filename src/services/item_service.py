@@ -26,6 +26,9 @@ class ItemService:
         if not column:
             raise ColumnNotFoundError(f"Column with id '{column_id}' not found")
         
+        # Check if column is at capacity before adding
+        self._validator.validate_column_capacity(column)
+        
         if parent_id:
             parent = board.get_parent_by_id(parent_id)
             if not parent:
@@ -88,6 +91,9 @@ class ItemService:
         target_column = board.get_column_by_id(target_column_id)
         if not target_column:
             raise ColumnNotFoundError(f"Target column with id '{target_column_id}' not found")
+        
+        # Check if target column is at capacity before moving
+        self._validator.validate_column_capacity(target_column)
         
         if not self._storage.move_item_between_columns(board, item_to_move, source_column, target_column):
             return False

@@ -42,6 +42,7 @@ class MKanbanApp(App):
         Binding("p", "toggle_parents", "Toggle Parents", show=False),
         Binding("w", "save", "Save", show=False),
         Binding("r", "refresh", "Refresh", show=False),
+        Binding("c", "column_settings", "Column Settings", show=False),
         Binding("g,question_mark", "show_help", "Help", show=False),
         Binding("q", "quit", "Quit", show=False),
         ("ctrl+c", "quit", "Quit"),
@@ -185,6 +186,10 @@ class MKanbanApp(App):
     def action_show_help(self) -> None:
         if self.board_view:
             self.board_view.show_help_dialog()
+
+    def action_column_settings(self) -> None:
+        if self.board_view:
+            self.board_view.show_column_settings_dialog()
 
     def start_auto_save_timer(self) -> None:
         if self.settings.auto_save and self.settings.auto_save_interval > 0:

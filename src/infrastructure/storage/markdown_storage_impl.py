@@ -132,49 +132,10 @@ class MarkdownStorageImpl(BoardRepository, StorageRepository):
     def create_sample_board(self, name: str = "Sample Board") -> Board:
         board = Board(name=name, description="Welcome to MKanban!")
 
-        todo_col = board.add_column("To Do", 0)
-        progress_col = board.add_column("In Progress", 1)
-        review_col = board.add_column("Review", 2)
-        done_col = board.add_column("Done", 3)
-
-        item1 = todo_col.add_item("Learn keyboard shortcuts")
-        item1.description = (
-            "Press 'g?' to view help dialog with all available shortcuts.\n\n"
-            "Basic navigation:\n"
-            "- h/j/k/l: Navigate left/down/up/right\n"
-            "- o: Create new item\n"
-            "- i: Edit selected item\n"
-            "- d: Delete selected item\n"
-            "- p: Toggle parent grouping\n"
-            "- H/L: Move item between columns"
-        )
-
-        item2 = todo_col.add_item("Explore markdown files")
-        item2.description = (
-            "Your boards are stored as markdown files in the data/boards/ directory.\n\n"
-            "Each board has its own folder with:\n"
-            "- kanban.md: Board structure and metadata\n"
-            "- Column folders with column.md files\n"
-            "- Item files in items/ subfolders"
-        )
-
-        item3 = progress_col.add_item("Create your first board")
-        item3.description = (
-            "Try creating a new board by:\n"
-            "1. Exiting MKanban (press 'q')\n"
-            "2. Creating a new markdown file in data/boards/\n"
-            "3. Or modify this sample board to suit your needs"
-        )
-
-        item4 = review_col.add_item("Organize with parents")
-        item4.description = (
-            "Parents help organize related items across columns.\n\n"
-            "Toggle parent grouping with 'p' to see items grouped by their parent.\n"
-            "Items with the same parent are shown together regardless of column."
-        )
-
-        item5 = done_col.add_item("Install MKanban")
-        item5.description = "Great! You've successfully installed and launched MKanban."
+        todo_col = board.add_column("To Do", 1)
+        progress_col = board.add_column("In Progress", 2)
+        review_col = board.add_column("Review", 3)
+        done_col = board.add_column("Done", 4)
 
         return board
 

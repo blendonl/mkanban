@@ -1,5 +1,6 @@
 from ..core.exceptions import ValidationError
 from ..domain.entities.board import Board
+from ..domain.entities.column import Column
 
 
 class ValidationService:
@@ -41,3 +42,11 @@ class ValidationService:
         positions = [col.position for col in board.columns if col.position is not None]
         if len(positions) != len(set(positions)):
             raise ValidationError("Board cannot have columns with duplicate positions")
+
+    def validate_column_limit(self, limit: int | None) -> None:
+        if limit is not None and limit < 1:
+            raise ValidationError("Column limit must be at least 1")
+
+    def validate_column_capacity(self, column: Column) -> None:
+        if column.limit is not None and len(column.items) >= column.limit:
+            raise ValidationError(f"Column '{column.name}' is at capacity ({column.limit} items). Cannot add more items.")

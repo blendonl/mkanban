@@ -73,6 +73,7 @@ class HelpDialog(ModalScreen):
 
 ## View Operations
 - p         : Toggle parent grouping
+- c         : Column settings (set item limits)
 - w         : Save board
 - r         : Refresh view
 
