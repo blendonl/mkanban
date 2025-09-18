@@ -170,6 +170,16 @@ class TaskSynchronizer:
             board = await self._ensure_git_board_exists()
             self.logger.debug(f"Using board: {board.name} (ID: {board.id})")
 
+            # If this is the current branch and auto-sync is enabled, move to in-progress
+            if git_task.auto_sync_enabled and git_task.should_auto_activate():
+                progress_column = self._find_or_create_column(
+                    board, self.daemon_config.in_progress_column
+                )
+                git_task.move_to_column(progress_column.id)
+                self.logger.debug(
+                    f"Moved new current branch task to in-progress: {git_task.title}"
+                )
+
             # Add task to board
             self._add_git_task_to_board(board, git_task)
 
@@ -243,9 +253,10 @@ class TaskSynchronizer:
             if current_branch and self._should_track_branch(current_branch):
                 current_task = self._get_git_task(repo_path, current_branch)
                 if current_task and current_task.auto_sync_enabled:
+                    # Mark as current branch BEFORE checking auto-activation
                     current_task.set_current_branch(True)
 
-                    # Move to in-progress
+                    # Move to in-progress (check again now that is_current_branch is True)
                     if current_task.should_auto_activate():
                         board = await self._get_git_board()
                         if board:
