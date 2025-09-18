@@ -18,7 +18,8 @@ class Environment:
     
     @staticmethod
     def get_editor() -> str:
-        return os.environ.get("MKANBAN_EDITOR", "nvim")
+        # Priority: EDITOR env var, then MKANBAN_EDITOR, then default to nvim
+        return os.environ.get("EDITOR") or os.environ.get("MKANBAN_EDITOR", "nvim")
     
     @staticmethod
     def get_cli_editor() -> str:

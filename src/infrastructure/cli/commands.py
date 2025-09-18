@@ -40,6 +40,11 @@ from ...core.exceptions import MKanbanError
     is_flag=True,
     help="Create a new item with neovide editor (requires --board)",
 )
+@click.option(
+    "--show-current-task",
+    is_flag=True,
+    help="Show and edit the first task in the specified column (requires --board and --column)",
+)
 def main_command(
     data_dir: Path,
     board: Optional[str],
@@ -47,6 +52,7 @@ def main_command(
     new_task_description: str,
     column: str,
     new_item: bool,
+    show_current_task: bool,
 ) -> None:
     try:
         from .task_creator import TaskCreator
@@ -54,6 +60,14 @@ def main_command(
         
         settings = Settings(data_dir=str(data_dir))
         task_creator = TaskCreator(settings)
+        
+        if show_current_task:
+            if not board:
+                click.echo("Error: --board is required when using --show-current-task")
+                return
+            
+            task_creator.show_current_task(board, column)
+            return
         
         if new_item:
             if not board:
