@@ -74,7 +74,7 @@ class ServiceManager:
     def _setup_logging(self) -> logging.Logger:
         """Setup logging for the daemon"""
         logger = logging.getLogger("mkanban-daemon")
-        logger.setLevel(logging.INFO)
+        logger.setLevel(logging.DEBUG)
 
         # Create logs directory
         log_dir = Path.home() / ".mkanban" / "logs"
@@ -82,11 +82,11 @@ class ServiceManager:
 
         # File handler
         file_handler = logging.FileHandler(log_dir / "daemon.log")
-        file_handler.setLevel(logging.INFO)
+        file_handler.setLevel(logging.DEBUG)
 
         # Console handler
         console_handler = logging.StreamHandler()
-        console_handler.setLevel(logging.INFO)
+        console_handler.setLevel(logging.DEBUG)
 
         # Formatter
         formatter = logging.Formatter(

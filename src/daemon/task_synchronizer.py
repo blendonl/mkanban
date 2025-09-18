@@ -42,7 +42,9 @@ class TaskSynchronizer:
     def _initialize_services(self) -> None:
         """Initialize required services"""
         # Initialize storage and repositories
-        markdown_storage = MarkdownStorageImpl(self.settings.get_data_dir())
+        data_dir = self.settings.get_data_dir()
+        self.logger.debug(f"TaskSynchronizer data_dir: {data_dir}")
+        markdown_storage = MarkdownStorageImpl(data_dir)
         validation_service = ValidationService()
 
         # Initialize business services
@@ -339,7 +341,12 @@ class TaskSynchronizer:
 
             board_modified = False
             for column_name, intended_position in required_columns:
-                if not any(col.name.lower() == column_name.lower() for col in board.columns):
+                # Get safe column ID for comparison
+                from utils.string_utils import get_safe_filename
+                column_id = get_safe_filename(column_name)
+
+                # Check if a column with this ID already exists
+                if not any(col.id == column_id for col in board.columns):
                     # Check if intended position is already taken
                     existing_positions = {col.position for col in board.columns if col.position is not None}
                     if intended_position in existing_positions:
@@ -414,10 +421,13 @@ class TaskSynchronizer:
         """Add a git task to the appropriate column in the board"""
         try:
             self.logger.debug(f"Adding task '{git_task.title}' to board '{board.name}'")
+            self.logger.debug(f"Task column_id: '{git_task.column_id}'")
+            self.logger.debug(f"Available columns: {[(col.id, col.name) for col in board.columns]}")
 
             # Find target column
             target_column = None
             for column in board.columns:
+                self.logger.debug(f"Checking column: ID='{column.id}', Name='{column.name}'")
                 if column.id == git_task.column_id:
                     target_column = column
                     break
@@ -434,9 +444,11 @@ class TaskSynchronizer:
             self.logger.debug(
                 f"Adding task to column '{target_column.name}' (ID: {target_column.id})"
             )
+            self.logger.debug(f"Column currently has {len(target_column.items)} items")
 
             # Add item to column
             target_column.items.append(git_task)
+            self.logger.debug(f"Column now has {len(target_column.items)} items")
 
             # Save board
             self.board_service.save_board(board)

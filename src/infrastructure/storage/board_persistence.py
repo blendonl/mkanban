@@ -35,8 +35,14 @@ class BoardPersistence:
     def save_item_to_column(
         self, board_name: str, column_name: str, item_data: dict
     ) -> None:
+        # Add debug logging
+        import logging
+        logger = logging.getLogger("mkanban-daemon")
+        logger.debug(f"save_item_to_column: board='{board_name}', column='{column_name}', item='{item_data.get('title', 'unknown')}'")
+
         board_dir = get_board_directory_path(self.boards_dir, board_name)
         column_dir = get_column_directory_path(board_dir, column_name)
+        logger.debug(f"Column directory: {column_dir}")
         ensure_directory_exists(column_dir)
 
         item_id = item_data["id"]

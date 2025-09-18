@@ -281,6 +281,13 @@ class MarkdownStorageImpl(BoardRepository, StorageRepository):
     def _save_column_with_items(self, board: Board, column: Column) -> None:
         current_item_ids = {item.id for item in column.items}
 
+        # Add debug logging
+        import logging
+        logger = logging.getLogger("mkanban-daemon")
+        logger.debug(f"Saving column '{column.name}' (ID: {column.id}) with {len(column.items)} items")
+        for item in column.items:
+            logger.debug(f"  Item: {item.title} (ID: {item.id})")
+
         for item in column.items:
             item_data = item.to_dict()
             self.persistence.save_item_to_column(board.name, column.name, item_data)

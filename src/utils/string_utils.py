@@ -8,8 +8,16 @@ def generate_id_from_name(name: str) -> str:
 
 
 def get_safe_filename(name: str) -> str:
-    safe_name = re.sub(r"[^a-zA-Z0-9\s-]", "", name.lower())
+    # Replace forward slashes and other path separators with dashes first
+    safe_name = name.replace("/", "-").replace("\\", "-")
+    # Remove all characters except alphanumeric, spaces, and dashes
+    safe_name = re.sub(r"[^a-zA-Z0-9\s-]", "", safe_name.lower())
+    # Replace multiple spaces with single dashes
     safe_name = re.sub(r"\s+", "-", safe_name.strip())
+    # Replace multiple consecutive dashes with single dash
+    safe_name = re.sub(r"-+", "-", safe_name)
+    # Remove leading/trailing dashes
+    safe_name = safe_name.strip("-")
     return safe_name or "unnamed"
 
 

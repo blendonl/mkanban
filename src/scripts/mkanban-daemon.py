@@ -37,11 +37,21 @@ def setup_logging(log_level: str = "INFO") -> None:
 
 def create_daemon_config(args) -> DaemonConfig:
     """Create daemon configuration from command line arguments"""
+    from infrastructure.tmux.session_manager import TmuxSessionManager
+
+    # Determine board name - use session name if in tmux and tmux_session_only is True
+    board_name = args.board_name
+    if args.tmux_session_only:
+        tmux_manager = TmuxSessionManager()
+        current_session = tmux_manager.get_current_session()
+        if current_session:
+            board_name = current_session.name
+
     return DaemonConfig(
         enabled=not args.disable,
         polling_interval=args.polling_interval,
         tmux_session_only=args.tmux_session_only,
-        default_board=args.board_name,
+        default_board=board_name,
         default_column=args.default_column,
         in_progress_column=args.in_progress_column,
         done_column=args.done_column,
