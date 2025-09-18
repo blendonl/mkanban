@@ -14,11 +14,8 @@ from domain.entities.board import Board
 from domain.entities.column import Column
 from domain.entities.git_task import GitTask, GitMetadata
 from services.board_service import BoardService
-from services.item_service import ItemService
 from services.validation_service import ValidationService
 from infrastructure.storage.markdown_storage_impl import MarkdownStorageImpl
-from domain.repositories.board_repository import BoardRepository
-from domain.repositories.storage_repository import StorageRepository
 from infrastructure.git.repository import GitOperations, GitBranch
 from daemon.git_monitor import GitEvent, GitEventType
 from daemon.service_manager import DaemonConfig
@@ -45,11 +42,10 @@ class TaskSynchronizer:
         # Initialize storage and repositories
         markdown_storage = MarkdownStorageImpl(self.settings.get_data_dir())
         validation_service = ValidationService()
-        
+
         # Initialize business services
         self.board_service = BoardService(markdown_storage, validation_service)
-        self.item_service = ItemService(markdown_storage, validation_service)
-        
+
         # Load existing git tasks
         self._load_existing_git_tasks()
     
@@ -121,24 +117,28 @@ class TaskSynchronizer:
     
     async def _handle_branch_created(self, repo_path: str, branch_name: str) -> None:
         """Handle creation of a new branch"""
+        self.logger.info(f"Processing branch creation: {branch_name} in {Path(repo_path).name}")
+
         if not self._should_track_branch(branch_name):
             self.logger.debug(f"Skipping branch {branch_name} (filtered out)")
             return
-        
+
         # Check if task already exists
         if self._get_git_task(repo_path, branch_name):
             self.logger.debug(f"Task for branch {branch_name} already exists")
             return
-        
+
         try:
             # Get branch information
             git_ops = GitOperations(Path(repo_path))
             branch_info = git_ops.get_branch_info(branch_name)
-            
+
             if not branch_info:
                 self.logger.warning(f"Could not get info for branch {branch_name}")
                 return
-            
+
+            self.logger.debug(f"Got branch info for {branch_name}: {branch_info}")
+
             # Create GitTask
             git_task = GitTask.from_git_branch(
                 branch_name=branch_name,
@@ -151,22 +151,25 @@ class TaskSynchronizer:
                 last_commit_date=branch_info.last_commit_date,
                 is_current=branch_info.is_current
             )
-            
+
+            self.logger.debug(f"Created GitTask: {git_task.title} (ID: {git_task.id})")
+
             # Ensure board exists
             board = await self._ensure_git_board_exists()
-            
+            self.logger.debug(f"Using board: {board.name} (ID: {board.id})")
+
             # Add task to board
             self._add_git_task_to_board(board, git_task)
-            
+
             # Track the task
             if repo_path not in self.git_tasks:
                 self.git_tasks[repo_path] = {}
             self.git_tasks[repo_path][branch_name] = git_task
-            
-            self.logger.info(f"Created task for new branch: {branch_name} in {Path(repo_path).name}")
-            
+
+            self.logger.info(f"Successfully created task '{git_task.title}' for branch {branch_name} in {Path(repo_path).name}")
+
         except Exception as e:
-            self.logger.error(f"Failed to create task for branch {branch_name}: {e}")
+            self.logger.error(f"Failed to create task for branch {branch_name}: {e}", exc_info=True)
     
     async def _handle_branch_deleted(self, repo_path: str, branch_name: str) -> None:
         """Handle deletion of a branch"""
@@ -262,15 +265,19 @@ class TaskSynchronizer:
         # Skip excluded branches
         for excluded in self.daemon_config.excluded_branches:
             if fnmatch(branch_name, excluded):
+                self.logger.debug(f"Branch '{branch_name}' excluded by pattern '{excluded}'")
                 return False
-        
+
         # Check inclusion patterns
         if self.daemon_config.branch_patterns:
             for pattern in self.daemon_config.branch_patterns:
                 if fnmatch(branch_name, pattern):
+                    self.logger.debug(f"Branch '{branch_name}' matches pattern '{pattern}'")
                     return True
+            self.logger.debug(f"Branch '{branch_name}' doesn't match any inclusion patterns: {self.daemon_config.branch_patterns}")
             return False  # No patterns matched
-        
+
+        self.logger.debug(f"No branch patterns specified, tracking branch '{branch_name}'")
         return True  # No patterns specified, track all (except excluded)
     
     def _get_git_task(self, repo_path: str, branch_name: str) -> Optional[GitTask]:
@@ -280,23 +287,32 @@ class TaskSynchronizer:
     async def _ensure_git_board_exists(self) -> Board:
         """Ensure the git branches board exists"""
         board_name = self.daemon_config.default_board
-        
+
         try:
-            return self.board_service.get_board_by_name(board_name)
-        except:
-            # Create the board
-            board = self.board_service.create_board(
-                name=board_name,
-                description="Automatically managed tasks based on git branches"
-            )
-            
-            # Add default columns
-            board.add_column(self.daemon_config.default_column, 0)
-            board.add_column(self.daemon_config.in_progress_column, 1) 
-            board.add_column(self.daemon_config.done_column, 2)
-            
-            self.board_service.save_board(board)
+            board = self.board_service.get_board_by_name(board_name)
+            self.logger.debug(f"Found existing git board: {board_name}")
             return board
+        except Exception as e:
+            self.logger.info(f"Git board '{board_name}' not found, creating new one. Error: {e}")
+
+            try:
+                # Create the board
+                board = self.board_service.create_board(
+                    name=board_name,
+                    description="Automatically managed tasks based on git branches"
+                )
+
+                # Add default columns
+                board.add_column(self.daemon_config.default_column, 0)
+                board.add_column(self.daemon_config.in_progress_column, 1)
+                board.add_column(self.daemon_config.done_column, 2)
+
+                self.board_service.save_board(board)
+                self.logger.info(f"Created git board '{board_name}' with default columns")
+                return board
+            except Exception as create_error:
+                self.logger.error(f"Failed to create git board '{board_name}': {create_error}")
+                raise
     
     async def _get_git_board(self) -> Optional[Board]:
         """Get the git branches board"""
@@ -316,22 +332,33 @@ class TaskSynchronizer:
     
     def _add_git_task_to_board(self, board: Board, git_task: GitTask) -> None:
         """Add a git task to the appropriate column in the board"""
-        # Find target column
-        target_column = None
-        for column in board.columns:
-            if column.id == git_task.column_id:
-                target_column = column
-                break
-        
-        if not target_column:
-            target_column = self._find_or_create_column(board, self.daemon_config.default_column)
-            git_task.column_id = target_column.id
-        
-        # Add item to column
-        target_column.items.append(git_task)
-        
-        # Save board
-        self.board_service.save_board(board)
+        try:
+            self.logger.debug(f"Adding task '{git_task.title}' to board '{board.name}'")
+
+            # Find target column
+            target_column = None
+            for column in board.columns:
+                if column.id == git_task.column_id:
+                    target_column = column
+                    break
+
+            if not target_column:
+                self.logger.debug(f"Column '{git_task.column_id}' not found, using default column")
+                target_column = self._find_or_create_column(board, self.daemon_config.default_column)
+                git_task.column_id = target_column.id
+
+            self.logger.debug(f"Adding task to column '{target_column.name}' (ID: {target_column.id})")
+
+            # Add item to column
+            target_column.items.append(git_task)
+
+            # Save board
+            self.board_service.save_board(board)
+            self.logger.debug(f"Saved board '{board.name}' with new task")
+
+        except Exception as e:
+            self.logger.error(f"Failed to add git task to board: {e}", exc_info=True)
+            raise
     
     def _save_git_task_changes(self, board: Board, git_task: GitTask) -> None:
         """Save changes to a git task"""

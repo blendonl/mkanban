@@ -18,6 +18,9 @@ def read_frontmatter_file(file_path: Path) -> tuple[str, Metadata]:
 
 def write_frontmatter_file(file_path: Path, content: str, metadata: Metadata) -> None:
     try:
+        # Ensure parent directory exists
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+
         post = frontmatter.Post(content, **metadata)
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(frontmatter.dumps(post))

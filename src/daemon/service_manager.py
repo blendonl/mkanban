@@ -34,7 +34,8 @@ class DaemonConfig:
     
     def __post_init__(self):
         if self.branch_patterns is None:
-            self.branch_patterns = ["feature/*", "bugfix/*", "hotfix/*", "fix/*", "feat/*"]
+            # Include common patterns but also allow arbitrary branch names
+            self.branch_patterns = ["feature/*", "bugfix/*", "hotfix/*", "fix/*", "feat/*", "test", "test/*", "*"]
         if self.excluded_branches is None:
             self.excluded_branches = ["main", "master", "develop", "staging", "production"]
         if self.data_path is None:
