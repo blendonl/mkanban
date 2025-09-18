@@ -25,6 +25,7 @@ setup(
     entry_points={
         "console_scripts": [
             "mkanban=main:main",
+            "mkanban-daemon=src.scripts.mkanban-daemon:main",
         ],
     },
     classifiers=[

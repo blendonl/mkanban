@@ -1,0 +1,35 @@
+[Unit]
+Description=MKanban Git Daemon - Automatic kanban task management based on git branches
+Documentation=https://github.com/blendonl/mkanban
+After=network.target
+
+[Service]
+Type=simple
+User=%i
+Group=%i
+WorkingDirectory=%h
+ExecStart=/usr/local/bin/mkanban-daemon --log-level INFO
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+# Environment variables
+Environment=PYTHONUNBUFFERED=1
+Environment=MKANBAN_PATH=%h/.mkanban
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=false
+ReadWritePaths=%h/.mkanban
+ReadWritePaths=%h/.local/share/tmux
+ReadWritePaths=/tmp
+
+# Resource limits
+MemoryMax=256M
+CPUQuota=50%
+
+[Install]
+WantedBy=default.target

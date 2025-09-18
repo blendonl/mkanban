@@ -1,10 +1,10 @@
 from typing import List, Optional
-from ..core.exceptions import BoardNotFoundError, ValidationError
-from ..core.types import BoardId, ColumnId
-from ..domain.entities.board import Board
-from ..domain.entities.column import Column
-from ..domain.repositories.board_repository import BoardRepository
-from .validation_service import ValidationService
+from core.exceptions import BoardNotFoundError, ValidationError
+from core.types import BoardId, ColumnId
+from domain.entities.board import Board
+from domain.entities.column import Column
+from domain.repositories.board_repository import BoardRepository
+from services.validation_service import ValidationService
 
 
 class BoardService:

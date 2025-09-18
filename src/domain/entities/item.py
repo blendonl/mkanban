@@ -1,9 +1,9 @@
 from pathlib import Path
 from typing import Optional
 from pydantic import BaseModel, Field
-from ...core.types import ItemId, ColumnId, ParentId, Timestamp, FilePath
-from ...utils.string_utils import generate_id_from_name
-from ...utils.date_utils import now
+from core.types import ItemId, ColumnId, ParentId, Timestamp, FilePath
+from utils.string_utils import generate_id_from_name
+from utils.date_utils import now
 
 
 class Item(BaseModel):

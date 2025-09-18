@@ -1,7 +1,7 @@
 import click
 from pathlib import Path
 from typing import Optional
-from ...core.exceptions import MKanbanError
+from core.exceptions import MKanbanError
 
 
 @click.command()
@@ -45,6 +45,11 @@ from ...core.exceptions import MKanbanError
     is_flag=True,
     help="Show and edit the first task in the specified column (requires --board and --column)",
 )
+@click.option(
+    "--daemon",
+    type=click.Choice(["start", "stop", "status", "restart"]),
+    help="Daemon management commands"
+)
 def main_command(
     data_dir: Path,
     board: Optional[str],
@@ -53,8 +58,16 @@ def main_command(
     column: str,
     new_item: bool,
     show_current_task: bool,
+    daemon: Optional[str],
 ) -> None:
     try:
+        # Handle daemon commands first
+        if daemon:
+            from .daemon_manager import DaemonManager
+            daemon_manager = DaemonManager()
+            daemon_manager.handle_daemon_command(daemon)
+            return
+        
         from .task_creator import TaskCreator
         from ...config.settings import Settings
         

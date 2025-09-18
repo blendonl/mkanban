@@ -1,10 +1,10 @@
 from typing import Optional, List
-from ..core.exceptions import ItemNotFoundError, ColumnNotFoundError, ValidationError
-from ..core.types import ItemId, ColumnId, ParentId
-from ..domain.entities.board import Board
-from ..domain.entities.item import Item
-from ..domain.repositories.storage_repository import StorageRepository
-from .validation_service import ValidationService
+from core.exceptions import ItemNotFoundError, ColumnNotFoundError, ValidationError
+from core.types import ItemId, ColumnId, ParentId
+from domain.entities.board import Board
+from domain.entities.item import Item
+from domain.repositories.storage_repository import StorageRepository
+from services.validation_service import ValidationService
 
 
 class ItemService:

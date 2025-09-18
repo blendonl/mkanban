@@ -1,6 +1,6 @@
-from ..core.exceptions import ValidationError
-from ..domain.entities.board import Board
-from ..domain.entities.column import Column
+from core.exceptions import ValidationError
+from domain.entities.board import Board
+from domain.entities.column import Column
 
 
 class ValidationService:

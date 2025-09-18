@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from typing import Dict, Optional
 from dataclasses import dataclass, asdict
-from ..core.constants import (
+from core.constants import (
     DEFAULT_DATA_DIR,
     DEFAULT_CONFIG_FILE,
     DEFAULT_COLUMN_WIDTH,
@@ -10,7 +10,7 @@ from ..core.constants import (
     DEFAULT_BACKUP_COUNT,
     VIM_KEYBINDINGS
 )
-from ..core.types import ThemeType
+from core.types import ThemeType
 
 
 @dataclass

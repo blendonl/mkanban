@@ -1,12 +1,12 @@
 from pathlib import Path
 from typing import Optional
 from pydantic import BaseModel, Field
-from ...core.types import BoardId, ColumnId, ParentId, Timestamp, FilePath
-from ...utils.string_utils import generate_id_from_name
-from ...utils.date_utils import now
-from .column import Column
-from .item import Item
-from .parent import Parent
+from core.types import BoardId, ColumnId, ParentId, Timestamp, FilePath
+from utils.string_utils import generate_id_from_name
+from utils.date_utils import now
+from domain.entities.column import Column
+from domain.entities.item import Item
+from domain.entities.parent import Parent
 
 
 class Board(BaseModel):

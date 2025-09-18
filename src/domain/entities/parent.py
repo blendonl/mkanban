@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
-from ...core.types import ParentId, ParentColor, Timestamp
-from ...utils.string_utils import generate_id_from_name
-from ...utils.date_utils import now
+from core.types import ParentId, ParentColor, Timestamp
+from utils.string_utils import generate_id_from_name
+from utils.date_utils import now
 
 
 class Parent(BaseModel):
