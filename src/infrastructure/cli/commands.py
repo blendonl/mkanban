@@ -63,13 +63,13 @@ def main_command(
     try:
         # Handle daemon commands first
         if daemon:
-            from .daemon_manager import DaemonManager
+            from infrastructure.cli.daemon_manager import DaemonManager
             daemon_manager = DaemonManager()
             daemon_manager.handle_daemon_command(daemon)
             return
-        
-        from .task_creator import TaskCreator
-        from ...config.settings import Settings
+
+        from infrastructure.cli.task_creator import TaskCreator
+        from config.settings import Settings
         
         settings = Settings(data_dir=str(data_dir))
         task_creator = TaskCreator(settings)
@@ -98,7 +98,7 @@ def main_command(
             task_creator.create_task_via_cli(board, new_task_title, new_task_description, column)
             return
         
-        from ...app import MKanbanApp
+        from app import MKanbanApp
         app = MKanbanApp(data_dir=data_dir, initial_board=board)
         app.run()
         

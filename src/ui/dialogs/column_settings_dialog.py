@@ -4,7 +4,7 @@ from textual.screen import ModalScreen
 from textual.app import ComposeResult
 from textual.validation import Integer
 from typing import Optional, Callable
-from ...domain.entities.column import Column
+from domain.entities.column import Column
 
 
 class ColumnSettingsDialog(ModalScreen):

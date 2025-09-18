@@ -4,19 +4,19 @@ import subprocess
 from textual.containers import Horizontal, Vertical
 from textual.widget import Widget
 from textual.reactive import reactive
-from ...core.exceptions import ValidationError
-from ...domain.entities.board import Board
-from ...domain.entities.item import Item
-from ...core.types import RefreshType
-from .markdown_widget import MarkDownWidget
-from .item_widget import ItemWidget
-from .column_widget import ColumnWidget
-from ...controllers.column_controller import ColumnController
-from ...controllers.item_controller import ItemController
-from ...utils.editor_utils import open_editor_for_app
+from core.exceptions import ValidationError
+from domain.entities.board import Board
+from domain.entities.item import Item
+from core.types import RefreshType
+from ui.widgets.markdown_widget import MarkDownWidget
+from ui.widgets.item_widget import ItemWidget
+from ui.widgets.column_widget import ColumnWidget
+from controllers.column_controller import ColumnController
+from controllers.item_controller import ItemController
+from utils.editor_utils import open_editor_for_app
 
-from ..dialogs.help_dialog import HelpDialog
-from ..dialogs.column_settings_dialog import ColumnSettingsDialog
+from ui.dialogs.help_dialog import HelpDialog
+from ui.dialogs.column_settings_dialog import ColumnSettingsDialog
 
 
 class BoardWidget(Widget):

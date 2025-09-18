@@ -12,14 +12,14 @@ from domain.repositories.storage_repository import StorageRepository
 from utils.file_utils import find_files_by_pattern, ensure_directory_exists
 from utils.string_utils import generate_id_from_name, get_safe_filename
 from utils.date_utils import now
-from .board_persistence import BoardPersistence
-from .markdown_parser import (
-    parse_board_metadata, 
-    parse_item_metadata, 
-    parse_column_metadata, 
+from infrastructure.storage.board_persistence import BoardPersistence
+from infrastructure.storage.markdown_parser import (
+    parse_board_metadata,
+    parse_item_metadata,
+    parse_column_metadata,
     save_board_metadata
 )
-from .file_operations import get_board_directory_path, find_item_file_by_id
+from infrastructure.storage.file_operations import get_board_directory_path, find_item_file_by_id
 
 
 class MarkdownStorageImpl(BoardRepository, StorageRepository):

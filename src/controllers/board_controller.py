@@ -1,7 +1,7 @@
-from ..domain.entities.board import Board
-from ..domain.entities.column import Column
-from ..services.board_service import BoardService
-from ..core.types import ColumnId
+from domain.entities.board import Board
+from domain.entities.column import Column
+from services.board_service import BoardService
+from core.types import ColumnId
 
 
 class BoardController:

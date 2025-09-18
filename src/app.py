@@ -5,14 +5,14 @@ from textual.containers import Horizontal, Vertical
 from textual.binding import Binding
 from textual.reactive import reactive
 
-from .infrastructure.storage.markdown_storage_impl import MarkdownStorageImpl
-from .domain.entities.board import Board
-from .ui.widgets.board_widget import BoardWidget
-from .controllers.board_controller import BoardController
-from .services.board_service import BoardService
-from .services.item_service import ItemService
-from .services.validation_service import ValidationService
-from .config.settings import Settings
+from infrastructure.storage.markdown_storage_impl import MarkdownStorageImpl
+from domain.entities.board import Board
+from ui.widgets.board_widget import BoardWidget
+from controllers.board_controller import BoardController
+from services.board_service import BoardService
+from services.item_service import ItemService
+from services.validation_service import ValidationService
+from config.settings import Settings
 
 
 class MKanbanApp(App):
@@ -152,7 +152,7 @@ class MKanbanApp(App):
 
     def action_refresh(self) -> None:
         if self.board_view and self.current_board:
-            from .core.types import RefreshType
+            from core.types import RefreshType
             self.board_view.refresh_board(refresh_type=RefreshType.FULL)
 
     def action_focus_next(self) -> None:
