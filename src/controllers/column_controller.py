@@ -8,11 +8,11 @@ from core.types import ItemId, ColumnId, ParentId
 
 class ColumnController:
     def __init__(
-        self, 
-        board: Board, 
-        column: Column, 
-        board_service: BoardService, 
-        item_service: ItemService
+        self,
+        board: Board,
+        column: Column,
+        board_service: BoardService,
+        item_service: ItemService,
     ):
         self.column = column
         self.board = board

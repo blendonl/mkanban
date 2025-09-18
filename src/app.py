@@ -53,12 +53,15 @@ class MKanbanApp(App):
         self.settings = Settings.load()
 
         if data_dir != Path("./data"):
+            # If a specific data_dir is provided, use it
             self.settings.data_dir = str(data_dir)
+            self.data_dir = Path(self.settings.data_dir).expanduser().resolve()
+        else:
+            # Use session-based data directory for default case
+            self.data_dir = self.settings.get_session_based_data_dir()
 
-        self.data_dir = Path(self.settings.data_dir).expanduser().resolve()
-        
         self._setup_services()
-        
+
         self.initial_board = initial_board
         self.current_board: Optional[Board] = None
         self.board_view: Optional[BoardWidget] = None
@@ -99,15 +102,21 @@ class MKanbanApp(App):
     def load_initial_board(self) -> None:
         if self.initial_board:
             try:
-                self.current_board = self._board_service.get_board_by_name(self.initial_board)
+                self.current_board = self._board_service.get_board_by_name(
+                    self.initial_board
+                )
             except Exception:
-                self.current_board = self._board_service.get_or_create_sample_board(self.initial_board)
+                self.current_board = self._board_service.get_or_create_sample_board(
+                    self.initial_board
+                )
         else:
             boards = self._board_service.get_all_boards()
             if boards:
                 self.current_board = boards[0]
             else:
-                self.current_board = self._board_service.get_or_create_sample_board("default")
+                self.current_board = self._board_service.get_or_create_sample_board(
+                    "default"
+                )
 
         if self.current_board:
             self.controller = BoardController(self.current_board, self._board_service)
@@ -153,6 +162,7 @@ class MKanbanApp(App):
     def action_refresh(self) -> None:
         if self.board_view and self.current_board:
             from core.types import RefreshType
+
             self.board_view.refresh_board(refresh_type=RefreshType.FULL)
 
     def action_focus_next(self) -> None:
@@ -210,7 +220,7 @@ class MKanbanApp(App):
                 self.controller.save()
             except Exception:
                 pass
-        
+
         if self.auto_save_timer:
             self.auto_save_timer.stop()
 

@@ -17,19 +17,22 @@ from infrastructure.storage.markdown_parser import (
     parse_board_metadata,
     parse_item_metadata,
     parse_column_metadata,
-    save_board_metadata
+    save_board_metadata,
 )
-from infrastructure.storage.file_operations import get_board_directory_path, find_item_file_by_id
+from infrastructure.storage.file_operations import (
+    get_board_directory_path,
+    find_item_file_by_id,
+)
 
 
 class MarkdownStorageImpl(BoardRepository, StorageRepository):
     def __init__(self, data_dir: Path):
         self.data_dir = Path(data_dir)
         ensure_directory_exists(self.data_dir)
-        
+
         self.boards_dir = self.data_dir / "boards"
         ensure_directory_exists(self.boards_dir)
-        
+
         self.persistence = BoardPersistence(data_dir)
 
     def load_all_boards(self) -> List[Board]:
@@ -65,7 +68,7 @@ class MarkdownStorageImpl(BoardRepository, StorageRepository):
     def load_board_from_file(self, kanban_file: Path) -> Optional[Board]:
         try:
             board_name, metadata = parse_board_metadata(kanban_file)
-            
+
             board = Board(
                 id=metadata.get("id", kanban_file.parent.name),
                 name=board_name,
@@ -113,16 +116,17 @@ class MarkdownStorageImpl(BoardRepository, StorageRepository):
         board = self.load_board_by_id(board_id)
         if not board:
             return False
-        
+
         try:
             board_dir = get_board_directory_path(self.boards_dir, board.name)
             if board_dir.exists():
                 import shutil
+
                 shutil.rmtree(board_dir)
                 return True
         except Exception:
             return False
-        
+
         return False
 
     def list_board_names(self) -> List[str]:
@@ -140,14 +144,16 @@ class MarkdownStorageImpl(BoardRepository, StorageRepository):
         return board
 
     def delete_item_from_column(self, board: Board, item: Item, column: Column) -> bool:
-        return self.persistence.delete_item_from_column(board.name, column.name, item.id)
+        return self.persistence.delete_item_from_column(
+            board.name, column.name, item.id
+        )
 
     def move_item_between_columns(
         self, board: Board, item: Item, old_column: Column, new_column: Column
     ) -> bool:
         item_data = item.to_dict()
         item_data["column_id"] = new_column.id
-        
+
         return self.persistence.move_item_between_columns(
             board.name, old_column.name, new_column.name, item_data
         )
@@ -157,55 +163,69 @@ class MarkdownStorageImpl(BoardRepository, StorageRepository):
 
     def _load_columns_for_board(self, board: Board, board_dir: Path) -> None:
         columns_data = []
-        
+
         for folder_path in board_dir.iterdir():
             if folder_path.is_dir() and folder_path.name != "items":
-                column_name = folder_path.name.replace("-", " ").replace("_", " ").title()
-                column_id = generate_id_from_name(column_name)
+                # Use folder name as column ID directly
+                column_id = folder_path.name
+                # Generate display name from folder name
+                column_name = (
+                    folder_path.name.replace("-", " ").replace("_", " ").title()
+                )
                 position = None
-                
+
+                # Try to get position and display name from column metadata (optional)
                 column_md_path = folder_path / COLUMN_METADATA_FILENAME
                 column_metadata = parse_column_metadata(column_md_path)
                 if column_metadata:
-                    column_id = column_metadata.get("id", column_id)
+                    # Override column name if specified in metadata
+                    column_name = column_metadata.get("name", column_name)
                     position = column_metadata.get("position")
-                
-                columns_data.append({
-                    'id': column_id,
-                    'name': column_name,
-                    'position': position,
-                    'folder_path': folder_path
-                })
-        
-        columns_data.sort(key=lambda col: (
-            1 if col['position'] is None else 0, 
-            col['position'] if col['position'] is not None else 0, 
-            col['name']
-        ))
-        
-        used_positions = {col['position'] for col in columns_data if col['position'] is not None}
+
+                columns_data.append(
+                    {
+                        "id": column_id,
+                        "name": column_name,
+                        "position": position,
+                        "folder_path": folder_path,
+                    }
+                )
+
+        columns_data.sort(
+            key=lambda col: (
+                1 if col["position"] is None else 0,
+                col["position"] if col["position"] is not None else 0,
+                col["name"],
+            )
+        )
+
+        used_positions = {
+            col["position"] for col in columns_data if col["position"] is not None
+        }
         next_position = 0
-        
+
         for col_data in columns_data:
-            if col_data['position'] is None:
+            if col_data["position"] is None:
                 while next_position in used_positions:
                     next_position += 1
                 position = next_position
                 used_positions.add(next_position)
                 next_position += 1
             else:
-                position = col_data['position']
-            
+                position = col_data["position"]
+
             column = Column(
-                id=col_data['id'],
-                name=col_data['name'],
+                id=col_data["id"],
+                name=col_data["name"],
                 position=position,
-                file_path=str(col_data['folder_path'])
+                file_path=str(col_data["folder_path"]),
             )
             board.columns.append(column)
-            self._load_items_for_column(board, column, col_data['folder_path'])
+            self._load_items_for_column(board, column, col_data["folder_path"])
 
-    def _load_items_for_column(self, board: Board, column: Column, column_dir: Path) -> None:
+    def _load_items_for_column(
+        self, board: Board, column: Column, column_dir: Path
+    ) -> None:
         md_files = find_files_by_pattern(column_dir, "*.md")
         for item_file in md_files:
             if item_file.name != COLUMN_METADATA_FILENAME:
@@ -216,21 +236,33 @@ class MarkdownStorageImpl(BoardRepository, StorageRepository):
     def _load_item_from_file(self, item_file: Path, column_id: str) -> Optional[Item]:
         try:
             title, content, metadata = parse_item_metadata(item_file)
-            
-            item_metadata_column_id = metadata.get("column_id")
-            if item_metadata_column_id and item_metadata_column_id != column_id:
-                return None
 
-            return Item(
-                id=metadata.get("id", item_file.stem),
-                column_id=item_metadata_column_id or column_id,
-                title=title,
-                description=content,
-                parent_id=metadata.get("parent_id"),
-                created_at=metadata.get("created_at", now()),
-                updated_at=metadata.get("updated_at", now()),
-                file_path=str(item_file),
-            )
+            # Column ID comes from the folder structure, not metadata
+            # Create Item with optional git metadata
+            item_data = {
+                "id": metadata.get("id", item_file.stem),
+                "column_id": column_id,  # Always use the folder-based column_id
+                "title": title,
+                "description": content,
+                "parent_id": metadata.get("parent_id"),
+                "created_at": metadata.get("created_at", now()),
+                "updated_at": metadata.get("updated_at", now()),
+                "file_path": str(item_file),
+            }
+
+            # Add git-specific fields if present
+            if metadata.get("is_git_managed"):
+                from domain.entities.item import GitMetadata
+
+                item_data.update({
+                    "is_git_managed": metadata.get("is_git_managed", False),
+                    "auto_sync_enabled": metadata.get("auto_sync_enabled", True),
+                })
+
+                if metadata.get("git_metadata"):
+                    item_data["git_metadata"] = GitMetadata(**metadata["git_metadata"])
+
+            return Item(**item_data)
         except Exception:
             return None
 
@@ -248,11 +280,11 @@ class MarkdownStorageImpl(BoardRepository, StorageRepository):
 
     def _save_column_with_items(self, board: Board, column: Column) -> None:
         current_item_ids = {item.id for item in column.items}
-        
+
         for item in column.items:
             item_data = item.to_dict()
             self.persistence.save_item_to_column(board.name, column.name, item_data)
-        
+
         self.persistence.save_column_metadata_if_needed(board.name, column.to_dict())
         self.persistence.cleanup_column(board.name, column.name, current_item_ids)
 
@@ -268,6 +300,8 @@ class MarkdownStorageImpl(BoardRepository, StorageRepository):
         """Find an item file by its ID in the given directory"""
         return find_item_file_by_id(items_dir, item_id)
 
-    def load_item_from_title_file(self, item_file: Path, column_id: str) -> Optional[Item]:
+    def load_item_from_title_file(
+        self, item_file: Path, column_id: str
+    ) -> Optional[Item]:
         """Load an item from a file path"""
         return self._load_item_from_file(item_file, column_id)

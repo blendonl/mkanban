@@ -44,14 +44,16 @@ def save_board_metadata(kanban_file: Path, board_name: str, metadata: Metadata) 
         content_lines = [f"# {board_name}", ""]
         yaml_str = yaml.dump(metadata, default_flow_style=False, sort_keys=False)
         full_content = f"---\n{yaml_str}---\n\n{'\n'.join(content_lines)}"
-        
+
         with open(kanban_file, "w", encoding="utf-8") as f:
             f.write(full_content)
     except Exception as e:
         raise ParseError(f"Failed to save board metadata to {kanban_file}: {e}")
 
 
-def save_item_with_metadata(item_file: Path, title: str, content: str, metadata: Metadata) -> None:
+def save_item_with_metadata(
+    item_file: Path, title: str, content: str, metadata: Metadata
+) -> None:
     try:
         updated_content = ensure_title_header(content, title)
         write_frontmatter_file(item_file, updated_content, metadata)
@@ -59,7 +61,9 @@ def save_item_with_metadata(item_file: Path, title: str, content: str, metadata:
         raise ParseError(f"Failed to save item to {item_file}: {e}")
 
 
-def save_column_metadata(column_file: Path, column_name: str, metadata: Metadata) -> None:
+def save_column_metadata(
+    column_file: Path, column_name: str, metadata: Metadata
+) -> None:
     try:
         content = f"# {column_name}\n\nColumn metadata and configuration."
         write_frontmatter_file(column_file, content, metadata)

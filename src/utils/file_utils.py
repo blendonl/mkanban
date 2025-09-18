@@ -64,25 +64,25 @@ def get_unique_filename(base_path: Path, item_id: str, max_retries: int = 100) -
     base_name = base_path.stem
     suffix = base_path.suffix
     directory = base_path.parent
-    
+
     if not (directory / base_path.name).exists():
         return base_name
-    
+
     existing_item_id = _get_item_id_from_file(directory / base_path.name)
     if existing_item_id == item_id:
         return base_name
-    
+
     for counter in range(1, max_retries + 1):
         test_name = f"{base_name}_{counter}"
         test_path = directory / f"{test_name}{suffix}"
-        
+
         if not test_path.exists():
             return test_name
-        
+
         existing_item_id = _get_item_id_from_file(test_path)
         if existing_item_id == item_id:
             return test_name
-    
+
     return f"{base_name}_{item_id[:8]}"
 
 

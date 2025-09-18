@@ -12,5 +12,7 @@ def open_editor_for_app(file_path: str, app_instance) -> None:
         app_instance.notify(f"Error opening {editor}", severity="error")
         raise
     except FileNotFoundError:
-        app_instance.notify(f"{editor} not found. Please install {editor}", severity="error")
+        app_instance.notify(
+            f"{editor} not found. Please install {editor}", severity="error"
+        )
         raise

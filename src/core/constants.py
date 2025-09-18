@@ -14,7 +14,7 @@ DEFAULT_BACKUP_COUNT = 5
 
 VIM_KEYBINDINGS = {
     "focus_next": "j",
-    "focus_previous": "k", 
+    "focus_previous": "k",
     "focus_left": "h",
     "focus_right": "l",
     "focus_first": "gg",

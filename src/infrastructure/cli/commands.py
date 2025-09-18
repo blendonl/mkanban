@@ -48,7 +48,7 @@ from core.exceptions import MKanbanError
 @click.option(
     "--daemon",
     type=click.Choice(["start", "stop", "status", "restart"]),
-    help="Daemon management commands"
+    help="Daemon management commands",
 )
 def main_command(
     data_dir: Path,
@@ -64,44 +64,57 @@ def main_command(
         # Handle daemon commands first
         if daemon:
             from infrastructure.cli.daemon_manager import DaemonManager
+
             daemon_manager = DaemonManager()
             daemon_manager.handle_daemon_command(daemon)
             return
 
         from infrastructure.cli.task_creator import TaskCreator
         from config.settings import Settings
-        
-        settings = Settings(data_dir=str(data_dir))
-        task_creator = TaskCreator(settings)
-        
+
+        settings = Settings.load()
+
+        # Use session-based data directory if default is used
+        if data_dir == Path("./data"):
+            actual_data_dir = settings.get_session_based_data_dir()
+        else:
+            # Use provided data_dir
+            settings.data_dir = str(data_dir)
+            actual_data_dir = settings.get_data_dir()
+
+        task_creator = TaskCreator(settings, actual_data_dir)
+
         if show_current_task:
             if not board:
                 click.echo("Error: --board is required when using --show-current-task")
                 return
-            
+
             task_creator.show_current_task(board, column)
             return
-        
+
         if new_item:
             if not board:
                 click.echo("Error: --board is required when using --new-item")
                 return
-            
+
             task_creator.create_item_with_editor(board, column)
             return
-        
+
         if new_task_title:
             if not board:
                 click.echo("Error: --board is required when creating a new task")
                 return
-            
-            task_creator.create_task_via_cli(board, new_task_title, new_task_description, column)
+
+            task_creator.create_task_via_cli(
+                board, new_task_title, new_task_description, column
+            )
             return
-        
+
         from app import MKanbanApp
+
         app = MKanbanApp(data_dir=data_dir, initial_board=board)
         app.run()
-        
+
     except MKanbanError as e:
         click.echo(f"Error: {e}")
     except Exception as e:

@@ -12,7 +12,7 @@ class ColumnSettingsDialog(ModalScreen):
         self,
         column: Column,
         on_save: Callable[[Optional[int]], None],
-        on_cancel: Optional[Callable[[], None]] = None
+        on_cancel: Optional[Callable[[], None]] = None,
     ):
         super().__init__()
         self.column = column
@@ -22,19 +22,24 @@ class ColumnSettingsDialog(ModalScreen):
     def compose(self) -> ComposeResult:
         with Vertical(classes="dialog column-settings-dialog"):
             yield Label(f"Column Settings: {self.column.name}", classes="dialog-title")
-            
+
             with Vertical(classes="form-container"):
                 yield Label("Item Limit:", classes="field-label")
-                yield Static("Set the maximum number of items for this column (leave empty for unlimited)", classes="help-text")
-                
-                current_limit = str(self.column.limit) if self.column.limit is not None else ""
+                yield Static(
+                    "Set the maximum number of items for this column (leave empty for unlimited)",
+                    classes="help-text",
+                )
+
+                current_limit = (
+                    str(self.column.limit) if self.column.limit is not None else ""
+                )
                 yield Input(
                     value=current_limit,
                     placeholder="Enter number or leave empty for unlimited",
                     validators=[Integer(minimum=1)],
-                    id="limit-input"
+                    id="limit-input",
                 )
-                
+
             with Horizontal(classes="button-container"):
                 yield Button("Save", variant="primary", id="save-btn")
                 yield Button("Cancel", id="cancel-btn")
@@ -42,7 +47,7 @@ class ColumnSettingsDialog(ModalScreen):
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "save-btn":
             limit_input = self.query_one("#limit-input", Input)
-            
+
             if limit_input.value.strip():
                 try:
                     limit_value = int(limit_input.value.strip())
@@ -55,7 +60,7 @@ class ColumnSettingsDialog(ModalScreen):
                     return
             else:
                 self.on_save(None)  # No limit
-                
+
             self.dismiss()
         elif event.button.id == "cancel-btn":
             if self.on_cancel:

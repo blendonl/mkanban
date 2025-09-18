@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 from typing import Dict, Optional
 from dataclasses import dataclass, asdict
@@ -8,9 +9,10 @@ from core.constants import (
     DEFAULT_COLUMN_WIDTH,
     DEFAULT_AUTO_SAVE_INTERVAL,
     DEFAULT_BACKUP_COUNT,
-    VIM_KEYBINDINGS
+    VIM_KEYBINDINGS,
 )
 from core.types import ThemeType
+from infrastructure.tmux.session_manager import TmuxSessionManager
 
 
 @dataclass
@@ -19,12 +21,12 @@ class Settings:
     auto_save: bool = True
     auto_save_interval: int = DEFAULT_AUTO_SAVE_INTERVAL
     backup_count: int = DEFAULT_BACKUP_COUNT
-    
+
     theme: str = ThemeType.DARK.value
     show_parent_colors: bool = True
     default_parent_view: bool = False
     column_width: int = DEFAULT_COLUMN_WIDTH
-    
+
     shortcuts: Dict[str, str] = None
 
     def __post_init__(self):
@@ -59,3 +61,27 @@ class Settings:
 
     def get_data_dir(self) -> Path:
         return Path(self.data_dir).expanduser().resolve()
+
+    def get_session_based_data_dir(self) -> Path:
+        """Get data directory based on tmux session, fall back to data_dir"""
+        tmux_manager = TmuxSessionManager()
+
+        try:
+            current_session = tmux_manager.get_current_session()
+            if current_session:
+                # Get base path from MKANBAN_PATH or default to ~/.mkanban
+                mkanban_path = os.environ.get("MKANBAN_PATH")
+                if mkanban_path:
+                    # Use MKANBAN_PATH directly with session name
+                    session_path = Path(mkanban_path).expanduser().resolve() / current_session.name
+                else:
+                    # Use ~/.mkanban/boards/{session_name} for default case
+                    session_path = Path.home() / ".mkanban" / "boards" / current_session.name
+
+                session_path.mkdir(parents=True, exist_ok=True)
+                return session_path
+        except Exception:
+            # If tmux detection fails, fall back to configured data_dir
+            pass
+
+        return self.get_data_dir()

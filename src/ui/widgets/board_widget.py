@@ -129,7 +129,9 @@ class BoardWidget(Widget):
             column_widget = ColumnWidget(
                 column,
                 items,
-                ColumnController(self.board, column, self.app._board_service, self.app._item_service),
+                ColumnController(
+                    self.board, column, self.app._board_service, self.app._item_service
+                ),
             )
             columns_container.mount(column_widget)
 
@@ -182,8 +184,8 @@ class BoardWidget(Widget):
             if first_column:
                 columns = list(self.query(ColumnWidget))
                 target_column = next(
-                    (col for col in columns if col.column.id == first_column.id), 
-                    columns[0] if columns else None
+                    (col for col in columns if col.column.id == first_column.id),
+                    columns[0] if columns else None,
                 )
 
         if target_column:
@@ -204,7 +206,9 @@ class BoardWidget(Widget):
 
         column_widget = self._find_column_for_item(selected)
         column = column_widget.column if column_widget else None
-        column_controller = ColumnController(self.board, column, self.app._board_service, self.app._item_service)
+        column_controller = ColumnController(
+            self.board, column, self.app._board_service, self.app._item_service
+        )
         if column_controller.delete_item(selected):
             self.refresh_board()
 
@@ -225,8 +229,8 @@ class BoardWidget(Widget):
             if first_column:
                 columns = list(self.query(ColumnWidget))
                 target_column = next(
-                    (col for col in columns if col.column.id == first_column.id), 
-                    columns[0] if columns else None
+                    (col for col in columns if col.column.id == first_column.id),
+                    columns[0] if columns else None,
                 )
 
         if not target_column:
@@ -352,7 +356,10 @@ updated_at: {item.updated_at}
 
                 column_widget = self._find_column_for_item(selected)
                 column_controller = ColumnController(
-                    self.board, column_widget.column, self.app._board_service, self.app._item_service
+                    self.board,
+                    column_widget.column,
+                    self.app._board_service,
+                    self.app._item_service,
                 )
 
                 try:
@@ -375,7 +382,10 @@ updated_at: {item.updated_at}
 
                 column_widget = self._find_column_for_item(selected)
                 column_controller = ColumnController(
-                    self.board, column_widget.column, self.app._board_service, self.app._item_service
+                    self.board,
+                    column_widget.column,
+                    self.app._board_service,
+                    self.app._item_service,
                 )
 
                 try:

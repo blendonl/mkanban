@@ -8,7 +8,9 @@ from services.validation_service import ValidationService
 
 
 class BoardService:
-    def __init__(self, board_repository: BoardRepository, validation_service: ValidationService):
+    def __init__(
+        self, board_repository: BoardRepository, validation_service: ValidationService
+    ):
         self._repository = board_repository
         self._validator = validation_service
 
@@ -29,11 +31,11 @@ class BoardService:
 
     def create_board(self, name: str, description: str = "") -> Board:
         self._validator.validate_board_name(name)
-        
+
         existing_board = self._repository.load_board_by_name(name)
         if existing_board:
             raise ValidationError(f"Board with name '{name}' already exists")
-        
+
         board = Board(name=name, description=description)
         self._repository.save_board(board)
         return board
@@ -45,23 +47,25 @@ class BoardService:
     def delete_board(self, board_id: BoardId) -> bool:
         return self._repository.delete_board(board_id)
 
-    def add_column_to_board(self, board: Board, column_name: str, position: Optional[int] = None) -> Column:
+    def add_column_to_board(
+        self, board: Board, column_name: str, position: Optional[int] = None
+    ) -> Column:
         self._validator.validate_column_name(column_name)
-        
+
         for existing_column in board.columns:
             if existing_column.name.lower() == column_name.lower():
                 raise ValidationError(f"Column '{column_name}' already exists in board")
-        
+
         return board.add_column(column_name, position)
 
     def remove_column_from_board(self, board: Board, column_id: ColumnId) -> bool:
         column = board.get_column_by_id(column_id)
         if not column:
             return False
-        
+
         if len(column.items) > 0:
             raise ValidationError("Cannot delete column that contains items")
-        
+
         return board.remove_column(column_id)
 
     def list_board_names(self) -> List[str]:

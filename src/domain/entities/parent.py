@@ -14,7 +14,7 @@ class Parent(BaseModel):
 
     def model_post_init(self, __context) -> None:
         if not self.id:
-            self.id = generate_id_from_name(self.name) or 'unnamed_parent'
+            self.id = generate_id_from_name(self.name) or "unnamed_parent"
 
     def update(self, **kwargs) -> None:
         for key, value in kwargs.items():

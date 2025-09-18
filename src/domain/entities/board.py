@@ -26,7 +26,7 @@ class Board(BaseModel):
             if not self.name or self.name == dir_name:
                 self.name = dir_name
         elif not self.id:
-            self.id = generate_id_from_name(self.name) or 'unnamed_board'
+            self.id = generate_id_from_name(self.name) or "unnamed_board"
 
     def update(self, **kwargs) -> None:
         for key, value in kwargs.items():

@@ -7,9 +7,14 @@ from ui.widgets.vim_widgets import VimTextArea
 
 
 class EditableItemWidget(Vertical):
-    def __init__(self, item: Optional[Item] = None, parent_name: Optional[str] = None,
-                 is_new: bool = False, on_save: Optional[callable] = None,
-                 on_cancel: Optional[callable] = None):
+    def __init__(
+        self,
+        item: Optional[Item] = None,
+        parent_name: Optional[str] = None,
+        is_new: bool = False,
+        on_save: Optional[callable] = None,
+        on_cancel: Optional[callable] = None,
+    ):
         self.item = item
         self.parent_name = parent_name
         self.is_new = is_new
@@ -39,10 +44,10 @@ class EditableItemWidget(Vertical):
         if not content:
             return
 
-        lines = content.split('\n')
+        lines = content.split("\n")
         title = "Untitled"
         for line in lines:
-            if line.strip().startswith('# '):
+            if line.strip().startswith("# "):
                 title = line.strip()[2:].strip()
                 break
 
