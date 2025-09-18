@@ -342,6 +342,7 @@ class TaskSynchronizer:
         try:
             board = self.board_service.get_board_by_name(board_name)
             self.logger.debug(f"Found existing git board: {board_name}")
+            self.logger.debug(f"Existing columns: {[(col.id, col.name, col.position) for col in board.columns]}")
 
             # Ensure the board has all required columns
             required_columns = [
@@ -356,8 +357,8 @@ class TaskSynchronizer:
                 from utils.string_utils import get_safe_filename
                 column_id = get_safe_filename(column_name)
 
-                # Check if a column with this ID already exists
-                if not any(col.id == column_id for col in board.columns):
+                # Check if a column with this ID or name already exists
+                if not any(col.id == column_id or col.name.lower() == column_name.lower() for col in board.columns):
                     # Check if intended position is already taken
                     existing_positions = {col.position for col in board.columns if col.position is not None}
                     if intended_position in existing_positions:
