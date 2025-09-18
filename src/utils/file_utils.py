@@ -30,7 +30,7 @@ def write_frontmatter_file(file_path: Path, content: str, metadata: Metadata) ->
 
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(frontmatter.dumps(post))
-        logger.debug(f"Successfully wrote frontmatter file {file_path} {post} {content} {**metadata}")
+        logger.debug(f"Successfully wrote frontmatter file {file_path} {post} {content} {metadata}")
     except Exception as e:
         logger.error(f"Exception in write_frontmatter_file: {e}", exc_info=True)
         raise FileOperationError(f"Failed to write file {file_path}: {e}")
