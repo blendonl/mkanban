@@ -6,7 +6,7 @@ updates, and status changes based on git events.
 
 import logging
 from pathlib import Path
-from typing import List, Optional, Dict, Set
+from typing import List, Optional, Dict
 from fnmatch import fnmatch
 
 from config.settings import Settings
@@ -16,7 +16,7 @@ from domain.entities.item import Item
 from services.board_service import BoardService
 from services.validation_service import ValidationService
 from infrastructure.storage.markdown_storage_impl import MarkdownStorageImpl
-from infrastructure.git.repository import GitOperations, GitBranch
+from infrastructure.git.repository import GitOperations
 from daemon.git_monitor import GitEvent, GitEventType
 from daemon.service_manager import DaemonConfig
 from utils.string_utils import get_safe_filename
@@ -184,7 +184,6 @@ class TaskSynchronizer:
             # Add task to board
             self._add_git_task_to_board(board, git_task)
 
-
             # Track the task
             if repo_path not in self.git_tasks:
                 self.git_tasks[repo_path] = {}
@@ -221,6 +220,10 @@ class TaskSynchronizer:
                     # Save changes
                     self._save_git_task_changes(board, git_task)
 
+                    # Update tracking
+                    if repo_path in self.git_tasks and branch_name in self.git_tasks[repo_path]:
+                        self.git_tasks[repo_path][branch_name] = git_task
+
             self.logger.info(
                 f"Marked task as completed for deleted branch: {branch_name}"
             )
@@ -234,44 +237,62 @@ class TaskSynchronizer:
         self, repo_path: str, current_branch: str, previous_branch: str
     ) -> None:
         """Handle switching between branches"""
+        self.logger.info(f"Processing branch switch in {Path(repo_path).name}: {previous_branch} -> {current_branch}")
         try:
             # Update previous branch task (if exists)
             if previous_branch:
                 prev_task = self._get_git_task(repo_path, previous_branch)
-                if prev_task and prev_task.auto_sync_enabled:
-                    prev_task.set_current_branch(False)
+                if prev_task:
+                    self.logger.debug(f"Found previous branch task: '{prev_task.title}' in column '{prev_task.column_id}'")
+                    if prev_task.auto_sync_enabled:
+                        prev_task.set_current_branch(False)
 
-                    # Move to done if it was in progress
-                    in_progress_column_id = get_safe_filename(self.daemon_config.in_progress_column)
-                    if prev_task.column_id == in_progress_column_id:
-                        board = await self._get_git_board()
-                        if board:
-                            done_column = self._find_or_create_column(
-                                board, self.daemon_config.done_column
-                            )
-                            prev_task.move_to_column(done_column.id)
-                            self._save_git_task_changes(board, prev_task)
+                        # Move to done if it was in progress
+                        in_progress_column_id = get_safe_filename(self.daemon_config.in_progress_column)
+                        if prev_task.column_id == in_progress_column_id:
+                            board = await self._get_git_board()
+                            if board:
+                                done_column = self._find_or_create_column(
+                                    board, self.daemon_config.done_column
+                                )
+                                prev_task.move_to_column(done_column.id)
+                                self._save_git_task_changes(board, prev_task)
+
+                                # Update tracking
+                                if repo_path in self.git_tasks and previous_branch in self.git_tasks[repo_path]:
+                                    self.git_tasks[repo_path][previous_branch] = prev_task
+                else:
+                    self.logger.debug(f"No task found for previous branch: {previous_branch}")
 
             # Update current branch task (if exists)
             if current_branch and self._should_track_branch(current_branch):
                 current_task = self._get_git_task(repo_path, current_branch)
-                if current_task and current_task.auto_sync_enabled:
-                    # Mark as current branch BEFORE checking auto-activation
-                    current_task.set_current_branch(True)
+                if current_task:
+                    self.logger.debug(f"Found current branch task: '{current_task.title}' in column '{current_task.column_id}'")
+                    if current_task.auto_sync_enabled:
+                        # Mark as current branch BEFORE checking auto-activation
+                        current_task.set_current_branch(True)
 
-                    # Move to in-progress (check again now that is_current_branch is True)
-                    if current_task.should_auto_activate():
-                        board = await self._get_git_board()
-                        if board:
-                            progress_column = self._find_or_create_column(
-                                board, self.daemon_config.in_progress_column
-                            )
-                            current_task.move_to_column(progress_column.id)
-                            self._save_git_task_changes(board, current_task)
+                        # Move to in-progress (check again now that is_current_branch is True)
+                        if current_task.should_auto_activate():
+                            board = await self._get_git_board()
+                            if board:
+                                progress_column = self._find_or_create_column(
+                                    board, self.daemon_config.in_progress_column
+                                )
+                                current_task.move_to_column(progress_column.id)
+                                self._save_git_task_changes(board, current_task)
+
+                                # Update tracking
+                                if repo_path in self.git_tasks and current_branch in self.git_tasks[repo_path]:
+                                    self.git_tasks[repo_path][current_branch] = current_task
 
                 # If no task exists for current branch, create one
                 elif not current_task:
+                    self.logger.debug(f"No task found for current branch: {current_branch}, creating new task")
                     await self._handle_branch_created(repo_path, current_branch)
+                else:
+                    self.logger.debug(f"Current branch task '{current_task.title}' auto-sync disabled, no action taken")
 
             self.logger.info(f"Switched from {previous_branch} to {current_branch}")
 
@@ -474,12 +495,57 @@ class TaskSynchronizer:
 
     def _save_git_task_changes(self, board: Board, git_task: Item) -> None:
         """Save changes to a git task"""
-        # Find and update the task in the board
+        self.logger.debug(f"Saving changes for git task '{git_task.title}' (ID: {git_task.id})")
+        self.logger.debug(f"Task should be in column: {git_task.column_id}")
+
+        # First, remove the task from its old location (if it exists)
+        task_found = False
+        old_column_id = None
         for column in board.columns:
             for i, item in enumerate(column.items):
                 if item.id == git_task.id:
-                    column.items[i] = git_task
+                    self.logger.debug(f"Found task in column '{column.id}' (name: {column.name})")
+                    old_column_id = column.id
+                    # Remove from old location
+                    column.items.pop(i)
+                    task_found = True
                     break
+            if task_found:
+                break
 
-        # Save board
-        self.board_service.save_board(board)
+        # Then, add the task to its correct column based on git_task.column_id
+        target_column = None
+        for column in board.columns:
+            if column.id == git_task.column_id:
+                target_column = column
+                break
+
+        if not target_column:
+            # If target column doesn't exist, create it
+            self.logger.warning(f"Target column '{git_task.column_id}' not found, creating it")
+            column_name = git_task.column_id.replace("-", " ").title()
+            target_column = self._find_or_create_column(board, column_name)
+            git_task.column_id = target_column.id
+
+        # Add task to target column
+        target_column.items.append(git_task)
+        self.logger.debug(f"Added task to column '{target_column.id}' (name: {target_column.name})")
+
+        if old_column_id and old_column_id != target_column.id:
+            self.logger.info(f"Moved task '{git_task.title}' from column '{old_column_id}' to '{target_column.id}'")
+        elif not task_found:
+            self.logger.info(f"Added new task '{git_task.title}' to column '{target_column.id}'")
+
+        # Save board and validate
+        try:
+            self.board_service.save_board(board)
+            self.logger.debug(f"Successfully saved board changes for task '{git_task.title}'")
+
+            # Validate the save by checking the current board state
+            # Note: We can't reload from disk here since this method isn't async
+            # The validation will be done in the calling async method if needed
+            self.logger.debug(f"Board save completed for task '{git_task.title}'")
+
+        except Exception as e:
+            self.logger.error(f"Failed to save board changes for task '{git_task.title}': {e}", exc_info=True)
+            raise
