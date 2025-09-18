@@ -229,14 +229,14 @@ class TaskSynchronizer:
                 if prev_task and prev_task.auto_sync_enabled:
                     prev_task.set_current_branch(False)
 
-                    # Move to pending/backlog if it was in progress
+                    # Move to done if it was in progress
                     if prev_task.column_id == self.daemon_config.in_progress_column:
                         board = await self._get_git_board()
                         if board:
-                            todo_column = self._find_or_create_column(
-                                board, self.daemon_config.default_column
+                            done_column = self._find_or_create_column(
+                                board, self.daemon_config.done_column
                             )
-                            prev_task.move_to_column(todo_column.id)
+                            prev_task.move_to_column(done_column.id)
                             self._save_git_task_changes(board, prev_task)
 
             # Update current branch task (if exists)
