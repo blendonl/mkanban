@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Optional, Dict, Any
 from pydantic import BaseModel, Field
 from core.types import ItemId, ColumnId, ParentId, Timestamp, FilePath
-from utils.string_utils import generate_id_from_name
+from utils.string_utils import generate_id_from_name, get_safe_filename
 from utils.date_utils import now
 
 
@@ -146,22 +146,30 @@ class Item(BaseModel):
 
     def should_auto_complete(self) -> bool:
         """Check if task should be auto-completed based on branch state"""
+        done_column_id = get_safe_filename("done")
+
         return (
             self.is_git_managed
             and self.auto_sync_enabled
             and not self.is_branch_active()
-            and self.column_id != "done"
+            and self.column_id != done_column_id
         )
 
     def should_auto_activate(self) -> bool:
         """Check if task should be moved to in-progress based on current branch"""
+        # Convert common column names to their corresponding IDs
+        excluded_column_ids = [
+            get_safe_filename("in-progress"),
+            get_safe_filename("done")
+        ]
+
         return (
             self.is_git_managed
             and self.auto_sync_enabled
             and self.git_metadata
             and self.git_metadata.is_current_branch
             and self.is_branch_active()
-            and self.column_id not in ["in-progress", "done"]
+            and self.column_id not in excluded_column_ids
         )
 
     @classmethod

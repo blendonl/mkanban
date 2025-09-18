@@ -19,6 +19,7 @@ from infrastructure.storage.markdown_storage_impl import MarkdownStorageImpl
 from infrastructure.git.repository import GitOperations, GitBranch
 from daemon.git_monitor import GitEvent, GitEventType
 from daemon.service_manager import DaemonConfig
+from utils.string_utils import get_safe_filename
 
 
 class TaskSynchronizer:
@@ -240,7 +241,8 @@ class TaskSynchronizer:
                     prev_task.set_current_branch(False)
 
                     # Move to done if it was in progress
-                    if prev_task.column_id == self.daemon_config.in_progress_column:
+                    in_progress_column_id = get_safe_filename(self.daemon_config.in_progress_column)
+                    if prev_task.column_id == in_progress_column_id:
                         board = await self._get_git_board()
                         if board:
                             done_column = self._find_or_create_column(
@@ -354,7 +356,6 @@ class TaskSynchronizer:
             board_modified = False
             for column_name, intended_position in required_columns:
                 # Get safe column ID for comparison
-                from utils.string_utils import get_safe_filename
                 column_id = get_safe_filename(column_name)
 
                 # Check if a column with this ID or name already exists

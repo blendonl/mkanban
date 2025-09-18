@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 from domain.entities.item import Item
 from core.types import ItemId, ColumnId, ParentId, Timestamp, FilePath
 from utils.date_utils import now
+from utils.string_utils import get_safe_filename
 
 
 class GitMetadata(BaseModel):
@@ -112,20 +113,27 @@ class GitTask(Item):
     def should_auto_complete(self) -> bool:
         """Check if task should be auto-completed based on branch state"""
         # Task should be completed if branch is deleted and auto-sync is enabled
+        done_column_id = get_safe_filename("done")
+
         return (
             self.auto_sync_enabled
             and not self.is_branch_active()
-            and self.column_id != "done"  # Avoid moving already completed tasks
+            and self.column_id != done_column_id  # Avoid moving already completed tasks
         )
 
     def should_auto_activate(self) -> bool:
         """Check if task should be moved to in-progress based on current branch"""
         # Task should be in-progress if it's the current branch and auto-sync is enabled
+        excluded_column_ids = [
+            get_safe_filename("in-progress"),
+            get_safe_filename("done")
+        ]
+
         return (
             self.auto_sync_enabled
             and self.git_metadata.is_current_branch
             and self.is_branch_active()
-            and self.column_id not in ["in-progress", "done"]
+            and self.column_id not in excluded_column_ids
         )
 
     def to_dict(self) -> Dict[str, Any]:
