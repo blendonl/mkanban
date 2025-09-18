@@ -184,6 +184,7 @@ class TaskSynchronizer:
             # Add task to board
             self._add_git_task_to_board(board, git_task)
 
+
             # Track the task
             if repo_path not in self.git_tasks:
                 self.git_tasks[repo_path] = {}
