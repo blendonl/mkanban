@@ -284,7 +284,7 @@ class MarkdownStorageImpl(BoardRepository, StorageRepository):
         # Add debug logging
         import logging
         logger = logging.getLogger("mkanban-daemon")
-        logger.debug(f"Saving column '{column.name}' (ID: {column.id}) with {len(column.items)} items")
+        logger.debug(f"Saving column {board.name} '{column.name}' (ID: {column.id}) with {len(column.items)} items")
         for item in column.items:
             logger.debug(f"  Item: {item.title} (ID: {item.id})")
 

@@ -80,7 +80,7 @@ def main_command(
         else:
             # Use provided data_dir
             settings.data_dir = str(data_dir)
-            actual_data_dir = settings.get_data_dir()
+            actual_data_dir = settings.get_session_based_data_dir()
 
         task_creator = TaskCreator(settings, actual_data_dir)
 

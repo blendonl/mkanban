@@ -15,8 +15,8 @@ from pathlib import Path
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from daemon.service_manager import ServiceManager, DaemonConfig, run_daemon
-from config.settings import Settings
+from daemon.service_manager import ServiceManager, run_daemon
+from daemon.core.configuration_service import ConfigurationService, DaemonConfiguration
 from infrastructure.tmux.session_manager import (
     get_mkanban_data_path,
     ensure_mkanban_directory,
@@ -35,39 +35,42 @@ def setup_logging(log_level: str = "INFO") -> None:
     )
 
 
-def create_daemon_config(args) -> DaemonConfig:
-    """Create daemon configuration from command line arguments"""
+def create_configuration_service(args) -> ConfigurationService:
+    """Create configuration service from command line arguments"""
     from infrastructure.tmux.session_manager import TmuxSessionManager
 
-    # Determine board name - use session name if in tmux and tmux_session_only is True
+    # Determine board name and data path - use session name if in tmux and tmux_session_only is True
     board_name = args.board_name
+    data_path = Path(args.data_path) if args.data_path else None
+
     if args.tmux_session_only:
         tmux_manager = TmuxSessionManager()
         current_session = tmux_manager.get_current_session()
         if current_session:
             board_name = current_session.name
 
-    return DaemonConfig(
+            # Use global data path - session isolation happens via board name
+            if not args.data_path:
+                data_path = get_mkanban_data_path()
+
+    config = DaemonConfiguration(
         enabled=not args.disable,
         polling_interval=args.polling_interval,
         tmux_session_only=args.tmux_session_only,
+        session_name=board_name,
         default_board=board_name,
         default_column=args.default_column,
         in_progress_column=args.in_progress_column,
         done_column=args.done_column,
-        branch_patterns=(
-            args.branch_patterns.split(",") if args.branch_patterns else None
-        ),
-        excluded_branches=(
-            args.excluded_branches.split(",") if args.excluded_branches else None
-        ),
-        data_path=Path(args.data_path) if args.data_path else None,
+        data_path=data_path or get_mkanban_data_path(),
     )
 
+    if args.branch_patterns:
+        config.branch_patterns = args.branch_patterns.split(",")
+    if args.excluded_branches:
+        config.excluded_branches = args.excluded_branches.split(",")
 
-def create_settings(daemon_config: DaemonConfig) -> Settings:
-    """Create settings for the daemon"""
-    return Settings(data_dir=str(daemon_config.data_path))
+    return ConfigurationService(config)
 
 
 async def main():
@@ -154,18 +157,19 @@ async def main():
         ensure_mkanban_directory()
 
         # Create configuration
-        daemon_config = create_daemon_config(args)
-        settings = create_settings(daemon_config)
+        config_service = create_configuration_service(args)
+        config = config_service.config
 
         logger.info(f"Starting MKanban daemon...")
-        logger.info(f"Data directory: {daemon_config.data_path}")
-        logger.info(f"Board name: {daemon_config.default_board}")
-        logger.info(f"Tmux session only: {daemon_config.tmux_session_only}")
-        logger.info(f"Polling interval: {daemon_config.polling_interval}s")
+        logger.info(f"Data directory: {config.data_path}")
+        logger.info(f"Session name: {config.session_name}")
+        logger.info(f"Board name: {config.default_board}")
+        logger.info(f"Tmux session only: {config.tmux_session_only}")
+        logger.info(f"Polling interval: {config.polling_interval}s")
 
-        if daemon_config.enabled:
+        if config.enabled:
             # Run the daemon
-            await run_daemon(settings, daemon_config)
+            await run_daemon(config_service)
         else:
             logger.info("Daemon is disabled (--disable flag)")
 

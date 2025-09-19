@@ -12,15 +12,30 @@ from typing import Optional
 
 import click
 
-from infrastructure.tmux.session_manager import get_mkanban_data_path
+from infrastructure.tmux.session_manager import (
+    get_mkanban_data_path,
+    TmuxSessionManager,
+)
 
 
 class DaemonManager:
     """Manages the MKanban daemon through CLI commands"""
 
-    def __init__(self):
+    def __init__(self, session_name: Optional[str] = None):
         self.daemon_script = self._find_daemon_script()
+
+        # Use global data path - session isolation happens via board names
         self.data_path = get_mkanban_data_path()
+
+        # Store session name for potential future use
+        if session_name:
+            self.session_name = session_name
+        else:
+            # Auto-detect current tmux session
+            tmux_manager = TmuxSessionManager()
+            current_session = tmux_manager.get_current_session()
+            self.session_name = current_session.name if current_session else None
+
         self.pid_file = self.data_path / "daemon.pid"
 
     def _find_daemon_script(self) -> Optional[Path]:
@@ -78,15 +93,12 @@ class DaemonManager:
                 start_new_session=True,
             )
 
-            # Save PID
-            self.data_path.mkdir(parents=True, exist_ok=True)
-            self.pid_file.write_text(str(process.pid))
-
-            # Give it a moment to start
-            time.sleep(1)
+            # Give it a moment to start and create its own PID file
+            time.sleep(2)
 
             if self.is_daemon_running():
-                click.echo(f"Daemon started successfully (PID: {process.pid})")
+                pid = self.get_daemon_pid()
+                click.echo(f"Daemon started successfully (PID: {pid})")
                 click.echo(f"Data directory: {self.data_path}")
             else:
                 click.echo("Error: Daemon failed to start")

@@ -74,8 +74,6 @@ class BoardPersistence:
         item_metadata.setdefault("created_at", now())
         item_metadata.setdefault("updated_at", now())
 
-        logger.debug(f"Saving item file: {new_item_file}")
-        logger.debug(f"Item metadata: {item_metadata}")
         try:
             save_item_with_metadata(new_item_file, title, content, item_metadata)
             logger.debug(f"Successfully saved item file: {new_item_file}")

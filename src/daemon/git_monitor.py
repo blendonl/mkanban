@@ -110,20 +110,16 @@ class RepositoryState:
 class GitMonitor:
     """Monitors git repositories for changes"""
 
-    def __init__(self, polling_interval: int = 5, tmux_session_only: bool = True):
+    def __init__(self, session_context_manager, polling_interval: int = 5):
+        self.session_context_manager = session_context_manager
         self.polling_interval = polling_interval
-        self.tmux_session_only = tmux_session_only
         self.logger = logging.getLogger("mkanban-daemon")
         self.repository_states: Dict[Path, RepositoryState] = {}
         self.event_queue: asyncio.Queue = asyncio.Queue()
         self.running = False
         self._monitor_task: Optional[asyncio.Task] = None
 
-        # Import tmux manager
-        from infrastructure.tmux.session_manager import TmuxSessionManager
-
-        self.tmux_manager = TmuxSessionManager() if tmux_session_only else None
-        self.current_tmux_session: Optional[str] = None
+        # Track current monitored repository
         self.current_monitored_repo: Optional[Path] = None
 
     async def start(self) -> None:
@@ -223,28 +219,18 @@ class GitMonitor:
             self.logger.info(f"Removed repository from monitoring: {repo_path}")
 
     async def _initialize_repositories(self) -> None:
-        """Initialize monitoring for repositories"""
-        if self.tmux_session_only and self.tmux_manager:
-            # Initialize tracking for the active tmux session (from outside tmux)
-            active_session = self.tmux_manager.get_active_session()
-            if active_session:
-                self.current_tmux_session = active_session.name
+        """Initialize monitoring for repositories based on session context"""
+        session_context = self.session_context_manager.current_context
 
-                # Only monitor the active tmux session's repository
-                active_repo = self.tmux_manager.get_active_session_repository_external()
-                if active_repo:
-                    await self.add_repository(active_repo)
-                    self.current_monitored_repo = active_repo
-                    self.logger.info(
-                        f"Monitoring active tmux session '{active_session.name}' repository: {active_repo}"
-                    )
-                else:
-                    self.logger.info(
-                        f"No git repository found in active tmux session '{active_session.name}'"
-                    )
-            else:
-                self.logger.info("No active tmux session found")
+        if session_context and session_context.repository_path:
+            # Monitor the repository from current session context
+            await self.add_repository(session_context.repository_path)
+            self.current_monitored_repo = session_context.repository_path
+            self.logger.info(
+                f"Monitoring session '{session_context.session_name}' repository: {session_context.repository_path}"
+            )
         else:
+            self.logger.info("No repository found in current session context, using auto-discovery")
             # Fallback to auto-discovery
             await self._auto_discover_repositories()
 
@@ -265,60 +251,38 @@ class GitMonitor:
                 for repo_path in repos:
                     await self.add_repository(repo_path)
 
-    async def _check_tmux_session_change(self) -> None:
-        """Check if the active tmux session has changed and update monitoring accordingly"""
-        if not self.tmux_manager:
-            return
+    async def handle_session_change(self, old_context, new_context) -> None:
+        """Handle session context change"""
+        self.logger.info(
+            f"GitMonitor handling session change: "
+            f"'{old_context.session_name}' -> '{new_context.session_name}'"
+        )
 
         try:
-            active_session = self.tmux_manager.get_active_session()
-            if not active_session:
-                # No tmux session active, clear monitoring if we had one before
-                if self.current_tmux_session is not None:
-                    self.logger.info(
-                        "No active tmux session found, clearing repository monitoring"
-                    )
-                    if self.current_monitored_repo:
-                        await self.remove_repository(self.current_monitored_repo)
-                    self.current_tmux_session = None
-                    self.current_monitored_repo = None
-                return
+            # Remove old repository if we had one
+            if self.current_monitored_repo:
+                await self.remove_repository(self.current_monitored_repo)
+                self.current_monitored_repo = None
 
-            # Check if session has changed
-            if active_session.name != self.current_tmux_session:
-                # Session has changed, update monitoring
-                old_session = self.current_tmux_session
-                self.current_tmux_session = active_session.name
-
-                # Remove old repository if we had one
-                if self.current_monitored_repo:
-                    await self.remove_repository(self.current_monitored_repo)
-                    self.current_monitored_repo = None
-
-                # Get repository for new session
-                new_repo = self.tmux_manager.get_active_session_repository_external()
-                if new_repo:
-                    await self.add_repository(new_repo)
-                    self.current_monitored_repo = new_repo
-                    self.logger.info(
-                        f"Switched monitoring from session '{old_session}' to '{active_session.name}', repository: {new_repo}"
-                    )
-                else:
-                    self.logger.info(
-                        f"Switched to session '{active_session.name}' but no git repository found"
-                    )
+            # Add new repository if available
+            if new_context.repository_path:
+                await self.add_repository(new_context.repository_path)
+                self.current_monitored_repo = new_context.repository_path
+                self.logger.info(
+                    f"Switched monitoring to session '{new_context.session_name}', repository: {new_context.repository_path}"
+                )
+            else:
+                self.logger.info(
+                    f"Switched to session '{new_context.session_name}' but no git repository found"
+                )
 
         except Exception as e:
-            self.logger.error(f"Error checking tmux session change: {e}")
+            self.logger.error(f"Error handling session change: {e}")
 
     async def _monitor_loop(self) -> None:
         """Main monitoring loop"""
         while self.running:
             try:
-                # Check for tmux session changes if tmux_session_only is enabled
-                if self.tmux_session_only and self.tmux_manager:
-                    await self._check_tmux_session_change()
-
                 # Check all repositories for changes
                 for repo_path, repo_state in self.repository_states.items():
                     events = repo_state.update_state()

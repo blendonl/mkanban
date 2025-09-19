@@ -6,12 +6,15 @@ Provides communication between the daemon and CLI using Unix domain sockets.
 import asyncio
 import json
 import logging
-import os
 from pathlib import Path
 from typing import Dict, Any, Optional, Callable
 from dataclasses import dataclass, asdict
 
-from infrastructure.tmux.session_manager import get_mkanban_data_path
+from infrastructure.tmux.session_manager import (
+    get_mkanban_data_path,
+    TmuxSessionManager,
+)
+from utils.string_utils import get_safe_filename
 
 
 @dataclass
@@ -157,8 +160,31 @@ class IPCServer:
 class IPCClient:
     """IPC client for CLI commands"""
 
-    def __init__(self, socket_path: Optional[Path] = None):
-        self.socket_path = socket_path or (get_mkanban_data_path() / "daemon.sock")
+    def __init__(
+        self,
+        socket_path: Optional[Path] = None,
+        session_name: Optional[str] = None,
+    ):
+        if socket_path:
+            self.socket_path = socket_path
+        elif session_name:
+            # Use session-specific socket path
+            safe_session_name = get_safe_filename(session_name)
+            self.socket_path = (
+                get_mkanban_data_path() / safe_session_name / "daemon.sock"
+            )
+        else:
+            # Auto-detect current tmux session or use global path
+            tmux_manager = TmuxSessionManager()
+            current_session = tmux_manager.get_current_session()
+            if current_session:
+                safe_session_name = get_safe_filename(current_session.name)
+                self.socket_path = (
+                    get_mkanban_data_path() / safe_session_name / "daemon.sock"
+                )
+            else:
+                # Fallback to global socket for non-tmux usage
+                self.socket_path = get_mkanban_data_path() / "daemon.sock"
 
     async def send_command(
         self, command: str, data: Dict[str, Any] = None
@@ -202,13 +228,15 @@ def setup_ipc_handlers(server: IPCServer, service_manager) -> None:
 
     async def handle_status(data: Dict[str, Any]) -> Dict[str, Any]:
         """Handle status command"""
+        config = service_manager.config_service.config
         return {
             "running": service_manager.running,
             "services": list(service_manager.services.keys()),
             "config": {
-                "polling_interval": service_manager.daemon_config.polling_interval,
-                "tmux_session_only": service_manager.daemon_config.tmux_session_only,
-                "default_board": service_manager.daemon_config.default_board,
+                "polling_interval": config.polling_interval,
+                "tmux_session_only": config.tmux_session_only,
+                "session_name": config.session_name,
+                "default_board": config.default_board,
             },
         }
 
@@ -219,9 +247,9 @@ def setup_ipc_handlers(server: IPCServer, service_manager) -> None:
             git_monitor = service_manager.services["git_monitor"]
             events = await git_monitor.get_events()
 
-            if events and "task_synchronizer" in service_manager.services:
-                task_synchronizer = service_manager.services["task_synchronizer"]
-                await task_synchronizer.process_events(events)
+            if events and "sync_coordinator" in service_manager.services:
+                sync_coordinator = service_manager.services["sync_coordinator"]
+                await sync_coordinator.process_events(events)
 
                 return {"synced_events": len(events)}
 
@@ -229,23 +257,37 @@ def setup_ipc_handlers(server: IPCServer, service_manager) -> None:
 
     async def handle_current_branch(data: Dict[str, Any]) -> Dict[str, Any]:
         """Handle current branch info command"""
-        from infrastructure.tmux.session_manager import TmuxSessionManager
+        session_context = service_manager.session_manager.current_context
+        if session_context and session_context.repository_path:
+            from infrastructure.git.repository import GitOperations
 
-        tmux_manager = TmuxSessionManager()
+            git_ops = GitOperations(session_context.repository_path)
+            current_branch = git_ops.get_current_branch()
 
-        if tmux_manager.is_in_tmux_session():
-            repo = tmux_manager.get_active_session_repository()
-            if repo:
-                from infrastructure.git.repository import GitOperations
+            return {
+                "repository": str(session_context.repository_path),
+                "current_branch": current_branch,
+                "session": session_context.session_name
+            }
 
-                git_ops = GitOperations(repo)
-                current_branch = git_ops.get_current_branch()
+        return {"repository": None, "current_branch": None, "session": None}
 
-                return {"repository": str(repo), "current_branch": current_branch}
+    async def handle_force_sync(data: Dict[str, Any]) -> Dict[str, Any]:
+        """Handle force sync command for current repository"""
+        session_context = service_manager.session_manager.current_context
+        if (session_context and session_context.repository_path and
+            "sync_coordinator" in service_manager.services):
 
-        return {"repository": None, "current_branch": None}
+            sync_coordinator = service_manager.services["sync_coordinator"]
+            task_count = await sync_coordinator.force_sync_repository(
+                session_context.repository_path
+            )
+            return {"synced_tasks": task_count}
+
+        return {"synced_tasks": 0}
 
     # Register handlers
     server.register_handler("status", handle_status)
     server.register_handler("sync", handle_sync)
     server.register_handler("current_branch", handle_current_branch)
+    server.register_handler("force_sync", handle_force_sync)
