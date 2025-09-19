@@ -179,15 +179,25 @@ class ServiceManager:
 
     async def _run_service_loop(self) -> None:
         """Main service loop"""
+        loop_count = 0
         while self.running:
             try:
+                loop_count += 1
+                if loop_count % 12 == 1:  # Log every minute (5s * 12 = 60s)
+                    self.logger.debug(f"Service loop iteration {loop_count}")
+
                 # Check for git events
                 if "git_monitor" in self.services:
                     events = await self.services["git_monitor"].get_events()
 
+                    if events:
+                        self.logger.debug(f"Got {len(events)} git events: {[e.event_type.value for e in events]}")
+
                     # Process events
                     if events and "task_synchronizer" in self.services:
+                        self.logger.debug(f"Processing {len(events)} events with task synchronizer")
                         await self.services["task_synchronizer"].process_events(events)
+                        self.logger.debug(f"Finished processing {len(events)} events")
 
                 # Sleep for polling interval
                 await asyncio.sleep(self.daemon_config.polling_interval)

@@ -32,13 +32,13 @@ class TaskSynchronizer:
         # Create settings with daemon data path
         self.settings = Settings(data_dir=str(daemon_config.data_path))
 
-        # Initialize services
-        self._initialize_services()
-
-        # Track git tasks by repository and branch
+        # Track git tasks by repository and branch (MUST be before _initialize_services)
         self.git_tasks: Dict[str, Dict[str, Item]] = (
             {}
         )  # repo_path -> {branch_name -> Item}
+
+        # Initialize services
+        self._initialize_services()
 
     def _initialize_services(self) -> None:
         """Initialize required services"""
@@ -440,8 +440,19 @@ class TaskSynchronizer:
 
     def _find_or_create_column(self, board: Board, column_name: str) -> Column:
         """Find or create a column in the board"""
+        from utils.string_utils import get_safe_filename
+
+        target_column_id = get_safe_filename(column_name)
+
+        # First, look for exact name match
         for column in board.columns:
             if column.name.lower() == column_name.lower():
+                return column
+
+        # Then, look for ID match (to handle case where column has different name but same ID)
+        for column in board.columns:
+            if column.id == target_column_id:
+                self.logger.debug(f"Found column with matching ID '{target_column_id}' but different name: '{column.name}' vs '{column_name}'")
                 return column
 
         # Create new column with proper position
@@ -450,6 +461,7 @@ class TaskSynchronizer:
             (col.position for col in board.columns if col.position is not None),
             default=-1
         )
+        self.logger.debug(f"Creating new column '{column_name}' with ID '{target_column_id}' at position {max_position + 1}")
         return board.add_column(column_name, max_position + 1)
 
     def _add_git_task_to_board(self, board: Board, git_task: Item) -> None:
