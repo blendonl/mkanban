@@ -133,7 +133,7 @@ class TaskCreator:
         return target_column
 
     def _create_item_template(self) -> str:
-        from ...utils.date_utils import now
+        from utils.date_utils import now
         from uuid import uuid4
 
         item_id = str(uuid4())[:8]
@@ -193,14 +193,13 @@ updated_at: {timestamp}
         first_item = target_column.items[0]
 
         # Find the item's file path
-        from ..storage.file_operations import (
+        from infrastructure.storage.file_operations import (
             get_board_directory_path,
             get_column_directory_path,
             find_item_file_by_id,
         )
 
-        data_dir = self.settings.get_data_dir()
-        boards_dir = data_dir / "boards"
+        boards_dir = self.settings.get_boards_directory()
         board_dir = get_board_directory_path(boards_dir, board_name)
         column_dir = get_column_directory_path(board_dir, target_column.name)
         item_file = find_item_file_by_id(column_dir, first_item.id)
@@ -218,7 +217,7 @@ updated_at: {timestamp}
             click.echo(f"Error opening editor: {e}")
 
     def _open_editor_for_current_task(self, file_path: str) -> None:
-        from ...config.environment import Environment
+        from config.environment import Environment
 
         editor = Environment.get_editor()
 

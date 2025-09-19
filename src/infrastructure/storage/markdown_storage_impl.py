@@ -30,7 +30,12 @@ class MarkdownStorageImpl(BoardRepository, StorageRepository):
         self.data_dir = Path(data_dir)
         ensure_directory_exists(self.data_dir)
 
-        self.boards_dir = self.data_dir / "boards"
+        # Use centralized logic for boards directory resolution
+        import os
+        if os.environ.get("MKANBAN_PATH"):
+            self.boards_dir = self.data_dir
+        else:
+            self.boards_dir = self.data_dir / "boards"
         ensure_directory_exists(self.boards_dir)
 
         self.persistence = BoardPersistence(data_dir)

@@ -72,8 +72,8 @@ class Settings:
                 # Get base path from MKANBAN_PATH or default to ~/.mkanban
                 mkanban_path = os.environ.get("MKANBAN_PATH")
                 if mkanban_path:
-                    # Use MKANBAN_PATH directly with session name
-                    session_path = Path(mkanban_path).expanduser().resolve() / current_session.name
+                    # Use MKANBAN_PATH directly - don't add session name
+                    session_path = Path(mkanban_path).expanduser().resolve()
                 else:
                     # Use ~/.mkanban/boards/{session_name} for default case
                     session_path = Path.home() / ".mkanban" / "boards" / current_session.name
@@ -85,3 +85,17 @@ class Settings:
             pass
 
         return self.get_data_dir()
+
+    def get_boards_directory(self) -> Path:
+        """Get the directory where board folders are located"""
+        data_dir = self.get_session_based_data_dir()
+
+        # If MKANBAN_PATH is set, the data_dir IS the boards directory
+        # Otherwise, boards are in data_dir/boards
+        mkanban_path = os.environ.get("MKANBAN_PATH")
+        if mkanban_path:
+            return data_dir
+        else:
+            boards_dir = data_dir / "boards"
+            boards_dir.mkdir(parents=True, exist_ok=True)
+            return boards_dir
