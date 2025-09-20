@@ -73,8 +73,13 @@ def create_configuration_service(args) -> ConfigurationService:
     return ConfigurationService(config)
 
 
-async def main():
-    """Main entry point for the daemon"""
+def main():
+    """Main entry point for the daemon - synchronous wrapper for console script"""
+    asyncio.run(async_main())
+
+
+async def async_main():
+    """Async main entry point for the daemon"""
     parser = argparse.ArgumentParser(
         description="MKanban Git Daemon - Automatically manage kanban tasks based on git branches"
     )
@@ -181,4 +186,4 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

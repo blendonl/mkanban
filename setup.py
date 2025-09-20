@@ -9,7 +9,7 @@ with open("requirements.txt", "r") as f:
 
 setup(
     name="mkanban",
-    version="0.1.2",
+    version="0.1.4",
     description="A Terminal User Interface Kanban Board",
     long_description="MKanban is a TUI Kanban board application for managing tasks in a terminal interface.",
     author="blendonl",
@@ -25,7 +25,7 @@ setup(
     entry_points={
         "console_scripts": [
             "mkanban=main:main",
-            "mkanban-daemon=src.scripts.mkanban-daemon:main",
+            "mkanban-daemon=src.scripts.mkanban_daemon:main",
         ],
     },
     classifiers=[
