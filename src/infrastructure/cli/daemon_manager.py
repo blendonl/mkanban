@@ -4,6 +4,7 @@ Handles daemon management commands like start, stop, status, and restart
 through the CLI interface.
 """
 
+import os
 import subprocess
 import sys
 import time
@@ -40,7 +41,14 @@ class DaemonManager:
 
     def _find_daemon_script(self) -> Optional[Path]:
         """Find the daemon script in various locations"""
-        # Check if mkanban-daemon is in PATH
+        # Check local development script first
+        script_path = (
+            Path(__file__).parent.parent.parent / "scripts" / "mkanban_daemon.py"
+        )
+        if script_path.exists():
+            return script_path
+
+        # Check if mkanban-daemon is in PATH (fallback)
         try:
             result = subprocess.run(
                 ["which", "mkanban-daemon"], capture_output=True, text=True
@@ -49,13 +57,6 @@ class DaemonManager:
                 return Path(result.stdout.strip())
         except:
             pass
-
-        # Check local installation
-        script_path = (
-            Path(__file__).parent.parent.parent / "scripts" / "mkanban-daemon.py"
-        )
-        if script_path.exists():
-            return script_path
 
         return None
 
@@ -85,13 +86,31 @@ class DaemonManager:
             sys.exit(1)
 
         try:
-            # Start daemon as background process
-            process = subprocess.Popen(
-                [sys.executable, str(self.daemon_script)],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                start_new_session=True,
-            )
+            # Find the project root directory (containing main.py)
+            project_root = Path(__file__).parent.parent.parent.parent
+            src_dir = project_root / "src"
+
+            # Set environment with Python path
+            env = dict(os.environ)
+            current_pythonpath = env.get('PYTHONPATH', '')
+            if current_pythonpath:
+                env['PYTHONPATH'] = f"{src_dir}:{current_pythonpath}"
+            else:
+                env['PYTHONPATH'] = str(src_dir)
+
+            # Start daemon as background process with temporary stderr capture for debugging
+            log_file = self.data_path / "logs" / "daemon_startup.log"
+            log_file.parent.mkdir(parents=True, exist_ok=True)
+
+            with open(log_file, 'w') as f:
+                process = subprocess.Popen(
+                    [sys.executable, str(self.daemon_script)],
+                    stdout=f,
+                    stderr=subprocess.STDOUT,
+                    start_new_session=True,
+                    env=env,
+                    cwd=str(project_root),
+                )
 
             # Give it a moment to start and create its own PID file
             time.sleep(2)
