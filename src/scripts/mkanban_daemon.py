@@ -57,6 +57,9 @@ def create_configuration_service(args) -> ConfigurationService:
         enabled=not args.disable,
         polling_interval=args.polling_interval,
         tmux_session_only=args.tmux_session_only,
+        enable_session_task_management=args.enable_session_task_management,
+        auto_complete_on_session_switch=args.auto_complete_on_session_switch,
+        auto_activate_on_session_switch=args.auto_activate_on_session_switch,
         session_name=board_name,
         default_board=board_name,
         default_column=args.default_column,
@@ -110,6 +113,29 @@ async def async_main():
         action="store_false",
         default=True,
         help="Monitor all repositories, not just the active tmux session",
+    )
+
+    # Session-based task management
+    parser.add_argument(
+        "--disable-session-task-management",
+        dest="enable_session_task_management",
+        action="store_false",
+        default=True,
+        help="Disable automatic task management when switching tmux sessions",
+    )
+    parser.add_argument(
+        "--no-auto-complete-on-session-switch",
+        dest="auto_complete_on_session_switch",
+        action="store_false",
+        default=True,
+        help="Don't automatically move in-progress tasks to done when switching sessions",
+    )
+    parser.add_argument(
+        "--no-auto-activate-on-session-switch",
+        dest="auto_activate_on_session_switch",
+        action="store_false",
+        default=True,
+        help="Don't automatically move current branch task to in-progress when switching sessions",
     )
 
     # Board configuration
@@ -171,6 +197,10 @@ async def async_main():
         logger.info(f"Board name: {config.default_board}")
         logger.info(f"Tmux session only: {config.tmux_session_only}")
         logger.info(f"Polling interval: {config.polling_interval}s")
+        logger.info(f"Session task management: {config.enable_session_task_management}")
+        if config.enable_session_task_management:
+            logger.info(f"  Auto-complete on session switch: {config.auto_complete_on_session_switch}")
+            logger.info(f"  Auto-activate on session switch: {config.auto_activate_on_session_switch}")
 
         if config.enabled:
             # Run the daemon

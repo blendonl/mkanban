@@ -26,6 +26,11 @@ class DaemonConfiguration:
     polling_interval: int = 5
     tmux_session_only: bool = True
 
+    # Session-based task management
+    enable_session_task_management: bool = True
+    auto_complete_on_session_switch: bool = True
+    auto_activate_on_session_switch: bool = True
+
     # Session context
     session_name: str = "git-branches"
     data_path: Path = field(default_factory=ensure_mkanban_directory)
@@ -141,6 +146,24 @@ class ConfigurationService:
             return False  # No patterns matched
 
         return True  # No patterns specified, track all (except excluded)
+
+    def is_session_task_management_enabled(self) -> bool:
+        """Check if session-based task management is enabled"""
+        return self._config.enable_session_task_management
+
+    def should_auto_complete_on_session_switch(self) -> bool:
+        """Check if tasks should be auto-completed when switching sessions"""
+        return (
+            self._config.enable_session_task_management and
+            self._config.auto_complete_on_session_switch
+        )
+
+    def should_auto_activate_on_session_switch(self) -> bool:
+        """Check if tasks should be auto-activated when switching sessions"""
+        return (
+            self._config.enable_session_task_management and
+            self._config.auto_activate_on_session_switch
+        )
 
     @classmethod
     def from_args(cls, args) -> 'ConfigurationService':

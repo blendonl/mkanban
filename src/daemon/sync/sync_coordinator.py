@@ -12,6 +12,7 @@ from daemon.core.configuration_service import ConfigurationService
 from daemon.core.session_context_manager import SessionContext
 from daemon.sync.event_processor import EventProcessor
 from daemon.sync.task_manager import TaskManager
+from daemon.sync.session_task_coordinator import SessionTaskCoordinator
 
 
 class SyncCoordinator:
@@ -24,6 +25,7 @@ class SyncCoordinator:
         # Initialize components
         self.event_processor = EventProcessor(config_service)
         self.task_manager = TaskManager(config_service)
+        self.session_task_coordinator = SessionTaskCoordinator(config_service, self.task_manager)
 
     async def process_events(self, events: List[GitEvent]) -> None:
         """Process a list of git events and synchronize with kanban tasks"""
@@ -137,6 +139,28 @@ class SyncCoordinator:
             self.logger.info(f"SyncCoordinator reinitialized for session: {new_context.session_name}")
         else:
             self.logger.debug("No configuration change needed for session")
+
+    async def handle_session_switch(self, old_context: SessionContext, new_context: SessionContext) -> None:
+        """Handle tmux session switch with task status management"""
+        board_name = self.config_service.get_board_name()
+
+        self.logger.info(
+            f"[{board_name}] Handling tmux session switch: "
+            f"'{old_context.session_name}' -> '{new_context.session_name}'"
+        )
+
+        try:
+            # Use the session task coordinator to handle the session switch
+            await self.session_task_coordinator.handle_session_switch(old_context, new_context)
+
+            self.logger.info(
+                f"[{board_name}] Successfully handled session switch to {new_context.session_name}"
+            )
+        except Exception as e:
+            self.logger.error(
+                f"[{board_name}] Failed to handle session switch: {e}",
+                exc_info=True
+            )
 
     def get_current_board_name(self) -> str:
         """Get the current board name being managed"""

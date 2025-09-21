@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Optional, Callable, Any
 from dataclasses import dataclass
 
-from infrastructure.tmux.session_manager import TmuxSessionManager, TmuxSession
+from infrastructure.tmux.session_manager import TmuxSessionManager
 
 
 @dataclass
@@ -36,21 +36,43 @@ class SessionContextManager:
 
         # Current context state
         self._current_context: Optional[SessionContext] = None
-        self._change_callbacks: list[Callable[[SessionContext, SessionContext], Any]] = []
+        self._change_callbacks: list[
+            Callable[[SessionContext, SessionContext], Any]
+        ] = []
+        self._session_switch_callbacks: list[
+            Callable[[SessionContext, SessionContext], Any]
+        ] = []
 
     @property
     def current_context(self) -> Optional[SessionContext]:
         """Get the current session context"""
         return self._current_context
 
-    def add_change_callback(self, callback: Callable[[SessionContext, SessionContext], Any]) -> None:
+    def add_change_callback(
+        self, callback: Callable[[SessionContext, SessionContext], Any]
+    ) -> None:
         """Add a callback to be called when session context changes"""
         self._change_callbacks.append(callback)
 
-    def remove_change_callback(self, callback: Callable[[SessionContext, SessionContext], Any]) -> None:
+    def remove_change_callback(
+        self, callback: Callable[[SessionContext, SessionContext], Any]
+    ) -> None:
         """Remove a session change callback"""
         if callback in self._change_callbacks:
             self._change_callbacks.remove(callback)
+
+    def add_session_switch_callback(
+        self, callback: Callable[[SessionContext, SessionContext], Any]
+    ) -> None:
+        """Add a callback specifically for tmux session switches"""
+        self._session_switch_callbacks.append(callback)
+
+    def remove_session_switch_callback(
+        self, callback: Callable[[SessionContext, SessionContext], Any]
+    ) -> None:
+        """Remove a session switch callback"""
+        if callback in self._session_switch_callbacks:
+            self._session_switch_callbacks.remove(callback)
 
     async def initialize_context(self) -> SessionContext:
         """Initialize the session context"""
@@ -96,8 +118,23 @@ class SessionContextManager:
             f"'{old_context.session_name}' -> '{new_context.session_name}'"
         )
 
-        # Notify callbacks
+        # Check if this is specifically a session switch
+        is_session_switch = self._session_name_changed(
+            old_context, new_context
+        )
+
+        # Notify general change callbacks
         await self._notify_change_callbacks(old_context, new_context)
+
+        # Notify session switch callbacks if applicable
+        if is_session_switch:
+            self.logger.info(
+                f"Tmux session switch detected: "
+                f"{old_context.session_name} -> {new_context.session_name}"
+            )
+            await self._notify_session_switch_callbacks(
+                old_context, new_context
+            )
 
         return True
 
@@ -143,6 +180,14 @@ class SessionContextManager:
             context1.is_tmux_session == context2.is_tmux_session
         )
 
+    def _session_name_changed(self, old_context: SessionContext, new_context: SessionContext) -> bool:
+        """Check if only the session name changed (for tmux session switches)"""
+        return (
+            old_context.session_name != new_context.session_name and
+            old_context.is_tmux_session and
+            new_context.is_tmux_session
+        )
+
     async def _notify_change_callbacks(
         self,
         old_context: SessionContext,
@@ -159,6 +204,23 @@ class SessionContextManager:
                         await result
             except Exception as e:
                 self.logger.error(f"Error in session change callback: {e}")
+
+    async def _notify_session_switch_callbacks(
+        self,
+        old_context: SessionContext,
+        new_context: SessionContext
+    ) -> None:
+        """Notify all registered session switch callbacks"""
+        for callback in self._session_switch_callbacks:
+            try:
+                # Check if callback is async
+                if hasattr(callback, '__call__'):
+                    result = callback(old_context, new_context)
+                    # If it returns a coroutine, await it
+                    if hasattr(result, '__await__'):
+                        await result
+            except Exception as e:
+                self.logger.error(f"Error in session switch callback: {e}")
 
     def get_repository_for_session(self, session_name: str) -> Optional[Path]:
         """Get repository path for a specific session"""
@@ -193,5 +255,7 @@ class SessionContextManager:
             return None
 
         except Exception as e:
-            self.logger.error(f"Error getting repository for session '{session_name}': {e}")
+            self.logger.error(
+                f"Error getting repository for session '{session_name}': {e}"
+            )
             return None

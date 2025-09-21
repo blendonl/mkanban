@@ -162,6 +162,12 @@ class ServiceManager:
         if "sync_coordinator" in self.services:
             self.session_manager.add_change_callback(self.services["sync_coordinator"].handle_session_change)
 
+        # Register session switch callbacks for task management
+        if "sync_coordinator" in self.services:
+            self.session_manager.add_session_switch_callback(
+                self.services["sync_coordinator"].handle_session_switch
+            )
+
         # Start services
         for service in self.services.values():
             if hasattr(service, "start"):

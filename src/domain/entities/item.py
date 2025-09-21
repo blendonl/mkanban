@@ -91,6 +91,8 @@ class Item(BaseModel):
             return ""
 
         branch_name = self.git_metadata.branch_name
+        repository_path = Path(self.git_metadata.repository_path)
+        repo_name = repository_path.name
 
         # Remove common prefixes
         prefixes = ["feature/", "bugfix/", "hotfix/", "fix/", "feat/"]
@@ -100,8 +102,10 @@ class Item(BaseModel):
                 break
 
         # Replace dashes and underscores with spaces and title case
-        title = branch_name.replace("-", " ").replace("_", " ")
-        return title.title()
+        title = branch_name.replace("-", " ").replace("_", " ").title()
+
+        # Include repository name to distinguish between repos
+        return f"{title} ({repo_name})"
 
     def update_git_metadata(self, **kwargs) -> None:
         """Update git metadata fields"""

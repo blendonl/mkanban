@@ -88,7 +88,7 @@ class TaskManager:
             )
 
             # Ensure board exists
-            board = await self._ensure_git_board_exists(repo_name)
+            board = await self._ensure_git_board_exists()
 
             # Add task to board
             self._add_git_task_to_board(board, git_task)
@@ -272,6 +272,118 @@ class TaskManager:
 
         return tasks
 
+    async def get_all_in_progress_tasks(self) -> List[Item]:
+        """Get all tasks currently in the in-progress column"""
+        try:
+            board = await self._get_git_board()
+            if not board:
+                return []
+
+            in_progress_column_id = get_safe_filename(self.config_service.config.in_progress_column)
+
+            for column in board.columns:
+                if column.id == in_progress_column_id:
+                    return [item for item in column.items if item.is_git_managed]
+
+            return []
+
+        except Exception as e:
+            board_name = self.config_service.get_board_name()
+            self.logger.error(f"[{board_name}] Failed to get in-progress tasks: {e}")
+            return []
+
+    async def move_all_in_progress_to_done(self) -> int:
+        """Move all in-progress tasks to done column. Returns count of moved tasks."""
+        board_name = self.config_service.get_board_name()
+        moved_count = 0
+
+        try:
+            in_progress_tasks = await self.get_all_in_progress_tasks()
+
+            for task in in_progress_tasks:
+                if task.git_metadata and task.git_metadata.repository_path:
+                    repository_path = Path(task.git_metadata.repository_path)
+                    success = await self.move_task_to_done(
+                        repository_path,
+                        task.git_metadata.branch_name
+                    )
+                    if success:
+                        moved_count += 1
+                        self.logger.debug(
+                            f"[{board_name}] Moved task '{task.title}' from in-progress to done"
+                        )
+
+            if moved_count > 0:
+                self.logger.info(f"[{board_name}] Moved {moved_count} tasks from in-progress to done")
+
+        except Exception as e:
+            self.logger.error(f"[{board_name}] Failed to move in-progress tasks to done: {e}")
+
+        return moved_count
+
+    async def find_or_create_and_activate_task(self, repository_path: Path, branch_name: str) -> Optional[Item]:
+        """Find existing task or create new one and move to in-progress"""
+        board_name = self.config_service.get_board_name()
+
+        try:
+            # Check if task already exists
+            existing_task = self._find_git_task(repository_path, branch_name)
+
+            if existing_task:
+                # Check if already in progress
+                in_progress_column_id = get_safe_filename(self.config_service.config.in_progress_column)
+                if existing_task.column_id == in_progress_column_id:
+                    self.logger.debug(f"[{board_name}] Task '{existing_task.title}' is already in-progress")
+                    return existing_task
+
+                # Move to in-progress
+                success = await self.move_task_to_progress(repository_path, branch_name)
+                if success:
+                    self.logger.info(f"[{board_name}] Moved existing task '{existing_task.title}' to in-progress")
+                    return existing_task
+                else:
+                    self.logger.warning(f"[{board_name}] Failed to move existing task to in-progress")
+                    return None
+
+            else:
+                # Create new task
+                git_ops = GitOperations(repository_path)
+                branch_info = git_ops.get_branch_info(branch_name)
+
+                if not branch_info:
+                    self.logger.warning(f"[{board_name}] Could not get branch info for {branch_name}")
+                    return None
+
+                # Mark as current branch
+                branch_info.is_current = True
+
+                new_task = await self.create_task(
+                    repository_path,
+                    branch_name,
+                    {"branch_info": branch_info}
+                )
+
+                if new_task:
+                    # Move to in-progress
+                    success = await self.move_task_to_progress(repository_path, branch_name)
+                    if success:
+                        self.logger.info(
+                            f"[{board_name}] Created and moved new task '{new_task.title}' to in-progress"
+                        )
+                        return new_task
+                    else:
+                        self.logger.warning(f"[{board_name}] Created task but failed to move to in-progress")
+                        return new_task
+
+                return None
+
+        except Exception as e:
+            self.logger.error(
+                f"[{board_name}] Error in find_or_create_and_activate_task for {branch_name}: {e}",
+                exc_info=True
+            )
+            return None
+
     async def _move_task_to_column(self, repository_path: Path, branch_name: str, column_name: str, friendly_name: str) -> bool:
         """Move a task to a specific column"""
         git_task = self._find_git_task(repository_path, branch_name)
@@ -302,8 +414,8 @@ class TaskManager:
     def _find_git_task(self, repository_path: Path, branch_name: str) -> Optional[Item]:
         """Find git task by repository and branch"""
         try:
-            repo_name = repository_path.name
-            board = self.board_service.get_board_by_name(repo_name)
+            board_name = self.config_service.get_board_name()
+            board = self.board_service.get_board_by_name(board_name)
 
             for column in board.columns:
                 for item in column.items:
@@ -322,9 +434,9 @@ class TaskManager:
             )
             return None
 
-    async def _ensure_git_board_exists(self, repo_name: str) -> Board:
+    async def _ensure_git_board_exists(self) -> Board:
         """Ensure the git board exists with all required columns"""
-        board_name = repo_name
+        board_name = self.config_service.get_board_name()
 
         try:
             board = self.board_service.get_board_by_name(board_name)
@@ -390,11 +502,8 @@ class TaskManager:
     async def _get_git_board(self) -> Optional[Board]:
         """Get the current git board"""
         try:
-            # Use the repository name from current context
-            # For now, we'll use a generic approach
-            return self.board_service.get_board_by_name(
-                self.config_service.get_board_name()
-            )
+            board_name = self.config_service.get_board_name()
+            return self.board_service.get_board_by_name(board_name)
         except:
             return None
 
