@@ -148,8 +148,8 @@ class Item(BaseModel):
         # Replace dashes and underscores with spaces and title case
         title = branch_name.replace("-", " ").replace("_", " ").title()
 
-        # Include repository name to distinguish between repos
-        return f"{title} ({repo_name})"
+        # Return title without repository name
+        return title
 
     def update_git_metadata(self, **kwargs) -> None:
         """Update git metadata fields"""

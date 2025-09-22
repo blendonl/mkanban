@@ -31,12 +31,13 @@ class TodoSelector:
 
     def run_todo_selector(self, selector_command: str, board_name: str) -> None:
         """Main entry point for the todo selector functionality"""
+        session = self._tmux_manager.get_active_session()
         try:
             # Get the board using the same logic as other CLI commands
             try:
-                board = self._board_service.get_board_by_name(board_name)
+                board = self._board_service.get_board_by_name(session.name)
             except BoardNotFoundError:
-                click.echo(f"Error: Board '{board_name}' not found")
+                click.echo(f"Error: Board '{session.name}' not found")
                 available_boards = self._board_service.list_board_names()
                 if available_boards:
                     click.echo(f"Available boards: {', '.join(available_boards)}")
@@ -209,19 +210,14 @@ class TodoSelector:
 
     def _get_current_repository(self) -> Optional[Path]:
         """Get the current git repository path"""
-        try:
-            if self._tmux_manager.is_in_tmux_session():
-                return self._tmux_manager.get_active_session_repository()
-            else:
-                # Try to find git repo in current working directory
-                current_path = Path.cwd()
-                while current_path != current_path.parent:
-                    if (current_path / ".git").exists():
-                        return current_path
-                    current_path = current_path.parent
-                return None
-        except Exception:
-            return None
+        if self._tmux_manager.is_in_tmux_session():
+            return self._tmux_manager.get_active_session_repository()
+        else:
+            # Get repo path from external tmux session
+            repo_path = self._tmux_manager.get_active_session_repository_external()
+            if not repo_path:
+                raise MKanbanError("No git repository found in active tmux session")
+            return repo_path
 
     def _create_or_switch_branch(self, repo_path: Path, branch_name: str) -> bool:
         """Create or switch to the specified branch"""
@@ -327,4 +323,3 @@ class TodoSelector:
             )
         except Exception as e:
             click.echo(f"Warning: Could not update JIRA status: {e}")
-
