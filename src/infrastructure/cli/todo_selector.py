@@ -9,7 +9,7 @@ from services.board_service import BoardService
 from services.item_service import ItemService
 from services.validation_service import ValidationService
 from infrastructure.storage.markdown_storage_impl import MarkdownStorageImpl
-from infrastructure.git.repository import GitRepository
+from infrastructure.git.repository import GitOperations
 from infrastructure.tmux.session_manager import TmuxSessionManager
 from domain.entities.item import Item
 from domain.entities.board import Board
@@ -226,10 +226,10 @@ class TodoSelector:
     def _create_or_switch_branch(self, repo_path: Path, branch_name: str) -> bool:
         """Create or switch to the specified branch"""
         try:
-            git_repo = GitRepository(repo_path)
+            git_ops = GitOperations(repo_path)
 
             # Check if branch exists
-            if git_repo.branch_exists(branch_name):
+            if git_ops.branch_exists(branch_name):
                 # Switch to existing branch
                 result = subprocess.run(
                     ["git", "checkout", branch_name],
