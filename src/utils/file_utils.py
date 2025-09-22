@@ -1,6 +1,6 @@
 import frontmatter
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional
 from src.core.exceptions import FileOperationError, ParseError
 from src.core.types import Metadata
 
@@ -26,7 +26,7 @@ def write_frontmatter_file(file_path: Path, content: str, metadata: Metadata) ->
         logger.debug(f"About to create frontmatter post for {file_path}")
 
         post = frontmatter.Post(content, **metadata)
-        logger.debug(f"Created frontmatter post, about to write file")
+        logger.debug("Created frontmatter post, about to write file")
 
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(frontmatter.dumps(post))

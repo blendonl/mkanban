@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-from typing import Optional
 from src.core.constants import DEFAULT_DATA_DIR, DEFAULT_CONFIG_DIR
 
 

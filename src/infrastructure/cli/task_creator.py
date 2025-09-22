@@ -3,7 +3,7 @@ import tempfile
 import click
 from pathlib import Path
 from typing import Optional
-from src.core.exceptions import MKanbanError, BoardNotFoundError, ColumnNotFoundError
+from src.core.exceptions import MKanbanError, BoardNotFoundError
 from src.core.dependency_container import DependencyContainer
 from src.services.board_service import BoardService
 from src.services.item_service import ItemService

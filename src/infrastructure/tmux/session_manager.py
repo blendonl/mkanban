@@ -7,10 +7,8 @@ particularly for identifying the current active session and its working director
 import os
 import subprocess
 from pathlib import Path
-from typing import Optional, Dict, List
+from typing import Optional, List
 from dataclasses import dataclass
-
-from src.core.exceptions import MKanbanError
 
 
 @dataclass

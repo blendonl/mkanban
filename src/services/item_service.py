@@ -27,12 +27,12 @@ class ItemService:
         description: str = "",
         parent_id: Optional[ParentId] = None,
     ) -> Item:
-        self._logger.info(f"Creating item", board=board.name, column=column_id, item=title)
+        self._logger.info("Creating item", board=board.name, column=column_id, item=title)
         self._validator.validate_item_title(title)
 
         column = board.get_column_by_id(column_id)
         if not column:
-            self._logger.warning(f"Column not found", board=board.name, column=column_id)
+            self._logger.warning("Column not found", board=board.name, column=column_id)
             raise ColumnNotFoundError(f"Column with id '{column_id}' not found")
 
         # Check if column is at capacity before adding
@@ -41,14 +41,14 @@ class ItemService:
         if parent_id:
             parent = board.get_parent_by_id(parent_id)
             if not parent:
-                self._logger.warning(f"Parent not found", board=board.name, item=title)
+                self._logger.warning("Parent not found", board=board.name, item=title)
                 raise ValidationError(f"Parent with id '{parent_id}' not found")
 
         item = column.add_item(title, parent_id)
         if description:
             item.description = description
 
-        self._logger.info(f"Successfully created item", board=board.name, column=column.name, item=title)
+        self._logger.info("Successfully created item", board=board.name, column=column.name, item=title)
         return item
 
     def update_item(self, board: Board, item_id: ItemId, **kwargs) -> bool:
@@ -64,24 +64,24 @@ class ItemService:
         raise ItemNotFoundError(f"Item with id '{item_id}' not found")
 
     def delete_item(self, board: Board, item_id: ItemId) -> bool:
-        self._logger.info(f"Deleting item", board=board.name, item=item_id)
+        self._logger.info("Deleting item", board=board.name, item=item_id)
 
         for column in board.columns:
             item = column.get_item_by_id(item_id)
             if item:
-                self._logger.debug(f"Found item to delete", board=board.name, column=column.name, item=item.title)
+                self._logger.debug("Found item to delete", board=board.name, column=column.name, item=item.title)
 
                 if not self._storage.delete_item_from_column(board, item, column):
-                    self._logger.error(f"Failed to delete item from storage", board=board.name, column=column.name, item=item.title)
+                    self._logger.error("Failed to delete item from storage", board=board.name, column=column.name, item=item.title)
                     raise ValidationError("Failed to delete item from storage")
 
                 success = column.remove_item(item_id)
                 if success:
                     self._storage.save_board_to_storage(board)
-                    self._logger.info(f"Successfully deleted item", board=board.name, column=column.name, item=item.title)
+                    self._logger.info("Successfully deleted item", board=board.name, column=column.name, item=item.title)
                 return success
 
-        self._logger.warning(f"Item not found for deletion", board=board.name, item=item_id)
+        self._logger.warning("Item not found for deletion", board=board.name, item=item_id)
         raise ItemNotFoundError(f"Item with id '{item_id}' not found")
 
     def move_item_between_columns(

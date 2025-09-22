@@ -6,8 +6,7 @@ in branch names and maintaining associations between git and Jira items.
 
 import logging
 import re
-from typing import List, Dict, Optional, Set
-from pathlib import Path
+from typing import List, Dict, Optional
 
 from daemon.core.configuration_service import ConfigurationService
 from daemon.jira.jira_client import JiraClient

@@ -12,7 +12,6 @@ from src.ui.widgets.markdown_widget import MarkDownWidget
 from src.ui.widgets.item_widget import ItemWidget
 from src.ui.widgets.column_widget import ColumnWidget
 from controllers.column_controller import ColumnController
-from controllers.item_controller import ItemController
 from src.utils.editor_utils import open_editor_for_app
 
 from src.ui.dialogs.help_dialog import HelpDialog

@@ -1,7 +1,6 @@
 import logging
 import logging.handlers
 from datetime import datetime
-from pathlib import Path
 from typing import Optional, Dict, Any
 from src.config.configuration_manager import ConfigurationManager
 from src.utils.path_resolver import PathResolver

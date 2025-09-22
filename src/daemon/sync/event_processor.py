@@ -5,7 +5,6 @@ for kanban task synchronization.
 """
 
 import logging
-from pathlib import Path
 from typing import List, Optional, Dict, Any
 from dataclasses import dataclass
 

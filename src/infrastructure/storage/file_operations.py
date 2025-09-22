@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Optional
 from src.core.exceptions import FileOperationError
-from src.core.types import ItemId, Metadata
+from src.core.types import ItemId
 from src.utils.file_utils import read_frontmatter_file, find_files_by_pattern
 
 

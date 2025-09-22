@@ -25,19 +25,23 @@ class JiraConfiguration:
     polling_interval: int = 300
     bidirectional_sync: bool = False
     backlog_limit: int = 50
-    status_mapping: Dict[str, str] = field(default_factory=lambda: {
-        "To Do": "to-do",
-        "In Progress": "in-progress",
-        "Done": "done",
-        "Backlog": "backlog"
-    })
+    status_mapping: Dict[str, str] = field(
+        default_factory=lambda: {
+            "Backlog": "backlog",
+            "To Do": "to-do",
+            "In Progress": "in-progress",
+            "Done": "done",
+        }
+    )
     jql_filter: str = ""
     board_name: str = "jira-tickets"
-    branch_patterns: List[str] = field(default_factory=lambda: [
-        r".*[A-Z]+-\d+.*",
-        r"[A-Z]+-\d+/.*",
-        r".*/[A-Z]+-\d+.*",
-    ])
+    branch_patterns: List[str] = field(
+        default_factory=lambda: [
+            r".*[A-Z]+-\d+.*",
+            r"[A-Z]+-\d+/.*",
+            r".*/[A-Z]+-\d+.*",
+        ]
+    )
 
 
 @dataclass
@@ -53,13 +57,21 @@ class DaemonConfiguration:
     default_column: str = "to-do"
     in_progress_column: str = "in-progress"
     done_column: str = "done"
-    branch_patterns: List[str] = field(default_factory=lambda: [
-        "feature/*", "bugfix/*", "hotfix/*", "fix/*", "feat/*",
-        "test", "test/*", "*"
-    ])
-    excluded_branches: List[str] = field(default_factory=lambda: [
-        "main", "master", "develop", "staging", "production"
-    ])
+    branch_patterns: List[str] = field(
+        default_factory=lambda: [
+            "feature/*",
+            "bugfix/*",
+            "hotfix/*",
+            "fix/*",
+            "feat/*",
+            "test",
+            "test/*",
+            "*",
+        ]
+    )
+    excluded_branches: List[str] = field(
+        default_factory=lambda: ["main", "master", "develop", "staging", "production"]
+    )
     jira: JiraConfiguration = field(default_factory=JiraConfiguration)
 
 
@@ -100,10 +112,10 @@ class UnifiedConfiguration:
 
 
 class ConfigurationManager:
-    _instance: Optional['ConfigurationManager'] = None
+    _instance: Optional["ConfigurationManager"] = None
     _config: Optional[UnifiedConfiguration] = None
 
-    def __new__(cls) -> 'ConfigurationManager':
+    def __new__(cls) -> "ConfigurationManager":
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
@@ -120,7 +132,7 @@ class ConfigurationManager:
                 with open(config_path, "r") as f:
                     data = json.load(f)
                 return self._create_config_from_dict(data)
-            except (json.JSONDecodeError, TypeError) as e:
+            except (json.JSONDecodeError, TypeError):
                 # Fallback to defaults if config is corrupted
                 pass
 
@@ -132,20 +144,22 @@ class ConfigurationManager:
     def _create_config_from_dict(self, data: Dict[str, Any]) -> UnifiedConfiguration:
         """Create UnifiedConfiguration from dict, properly handling nested dataclasses."""
         # Handle nested daemon configuration
-        daemon_data = data.get('daemon', {})
+        daemon_data = data.get("daemon", {})
         if daemon_data:
-            jira_data = daemon_data.get('jira', {})
-            daemon_data['jira'] = JiraConfiguration(**jira_data) if jira_data else JiraConfiguration()
-            data['daemon'] = DaemonConfiguration(**daemon_data)
+            jira_data = daemon_data.get("jira", {})
+            daemon_data["jira"] = (
+                JiraConfiguration(**jira_data) if jira_data else JiraConfiguration()
+            )
+            data["daemon"] = DaemonConfiguration(**daemon_data)
         else:
-            data['daemon'] = DaemonConfiguration()
+            data["daemon"] = DaemonConfiguration()
 
         # Handle nested logging configuration
-        logging_data = data.get('logging', {})
+        logging_data = data.get("logging", {})
         if logging_data:
-            data['logging'] = LoggingConfiguration(**logging_data)
+            data["logging"] = LoggingConfiguration(**logging_data)
         else:
-            data['logging'] = LoggingConfiguration()
+            data["logging"] = LoggingConfiguration()
 
         return UnifiedConfiguration(**data)
 

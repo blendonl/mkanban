@@ -1,6 +1,5 @@
 from pathlib import Path
 from typing import List, Optional
-from src.core.exceptions import StorageError, BoardNotFoundError
 from src.core.types import BoardId
 from src.core.constants import BOARD_FILENAME, COLUMN_METADATA_FILENAME
 from src.domain.entities.board import Board
@@ -10,7 +9,7 @@ from src.domain.entities.parent import Parent
 from src.domain.repositories.board_repository import BoardRepository
 from src.domain.repositories.storage_repository import StorageRepository
 from src.utils.file_utils import find_files_by_pattern, ensure_directory_exists
-from src.utils.string_utils import generate_id_from_name, get_safe_filename
+from src.utils.string_utils import get_safe_filename
 from src.utils.date_utils import now
 from src.infrastructure.storage.board_persistence import BoardPersistence
 from src.infrastructure.storage.markdown_parser import (
@@ -142,11 +141,6 @@ class MarkdownStorageImpl(BoardRepository, StorageRepository):
 
     def create_sample_board(self, name: str = "Sample Board") -> Board:
         board = Board(name=name, description="Welcome to MKanban!")
-
-        todo_col = board.add_column("To Do", 1)
-        progress_col = board.add_column("In Progress", 2)
-        review_col = board.add_column("Review", 3)
-        done_col = board.add_column("Done", 4)
 
         return board
 

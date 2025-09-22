@@ -56,7 +56,7 @@ class ColumnWidget(Vertical):
                 controller.add_item(title, None, content)
                 self.update_title()
                 self._finish_editing()
-            except ValidationError as e:
+            except ValidationError:
                 # TODO: Show error message to user (needs notification system)
                 self._finish_editing()
 

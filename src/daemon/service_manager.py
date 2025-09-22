@@ -152,6 +152,7 @@ class ServiceManager:
         # Initialize Jira daemon if enabled
         if self.config_service.is_jira_enabled():
             from daemon.jira.jira_daemon import JiraDaemon
+
             self.services["jira_daemon"] = JiraDaemon(self.config_service)
             self.logger.info("Jira daemon initialized")
 
@@ -164,9 +165,13 @@ class ServiceManager:
         # Register session change callbacks
         self.session_manager.add_change_callback(self._handle_session_change)
         if "git_monitor" in self.services:
-            self.session_manager.add_change_callback(self.services["git_monitor"].handle_session_change)
+            self.session_manager.add_change_callback(
+                self.services["git_monitor"].handle_session_change
+            )
         if "sync_coordinator" in self.services:
-            self.session_manager.add_change_callback(self.services["sync_coordinator"].handle_session_change)
+            self.session_manager.add_change_callback(
+                self.services["sync_coordinator"].handle_session_change
+            )
 
         # Register session switch callbacks for task management
         if "sync_coordinator" in self.services:
@@ -247,9 +252,7 @@ class ServiceManager:
     def _signal_handler(self, signum: int, frame) -> None:
         """Handle system signals"""
         session_name = self.config_service.get_board_name()
-        self.logger.info(
-            f"[{session_name}] Received signal {signum}, shutting down..."
-        )
+        self.logger.info(f"[{session_name}] Received signal {signum}, shutting down...")
         self.running = False
 
     def get_jira_daemon(self):

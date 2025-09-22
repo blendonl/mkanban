@@ -7,7 +7,6 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from src.storage.markdown_storage import MarkdownStorage
 from src.ui.widgets.board_widget import BoardWidget
-from src.app import MKanbanApp
 
 async def test_move_left_right():
     print("Testing move left/right functions...")

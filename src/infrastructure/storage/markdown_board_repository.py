@@ -1,6 +1,5 @@
 from pathlib import Path
 from typing import List, Optional
-from src.core.exceptions import StorageError, BoardNotFoundError
 from src.core.types import BoardId
 from src.core.constants import BOARD_FILENAME, COLUMN_METADATA_FILENAME
 from src.domain.entities.board import Board
@@ -19,10 +18,6 @@ from src.infrastructure.storage.markdown_parser import (
     parse_item_metadata,
     parse_column_metadata,
     save_board_metadata,
-)
-from src.infrastructure.storage.file_operations import (
-    get_board_directory_path,
-    find_item_file_by_id,
 )
 
 
@@ -49,7 +44,7 @@ class MarkdownBoardRepository(BoardRepository):
         return boards
 
     def load_board_by_id(self, board_id: BoardId) -> Optional[Board]:
-        self.logger.debug(f"Loading board by ID", board=board_id)
+        self.logger.debug("Loading board by ID", board=board_id)
 
         for board_dir in self.boards_dir.iterdir():
             if board_dir.is_dir():
@@ -57,22 +52,22 @@ class MarkdownBoardRepository(BoardRepository):
                 if kanban_file.exists():
                     board = self.load_board_from_file(kanban_file)
                     if board and board.id == board_id:
-                        self.logger.info(f"Found board by ID", board=board.name)
+                        self.logger.info("Found board by ID", board=board.name)
                         return board
 
-        self.logger.warning(f"Board not found by ID", board=board_id)
+        self.logger.warning("Board not found by ID", board=board_id)
         return None
 
     def load_board_by_name(self, board_name: str) -> Optional[Board]:
-        self.logger.debug(f"Loading board by name", board=board_name)
+        self.logger.debug("Loading board by name", board=board_name)
         boards = self.load_all_boards()
 
         for board in boards:
             if board.name.lower() == board_name.lower():
-                self.logger.info(f"Found board by name", board=board_name)
+                self.logger.info("Found board by name", board=board_name)
                 return board
 
-        self.logger.warning(f"Board not found by name", board=board_name)
+        self.logger.warning("Board not found by name", board=board_name)
         return None
 
     def load_board_from_file(self, kanban_file: Path) -> Optional[Board]:
@@ -92,12 +87,15 @@ class MarkdownBoardRepository(BoardRepository):
             self._load_parents_for_board(board, metadata)
 
             return board
-        except Exception as e:
-            self.logger.error(f"Failed to load board from file: {kanban_file}", board=kanban_file.parent.name)
+        except Exception:
+            self.logger.error(
+                f"Failed to load board from file: {kanban_file}",
+                board=kanban_file.parent.name,
+            )
             return None
 
     def save_board(self, board: Board) -> None:
-        self.logger.debug(f"Saving board", board=board.name)
+        self.logger.debug("Saving board", board=board.name)
 
         kanban_file = self.persistence.get_board_file_path(board.name)
         self.path_resolver.ensure_directory_exists(kanban_file.parent)
@@ -122,25 +120,26 @@ class MarkdownBoardRepository(BoardRepository):
         save_board_metadata(kanban_file, board.name, board_data)
         self._save_columns_for_board(board, kanban_file.parent)
 
-        self.logger.info(f"Successfully saved board", board=board.name)
+        self.logger.info("Successfully saved board", board=board.name)
 
     def delete_board(self, board_id: BoardId) -> bool:
-        self.logger.info(f"Deleting board", board=board_id)
+        self.logger.info("Deleting board", board=board_id)
 
         board = self.load_board_by_id(board_id)
         if not board:
-            self.logger.warning(f"Cannot delete non-existent board", board=board_id)
+            self.logger.warning("Cannot delete non-existent board", board=board_id)
             return False
 
         board_dir = self.path_resolver.get_board_directory(board.name)
 
         try:
             import shutil
+
             shutil.rmtree(board_dir)
-            self.logger.info(f"Successfully deleted board", board=board.name)
+            self.logger.info("Successfully deleted board", board=board.name)
             return True
-        except Exception as e:
-            self.logger.error(f"Failed to delete board directory", board=board.name)
+        except Exception:
+            self.logger.error("Failed to delete board directory", board=board.name)
             return False
 
     def list_board_names(self) -> List[str]:
@@ -151,7 +150,7 @@ class MarkdownBoardRepository(BoardRepository):
         return names
 
     def create_sample_board(self, name: str) -> Board:
-        self.logger.info(f"Creating sample board", board=name)
+        self.logger.info("Creating sample board", board=name)
 
         board = Board(name=name, description="Sample board for getting started")
 
@@ -163,7 +162,7 @@ class MarkdownBoardRepository(BoardRepository):
         # Add sample parent
         board.add_parent("Sample Project", "blue")
 
-        self.logger.info(f"Created sample board", board=name)
+        self.logger.info("Created sample board", board=name)
         return board
 
     def _load_columns_for_board(self, board: Board, board_dir: Path) -> None:
@@ -178,7 +177,9 @@ class MarkdownBoardRepository(BoardRepository):
                     metadata = parse_column_metadata(column_metadata_file)
                     column = Column(
                         id=metadata.get("id", column_dir.name),
-                        name=metadata.get("name", column_dir.name.replace("-", " ").title()),
+                        name=metadata.get(
+                            "name", column_dir.name.replace("-", " ").title()
+                        ),
                         position=metadata.get("position", idx),
                         limit=metadata.get("limit"),
                         created_at=metadata.get("created_at", now()),
@@ -234,7 +235,9 @@ class MarkdownBoardRepository(BoardRepository):
 
         for parent_data in parents_data:
             parent = Parent(
-                id=parent_data.get("id", generate_id_from_name(parent_data.get("name", ""))),
+                id=parent_data.get(
+                    "id", generate_id_from_name(parent_data.get("name", ""))
+                ),
                 name=parent_data.get("name", ""),
                 color=parent_data.get("color", "blue"),
                 created_at=parent_data.get("created_at", now()),
@@ -250,27 +253,39 @@ class MarkdownBoardRepository(BoardRepository):
             column_dir = board_dir / dir_name
             if column_dir.exists():
                 import shutil
+
                 shutil.rmtree(column_dir)
 
         # Save each column
         for column in board.columns:
-            column_dir = self.path_resolver.get_column_directory(board.name, column.name)
-            self.persistence.save_column_metadata(board.name, column.name, {
-                "id": column.id,
-                "name": column.name,
-                "position": column.position,
-                "limit": column.limit,
-                "created_at": column.created_at,
-                "updated_at": column.updated_at,
-            })
+            column_dir = self.path_resolver.get_column_directory(
+                board.name, column.name
+            )
+            self.persistence.save_column_metadata(
+                board.name,
+                column.name,
+                {
+                    "id": column.id,
+                    "name": column.name,
+                    "position": column.position,
+                    "limit": column.limit,
+                    "created_at": column.created_at,
+                    "updated_at": column.updated_at,
+                },
+            )
 
             # Save items in this column
             for item in column.items:
-                self.persistence.save_item_to_column(board.name, column.name, {
-                    "id": item.id,
-                    "title": item.title,
-                    "description": item.description,
-                    "parent_id": item.parent_id,
-                    "created_at": item.created_at,
-                    "updated_at": item.updated_at,
-                })
+                self.persistence.save_item_to_column(
+                    board.name,
+                    column.name,
+                    {
+                        "id": item.id,
+                        "title": item.title,
+                        "description": item.description,
+                        "parent_id": item.parent_id,
+                        "created_at": item.created_at,
+                        "updated_at": item.updated_at,
+                    },
+                )
+

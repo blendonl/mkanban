@@ -1,8 +1,5 @@
 from pathlib import Path
-from datetime import datetime
-from typing import Optional
-from src.core.exceptions import StorageError, FileOperationError
-from src.core.types import BoardId, ColumnId, ItemId
+from src.core.types import ItemId
 from src.core.constants import BOARD_FILENAME, COLUMN_METADATA_FILENAME
 from src.utils.file_utils import (
     ensure_directory_exists,
@@ -10,7 +7,7 @@ from src.utils.file_utils import (
     safe_rename_file,
     get_unique_filename,
 )
-from src.utils.string_utils import get_title_filename, generate_id_from_name
+from src.utils.string_utils import get_title_filename
 from src.utils.date_utils import now
 from src.infrastructure.storage.file_operations import (
     find_item_file_by_id,

@@ -1,6 +1,6 @@
 import shutil
 from pathlib import Path
-from typing import List, Optional, Generator
+from typing import List, Optional
 from src.utils.logger_factory import ContextAwareLogger
 
 

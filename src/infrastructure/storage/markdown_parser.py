@@ -1,12 +1,10 @@
 import yaml
 from pathlib import Path
-from datetime import datetime
 from typing import Optional
 from src.core.exceptions import ParseError
 from src.core.types import Metadata
 from src.utils.file_utils import read_frontmatter_file, write_frontmatter_file
 from src.utils.string_utils import extract_title_from_content, ensure_title_header
-from src.utils.date_utils import ensure_datetime
 
 
 def parse_board_metadata(kanban_file: Path) -> tuple[str, Metadata]:
@@ -43,7 +41,7 @@ def save_board_metadata(kanban_file: Path, board_name: str, metadata: Metadata) 
     try:
         content_lines = [f"# {board_name}", ""]
         yaml_str = yaml.dump(metadata, default_flow_style=False, sort_keys=False)
-        full_content = f"---\n{yaml_str}---\n\n{'\n'.join(content_lines)}"
+        full_content = f"---\n{yaml_str}---\n\n\n".join(content_lines)
 
         with open(kanban_file, "w", encoding="utf-8") as f:
             f.write(full_content)

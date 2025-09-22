@@ -1,9 +1,3 @@
-"""Configuration Service
-
-Centralizes all daemon configuration management, including session-aware
-configuration updates and data path resolution.
-"""
-
 from pathlib import Path
 from typing import Optional, List, Dict
 from dataclasses import dataclass, field
@@ -20,6 +14,7 @@ from src.utils.string_utils import get_safe_filename
 @dataclass
 class JiraConfig:
     """Configuration for Jira integration"""
+
     enabled: bool = False
     api_url: str = ""
     username: str = ""
@@ -28,19 +23,23 @@ class JiraConfig:
     polling_interval: int = 300  # 5 minutes
     bidirectional_sync: bool = False
     backlog_limit: int = 50  # -1 for unlimited
-    status_mapping: Dict[str, str] = field(default_factory=lambda: {
-        "To Do": "to-do",
-        "In Progress": "in-progress",
-        "Done": "done",
-        "Backlog": "backlog"
-    })
+    status_mapping: Dict[str, str] = field(
+        default_factory=lambda: {
+            "To Do": "to-do",
+            "In Progress": "in-progress",
+            "Done": "done",
+            "Backlog": "backlog",
+        }
+    )
     jql_filter: str = ""
     board_name: str = "jira-tickets"
-    branch_patterns: List[str] = field(default_factory=lambda: [
-        r".*[A-Z]+-\d+.*",  # Matches PROJ-123 anywhere in branch name
-        r"[A-Z]+-\d+/.*",   # Matches PROJ-123/feature-name
-        r".*/[A-Z]+-\d+.*", # Matches feature/PROJ-123-something
-    ])
+    branch_patterns: List[str] = field(
+        default_factory=lambda: [
+            r".*[A-Z]+-\d+.*",  # Matches PROJ-123 anywhere in branch name
+            r"[A-Z]+-\d+/.*",  # Matches PROJ-123/feature-name
+            r".*/[A-Z]+-\d+.*",  # Matches feature/PROJ-123-something
+        ]
+    )
 
 
 @dataclass
@@ -68,13 +67,21 @@ class DaemonConfiguration:
     done_column: str = "done"
 
     # Branch filtering
-    branch_patterns: List[str] = field(default_factory=lambda: [
-        "feature/*", "bugfix/*", "hotfix/*", "fix/*", "feat/*",
-        "test", "test/*", "*"
-    ])
-    excluded_branches: List[str] = field(default_factory=lambda: [
-        "main", "master", "develop", "staging", "production"
-    ])
+    branch_patterns: List[str] = field(
+        default_factory=lambda: [
+            "feature/*",
+            "bugfix/*",
+            "hotfix/*",
+            "fix/*",
+            "feat/*",
+            "test",
+            "test/*",
+            "*",
+        ]
+    )
+    excluded_branches: List[str] = field(
+        default_factory=lambda: ["main", "master", "develop", "staging", "production"]
+    )
 
     # Jira integration
     jira: JiraConfig = field(default_factory=JiraConfig)
@@ -183,15 +190,15 @@ class ConfigurationService:
     def should_auto_complete_on_session_switch(self) -> bool:
         """Check if tasks should be auto-completed when switching sessions"""
         return (
-            self._config.enable_session_task_management and
-            self._config.auto_complete_on_session_switch
+            self._config.enable_session_task_management
+            and self._config.auto_complete_on_session_switch
         )
 
     def should_auto_activate_on_session_switch(self) -> bool:
         """Check if tasks should be auto-activated when switching sessions"""
         return (
-            self._config.enable_session_task_management and
-            self._config.auto_activate_on_session_switch
+            self._config.enable_session_task_management
+            and self._config.auto_activate_on_session_switch
         )
 
     def is_jira_enabled(self) -> bool:
@@ -202,7 +209,9 @@ class ConfigurationService:
         """Get Jira configuration"""
         return self._config.jira
 
-    def should_track_jira_ticket(self, ticket_key: str, project_keys: List[str] = None) -> bool:
+    def should_track_jira_ticket(
+        self, ticket_key: str, project_keys: List[str] = None
+    ) -> bool:
         """Check if a Jira ticket should be tracked based on configuration"""
         if not self.is_jira_enabled():
             return False
@@ -224,7 +233,7 @@ class ConfigurationService:
         return self._config.jira.board_name
 
     @classmethod
-    def from_args(cls, args) -> 'ConfigurationService':
+    def from_args(cls, args) -> "ConfigurationService":
         """Create configuration service from command line arguments"""
         config = DaemonConfiguration(
             enabled=not args.disable,
@@ -235,7 +244,9 @@ class ConfigurationService:
             default_column=args.default_column,
             in_progress_column=args.in_progress_column,
             done_column=args.done_column,
-            data_path=Path(args.data_path) if args.data_path else get_mkanban_data_path(),
+            data_path=(
+                Path(args.data_path) if args.data_path else get_mkanban_data_path()
+            ),
         )
 
         if args.branch_patterns:
@@ -244,3 +255,4 @@ class ConfigurationService:
             config.excluded_branches = args.excluded_branches.split(",")
 
         return cls(config)
+

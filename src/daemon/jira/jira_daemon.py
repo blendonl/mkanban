@@ -9,7 +9,6 @@ import asyncio
 import logging
 import os
 from typing import Optional
-from datetime import datetime, timezone
 
 from daemon.core.configuration_service import ConfigurationService, JiraConfig
 from daemon.jira.jira_client import JiraClient, JiraAuthError, JiraAPIError

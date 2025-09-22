@@ -4,18 +4,18 @@ from src.utils.path_resolver import PathResolver
 from src.utils.logger_factory import LoggerFactory, ContextAwareLogger
 from src.utils.file_operations import FileOperations
 from src.infrastructure.storage.markdown_board_repository import MarkdownBoardRepository
-from src.infrastructure.storage.markdown_storage_repository import MarkdownStorageRepository
+from src.infrastructure.storage.markdown_storage_repository import (
+    MarkdownStorageRepository,
+)
 from src.services.board_service import BoardService
 from src.services.item_service import ItemService
 from src.services.validation_service import ValidationService
 
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class DependencyContainer:
-    """Simple dependency injection container for MKanban."""
-
     def __init__(self):
         self._instances: Dict[Type, Any] = {}
         self._factories: Dict[Type, callable] = {}
@@ -28,10 +28,11 @@ class DependencyContainer:
         self._factories[ConfigurationManager] = lambda: ConfigurationManager()
 
         # Utilities
-        self._factories[PathResolver] = lambda: PathResolver(self.get(ConfigurationManager))
+        self._factories[PathResolver] = lambda: PathResolver(
+            self.get(ConfigurationManager)
+        )
         self._factories[LoggerFactory] = lambda: LoggerFactory(
-            self.get(ConfigurationManager),
-            self.get(PathResolver)
+            self.get(ConfigurationManager), self.get(PathResolver)
         )
 
         # File operations
@@ -42,12 +43,12 @@ class DependencyContainer:
         # Repositories
         self._factories[MarkdownBoardRepository] = lambda: MarkdownBoardRepository(
             self.get(PathResolver),
-            self.get(LoggerFactory).get_daemon_logger("board_repository")
+            self.get(LoggerFactory).get_daemon_logger("board_repository"),
         )
 
         self._factories[MarkdownStorageRepository] = lambda: MarkdownStorageRepository(
             self.get(PathResolver),
-            self.get(LoggerFactory).get_daemon_logger("storage_repository")
+            self.get(LoggerFactory).get_daemon_logger("storage_repository"),
         )
 
         # Services
@@ -56,13 +57,13 @@ class DependencyContainer:
         self._factories[BoardService] = lambda: BoardService(
             self.get(MarkdownBoardRepository),
             self.get(ValidationService),
-            self.get(LoggerFactory).get_daemon_logger("board_service")
+            self.get(LoggerFactory).get_daemon_logger("board_service"),
         )
 
         self._factories[ItemService] = lambda: ItemService(
             self.get(MarkdownStorageRepository),
             self.get(ValidationService),
-            self.get(LoggerFactory).get_daemon_logger("item_service")
+            self.get(LoggerFactory).get_daemon_logger("item_service"),
         )
 
     def register_factory(self, interface: Type[T], factory: callable) -> None:
@@ -155,3 +156,4 @@ def get_daemon_logger(name: str) -> ContextAwareLogger:
 
 def get_tui_logger(name: str) -> ContextAwareLogger:
     return get_container().get_tui_logger(name)
+

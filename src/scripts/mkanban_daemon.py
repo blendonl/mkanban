@@ -6,6 +6,13 @@ manages kanban tasks based on git branch state, focusing on the
 active tmux session.
 """
 
+from daemon.service_manager import run_daemon
+from daemon.core.configuration_service import ConfigurationService, DaemonConfiguration
+from src.infrastructure.tmux.session_manager import (
+    get_mkanban_data_path,
+    ensure_mkanban_directory,
+)
+
 import asyncio
 import argparse
 import logging
@@ -14,13 +21,6 @@ from pathlib import Path
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from daemon.service_manager import ServiceManager, run_daemon
-from daemon.core.configuration_service import ConfigurationService, DaemonConfiguration
-from src.infrastructure.tmux.session_manager import (
-    get_mkanban_data_path,
-    ensure_mkanban_directory,
-)
 
 
 def setup_logging(log_level: str = "INFO") -> None:
@@ -69,7 +69,9 @@ def create_configuration_service(args) -> ConfigurationService:
         jira_config.backlog_limit = args.jira_backlog_limit
 
         if args.jira_projects:
-            jira_config.project_keys = [key.strip() for key in args.jira_projects.split(",")]
+            jira_config.project_keys = [
+                key.strip() for key in args.jira_projects.split(",")
+            ]
 
     config = DaemonConfiguration(
         enabled=not args.disable,
@@ -192,7 +194,9 @@ async def async_main():
     # Data path
     parser.add_argument(
         "--data-path",
-        help=f"Path for MKanban data (default: $MKANBAN_PATH or {get_mkanban_data_path()})",
+        help=f"Path for MKanban data (default: $MKANBAN_PATH or {
+            get_mkanban_data_path()
+        })",
     )
 
     # Jira integration options
@@ -260,7 +264,7 @@ async def async_main():
         config_service = create_configuration_service(args)
         config = config_service.config
 
-        logger.info(f"Starting MKanban daemon...")
+        logger.info("Starting MKanban daemon...")
         logger.info(f"Data directory: {config.data_path}")
         logger.info(f"Session name: {config.session_name}")
         logger.info(f"Board name: {config.default_board}")
@@ -268,12 +272,16 @@ async def async_main():
         logger.info(f"Polling interval: {config.polling_interval}s")
         logger.info(f"Session task management: {config.enable_session_task_management}")
         if config.enable_session_task_management:
-            logger.info(f"  Auto-complete on session switch: {config.auto_complete_on_session_switch}")
-            logger.info(f"  Auto-activate on session switch: {config.auto_activate_on_session_switch}")
+            logger.info(
+                f"  Auto-complete on session switch: {config.auto_complete_on_session_switch}"
+            )
+            logger.info(
+                f"  Auto-activate on session switch: {config.auto_activate_on_session_switch}"
+            )
 
         # Log Jira configuration
         if config.jira.enabled:
-            logger.info(f"Jira integration enabled:")
+            logger.info("Jira integration enabled:")
             logger.info(f"  URL: {config.jira.api_url}")
             logger.info(f"  Board: {config.jira.board_name}")
             logger.info(f"  Projects: {config.jira.project_keys}")

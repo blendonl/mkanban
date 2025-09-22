@@ -10,7 +10,6 @@ from src.ui.widgets.board_widget import BoardWidget
 from src.services.board_service import BoardService
 from src.services.item_service import ItemService
 from src.core.dependency_container import get_container, get_config_manager
-from src.config.configuration_manager import ConfigurationManager
 
 
 class MKanbanApp(App):

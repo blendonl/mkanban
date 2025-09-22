@@ -6,7 +6,7 @@ handling the transition of tasks between columns based on session context.
 
 import logging
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional
 
 from daemon.core.session_context_manager import SessionContext
 from daemon.core.configuration_service import ConfigurationService

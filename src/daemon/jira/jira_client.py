@@ -4,14 +4,12 @@ Handles all interactions with the Jira REST API, including authentication,
 ticket fetching, status updates, and error handling.
 """
 
-import asyncio
 import logging
 import re
-from typing import List, Dict, Any, Optional, Tuple
-from datetime import datetime, timezone
+from typing import List, Dict, Any, Optional
+from datetime import datetime
 import aiohttp
 import base64
-import json
 
 from daemon.core.configuration_service import JiraConfig
 from src.core.exceptions import MKanbanError

@@ -6,7 +6,7 @@ status checking, and repository introspection.
 
 import subprocess
 from pathlib import Path
-from typing import List, Optional, Dict, Any
+from typing import List, Optional
 from dataclasses import dataclass
 from enum import Enum
 
