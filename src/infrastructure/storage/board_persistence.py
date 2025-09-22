@@ -116,6 +116,25 @@ class BoardPersistence:
 
         return False
 
+    def save_column_metadata(
+        self, board_name: str, column_name: str, column_data: dict
+    ) -> None:
+        board_dir = get_board_directory_path(self.boards_dir, board_name)
+        column_dir = get_column_directory_path(board_dir, column_name)
+        ensure_directory_exists(column_dir)
+        column_metadata_file = column_dir / COLUMN_METADATA_FILENAME
+
+        metadata = {
+            "position": column_data.get("position"),
+            "created_at": column_data.get("created_at", now()),
+            "updated_at": column_data.get("updated_at", now()),
+        }
+
+        if column_data.get("limit") is not None:
+            metadata["limit"] = column_data["limit"]
+
+        save_column_metadata(column_metadata_file, column_name, metadata)
+
     def save_column_metadata_if_needed(
         self, board_name: str, column_data: dict
     ) -> None:
@@ -124,20 +143,7 @@ class BoardPersistence:
         )
 
         if needs_metadata:
-            board_dir = get_board_directory_path(self.boards_dir, board_name)
-            column_dir = get_column_directory_path(board_dir, column_data["name"])
-            column_metadata_file = column_dir / COLUMN_METADATA_FILENAME
-
-            metadata = {
-                "position": column_data.get("position"),
-                "created_at": column_data.get("created_at", now()),
-                "updated_at": column_data.get("updated_at", now()),
-            }
-
-            if column_data.get("limit") is not None:
-                metadata["limit"] = column_data["limit"]
-
-            save_column_metadata(column_metadata_file, column_data["name"], metadata)
+            self.save_column_metadata(board_name, column_data["name"], column_data)
 
     def cleanup_column(
         self, board_name: str, column_name: str, current_item_ids: set[ItemId]

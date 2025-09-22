@@ -119,7 +119,7 @@ class ConfigurationManager:
             try:
                 with open(config_path, "r") as f:
                     data = json.load(f)
-                return UnifiedConfiguration(**data)
+                return self._create_config_from_dict(data)
             except (json.JSONDecodeError, TypeError) as e:
                 # Fallback to defaults if config is corrupted
                 pass
@@ -128,6 +128,26 @@ class ConfigurationManager:
         config = UnifiedConfiguration()
         self._apply_environment_overrides(config)
         return config
+
+    def _create_config_from_dict(self, data: Dict[str, Any]) -> UnifiedConfiguration:
+        """Create UnifiedConfiguration from dict, properly handling nested dataclasses."""
+        # Handle nested daemon configuration
+        daemon_data = data.get('daemon', {})
+        if daemon_data:
+            jira_data = daemon_data.get('jira', {})
+            daemon_data['jira'] = JiraConfiguration(**jira_data) if jira_data else JiraConfiguration()
+            data['daemon'] = DaemonConfiguration(**daemon_data)
+        else:
+            data['daemon'] = DaemonConfiguration()
+
+        # Handle nested logging configuration
+        logging_data = data.get('logging', {})
+        if logging_data:
+            data['logging'] = LoggingConfiguration(**logging_data)
+        else:
+            data['logging'] = LoggingConfiguration()
+
+        return UnifiedConfiguration(**data)
 
     def _apply_environment_overrides(self, config: UnifiedConfiguration) -> None:
         if mkanban_data_dir := os.environ.get("MKANBAN_DATA_DIR"):

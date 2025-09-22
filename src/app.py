@@ -198,22 +198,22 @@ class MKanbanApp(App):
             self.board_view.show_column_settings_dialog()
 
     def start_auto_save_timer(self) -> None:
-        if self.settings.auto_save and self.settings.auto_save_interval > 0:
+        if self.config_manager.config.auto_save and self.config_manager.config.auto_save_interval > 0:
             self.auto_save_timer = self.set_interval(
-                self.settings.auto_save_interval, self.auto_save_callback
+                self.config_manager.config.auto_save_interval, self.auto_save_callback
             )
 
     def auto_save_callback(self) -> None:
-        if self.controller and self.current_board:
+        if self.current_board:
             try:
-                self.controller.save()
+                self._board_service.save_board(self.current_board)
             except Exception:
                 pass
 
     def on_unmount(self) -> None:
-        if self.controller and self.current_board:
+        if self.current_board:
             try:
-                self.controller.save()
+                self._board_service.save_board(self.current_board)
             except Exception:
                 pass
 
@@ -221,9 +221,9 @@ class MKanbanApp(App):
             self.auto_save_timer.stop()
 
     def action_quit(self) -> None:
-        if self.controller and self.current_board:
+        if self.current_board:
             try:
-                self.controller.save()
+                self._board_service.save_board(self.current_board)
             except Exception:
                 pass
         self.exit()

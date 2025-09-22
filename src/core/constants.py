@@ -1,6 +1,6 @@
 from pathlib import Path
 
-DEFAULT_DATA_DIR = "./mkanban/boards"
+DEFAULT_DATA_DIR = "~/.mkanban/boards"
 DEFAULT_CONFIG_DIR = Path.home() / ".mkanban"
 DEFAULT_CONFIG_FILE = DEFAULT_CONFIG_DIR / "config.json"
 
