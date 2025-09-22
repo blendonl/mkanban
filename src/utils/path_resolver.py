@@ -1,58 +1,26 @@
 from pathlib import Path
 from typing import Optional
 from src.config.configuration_manager import ConfigurationManager
-from src.infrastructure.tmux.session_manager import TmuxSessionManager
 from src.utils.string_utils import get_safe_filename
 
 
 class PathResolver:
-    def __init__(self, config_manager: ConfigurationManager, tmux_manager: Optional[TmuxSessionManager] = None):
+    def __init__(self, config_manager: ConfigurationManager):
         self.config_manager = config_manager
-        self.tmux_manager = tmux_manager or TmuxSessionManager()
 
-    def get_data_dir(self) -> Path:
-        return self.config_manager.get_data_dir()
-
-    def get_session_based_data_dir(self) -> Path:
-        mkanban_path = self.config_manager.get_mkanban_path()
-
-        if mkanban_path:
-            return Path(mkanban_path).expanduser().resolve()
-
-        try:
-            current_session = self.tmux_manager.get_current_session()
-            if current_session:
-                from src.core.constants import DEFAULT_DATA_DIR
-                # Replace the default data dir with session-specific path
-                default_path = Path(DEFAULT_DATA_DIR).expanduser().resolve()
-                session_path = default_path.parent / current_session.name
-                session_path.mkdir(parents=True, exist_ok=True)
-                return session_path
-        except Exception:
-            pass
-
-        return self.get_data_dir()
+    def get_boards_path(self) -> Path:
+        return self.config_manager.get_boards_path()
 
     def get_boards_directory(self) -> Path:
-        # Check if MKANBAN_PATH environment variable is set
-        mkanban_path = self.config_manager.get_mkanban_path()
-        if mkanban_path:
-            return Path(mkanban_path).expanduser().resolve()
+        boards_path = self.get_boards_path()
+        boards_path.mkdir(parents=True, exist_ok=True)
+        return boards_path
 
-        # Check if data_dir was explicitly configured (not default)
-        from src.core.constants import DEFAULT_DATA_DIR
-        configured_data_dir = self.config_manager.get_data_dir()
-        default_data_dir = Path(DEFAULT_DATA_DIR).expanduser().resolve()
-
-        # If data directory was explicitly set to something other than default, use it exactly as specified
-        if configured_data_dir.resolve() != default_data_dir:
-            configured_data_dir.mkdir(parents=True, exist_ok=True)
-            return configured_data_dir
-
-        # For default data directory, use session-based logic
-        data_dir = self.get_session_based_data_dir()
-        data_dir.mkdir(parents=True, exist_ok=True)
-        return data_dir
+    def get_data_dir(self) -> Path:
+        """Get data directory for non-board files (logs, sockets, etc.)"""
+        boards_path = self.get_boards_path()
+        # Get parent directory of boards (e.g., ~/.mkanban)
+        return boards_path.parent
 
     def get_board_directory(self, board_name: str) -> Path:
         boards_dir = self.get_boards_directory()

@@ -6,9 +6,9 @@ from src.core.exceptions import MKanbanError
 
 @click.command()
 @click.option(
-    "--data-dir",
-    default="./data",
-    help="Directory containing markdown board files",
+    "--boards-path",
+    default=None,
+    help="Path to directory containing markdown board files",
     type=click.Path(exists=False, path_type=Path),
 )
 @click.option(
@@ -62,7 +62,7 @@ from src.core.exceptions import MKanbanError
     type=str,
 )
 def main_command(
-    data_dir: Path,
+    boards_path: Optional[Path],
     board: Optional[str],
     new_task_title: Optional[str],
     new_task_description: str,
@@ -87,18 +87,18 @@ def main_command(
 
         config_manager = get_config_manager()
 
-        # Update configuration with provided data directory if needed
-        if data_dir != Path("./data"):
-            config_manager.update_configuration(data_dir=str(data_dir))
+        # Update configuration with provided boards path if needed
+        if boards_path is not None:
+            config_manager.update_configuration(boards_path=str(boards_path))
 
-        actual_data_dir = config_manager.get_data_dir()
+        actual_boards_path = config_manager.get_boards_path()
         container = get_container()
-        task_creator = TaskCreator(container, actual_data_dir)
+        task_creator = TaskCreator(container, actual_boards_path)
 
         if list_todos:
             from src.infrastructure.cli.todo_selector import TodoSelector
 
-            todo_selector = TodoSelector(container, actual_data_dir)
+            todo_selector = TodoSelector(container, actual_boards_path)
             todo_selector.run_todo_selector(selector_command, board)
             return
 
@@ -130,7 +130,7 @@ def main_command(
 
         from app import MKanbanApp
 
-        app = MKanbanApp(data_dir=data_dir, initial_board=board)
+        app = MKanbanApp(boards_path=actual_boards_path, initial_board=board)
         app.run()
 
     except MKanbanError as e:

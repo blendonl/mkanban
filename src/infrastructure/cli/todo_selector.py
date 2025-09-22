@@ -4,11 +4,9 @@ import click
 from pathlib import Path
 from typing import Optional, List, Tuple
 from src.core.exceptions import MKanbanError, BoardNotFoundError
-from src.config.settings import Settings
+from src.core.dependency_container import DependencyContainer
 from src.services.board_service import BoardService
 from src.services.item_service import ItemService
-from src.services.validation_service import ValidationService
-from src.infrastructure.storage.markdown_storage_impl import MarkdownStorageImpl
 from src.infrastructure.git.repository import GitOperations
 from src.infrastructure.tmux.session_manager import TmuxSessionManager
 from src.domain.entities.item import Item
@@ -16,17 +14,11 @@ from src.domain.entities.board import Board
 
 
 class TodoSelector:
-    def __init__(self, settings: Settings, data_dir: Optional[Path] = None):
-        self.settings = settings
-        if data_dir is None:
-            data_dir = Path(settings.data_dir)
-        self.data_dir = data_dir
-
-        # Use the provided data_dir (which should be the boards directory)
-        self._storage = MarkdownStorageImpl(data_dir)
-        self._validator = ValidationService()
-        self._board_service = BoardService(self._storage, self._validator)
-        self._item_service = ItemService(self._storage, self._validator)
+    def __init__(self, container: DependencyContainer, boards_path: Optional[Path] = None):
+        self.container = container
+        self.boards_path = boards_path
+        self._board_service = container.get(BoardService)
+        self._item_service = container.get(ItemService)
         self._tmux_manager = TmuxSessionManager()
 
     def run_todo_selector(self, selector_command: str, board_name: str) -> None:

@@ -1,19 +1,7 @@
 import os
-from pathlib import Path
-from src.core.constants import DEFAULT_DATA_DIR, DEFAULT_CONFIG_DIR
 
 
 class Environment:
-    @staticmethod
-    def get_data_dir() -> str:
-        return os.environ.get("MKANBAN_DATA_DIR", DEFAULT_DATA_DIR)
-
-    @staticmethod
-    def get_config_dir() -> Path:
-        config_dir_str = os.environ.get("MKANBAN_CONFIG_DIR")
-        if config_dir_str:
-            return Path(config_dir_str)
-        return DEFAULT_CONFIG_DIR
 
     @staticmethod
     def get_editor() -> str:

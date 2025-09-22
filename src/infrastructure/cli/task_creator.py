@@ -10,9 +10,9 @@ from src.services.item_service import ItemService
 
 
 class TaskCreator:
-    def __init__(self, container: DependencyContainer, data_dir: Optional[Path] = None):
+    def __init__(self, container: DependencyContainer, boards_path: Optional[Path] = None):
         self.container = container
-        self.data_dir = data_dir
+        self.boards_path = boards_path
         self._board_service = container.get(BoardService)
         self._item_service = container.get(ItemService)
 

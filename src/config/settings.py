@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Dict, Optional
 from dataclasses import dataclass, asdict
 from src.core.constants import (
-    DEFAULT_DATA_DIR,
+    DEFAULT_BOARDS_PATH,
     DEFAULT_CONFIG_FILE,
     DEFAULT_COLUMN_WIDTH,
     DEFAULT_AUTO_SAVE_INTERVAL,
@@ -17,7 +17,7 @@ from src.infrastructure.tmux.session_manager import TmuxSessionManager
 
 @dataclass
 class Settings:
-    data_dir: str = DEFAULT_DATA_DIR
+    boards_path: str = str(DEFAULT_BOARDS_PATH)
     auto_save: bool = True
     auto_save_interval: int = DEFAULT_AUTO_SAVE_INTERVAL
     backup_count: int = DEFAULT_BACKUP_COUNT

@@ -45,16 +45,15 @@ class MKanbanApp(App):
         ("ctrl+c", "quit", "Quit"),
     ]
 
-    def __init__(self, data_dir: Path, initial_board: Optional[str] = None):
+    def __init__(self, boards_path: Path, initial_board: Optional[str] = None):
         super().__init__()
         self.container = get_container()
         self.config_manager = get_config_manager()
 
-        # Update configuration with provided data directory
-        if data_dir != Path("./data"):
-            self.config_manager.update_configuration(data_dir=str(data_dir))
+        # Update configuration with provided boards path
+        self.config_manager.update_configuration(boards_path=str(boards_path))
 
-        self.data_dir = self.config_manager.get_data_dir()
+        self.boards_path = self.config_manager.get_boards_path()
         self._setup_services()
 
         self.initial_board = initial_board

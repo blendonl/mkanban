@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Dict, Optional, List, Any
 from dataclasses import dataclass, field, asdict
 from src.core.constants import (
-    DEFAULT_DATA_DIR,
+    DEFAULT_BOARDS_PATH,
     DEFAULT_CONFIG_DIR,
     DEFAULT_CONFIG_FILE,
     DEFAULT_COLUMN_WIDTH,
@@ -89,7 +89,7 @@ class LoggingConfiguration:
 
 @dataclass
 class UnifiedConfiguration:
-    data_dir: str = DEFAULT_DATA_DIR
+    boards_path: str = str(DEFAULT_BOARDS_PATH)
     config_dir: str = ""
     auto_save: bool = True
     auto_save_interval: int = DEFAULT_AUTO_SAVE_INTERVAL
@@ -139,6 +139,9 @@ class ConfigurationManager:
         # Create default configuration with environment overrides
         config = UnifiedConfiguration()
         self._apply_environment_overrides(config)
+
+        # Auto-save the default config when it doesn't exist
+        self._save_config_to_file(config, config_path)
         return config
 
     def _create_config_from_dict(self, data: Dict[str, Any]) -> UnifiedConfiguration:
@@ -163,13 +166,13 @@ class ConfigurationManager:
 
         return UnifiedConfiguration(**data)
 
+    def _save_config_to_file(self, config: UnifiedConfiguration, config_path: Path) -> None:
+        """Save configuration to specified path, creating directories as needed."""
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(config_path, "w") as f:
+            json.dump(asdict(config), f, indent=2)
+
     def _apply_environment_overrides(self, config: UnifiedConfiguration) -> None:
-        if mkanban_data_dir := os.environ.get("MKANBAN_DATA_DIR"):
-            config.data_dir = mkanban_data_dir
-
-        if mkanban_config_dir := os.environ.get("MKANBAN_CONFIG_DIR"):
-            config.config_dir = mkanban_config_dir
-
         if mkanban_theme := os.environ.get("MKANBAN_THEME"):
             config.theme = mkanban_theme
 
@@ -184,9 +187,6 @@ class ConfigurationManager:
                 config.logging.level = "DEBUG"
 
     def _get_config_file_path(self) -> Path:
-        config_dir = os.environ.get("MKANBAN_CONFIG_DIR")
-        if config_dir:
-            return Path(config_dir) / "config.json"
         return DEFAULT_CONFIG_FILE
 
     @property
@@ -195,8 +195,8 @@ class ConfigurationManager:
             self._config = self._load_configuration()
         return self._config
 
-    def get_data_dir(self) -> Path:
-        return Path(self.config.data_dir).expanduser().resolve()
+    def get_boards_path(self) -> Path:
+        return Path(self.config.boards_path).expanduser().resolve()
 
     def get_config_dir(self) -> Path:
         return Path(self.config.config_dir).expanduser().resolve()
@@ -210,8 +210,6 @@ class ConfigurationManager:
     def is_debug_mode(self) -> bool:
         return self.config.logging.level == "DEBUG"
 
-    def get_mkanban_path(self) -> Optional[str]:
-        return os.environ.get("MKANBAN_PATH")
 
     def save_configuration(self, config_path: Optional[Path] = None) -> None:
         if config_path is None:
