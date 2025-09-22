@@ -13,8 +13,14 @@ from pathlib import Path
 from typing import Dict, Any
 
 from src.core.exceptions import MKanbanError
-from daemon.core.configuration_service import ConfigurationService
-from daemon.core.session_context_manager import SessionContextManager
+from src.daemon.core.configuration_service import ConfigurationService
+from src.daemon.core.session_context_manager import SessionContextManager
+from src.core.dependency_container import (
+    get_container,
+    get_git_monitor,
+    get_jira_daemon,
+    get_session_context_manager,
+)
 
 
 class ServiceManager:
@@ -22,9 +28,12 @@ class ServiceManager:
 
     def __init__(self, config_service: ConfigurationService):
         self.config_service = config_service
-        self.session_manager = SessionContextManager(
-            config_service.config.tmux_session_only
-        )
+        self.container = get_container()
+        # Register the provided config service in the container
+        self.container.register_instance(ConfigurationService, config_service)
+
+        # Get services from DI container
+        self.session_manager = get_session_context_manager()
         self.logger = self._setup_logging()
         self.running = False
         self.services: Dict[str, Any] = {}
@@ -136,24 +145,18 @@ class ServiceManager:
 
     async def _initialize_services(self) -> None:
         """Initialize all daemon services"""
-        from daemon.git_monitor import GitMonitor
         from daemon.sync.sync_coordinator import SyncCoordinator
         from daemon.ipc.ipc_server import IPCServer, setup_ipc_handlers
 
-        # Initialize git monitor with session context manager
-        self.services["git_monitor"] = GitMonitor(
-            session_context_manager=self.session_manager,
-            polling_interval=self.config_service.config.polling_interval,
-        )
+        # Initialize git monitor using DI
+        self.services["git_monitor"] = get_git_monitor()
 
-        # Initialize sync coordinator
+        # Initialize sync coordinator (not yet in DI - still manual)
         self.services["sync_coordinator"] = SyncCoordinator(self.config_service)
 
         # Initialize Jira daemon if enabled
         if self.config_service.is_jira_enabled():
-            from daemon.jira.jira_daemon import JiraDaemon
-
-            self.services["jira_daemon"] = JiraDaemon(self.config_service)
+            self.services["jira_daemon"] = get_jira_daemon()
             self.logger.info("Jira daemon initialized")
 
         # Initialize IPC server with session-specific socket path

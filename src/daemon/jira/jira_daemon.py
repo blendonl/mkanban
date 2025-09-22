@@ -10,9 +10,9 @@ import logging
 import os
 from typing import Optional
 
-from daemon.core.configuration_service import ConfigurationService, JiraConfig
-from daemon.jira.jira_client import JiraClient, JiraAuthError, JiraAPIError
-from daemon.jira.jira_sync_coordinator import JiraSyncCoordinator
+from src.daemon.core.configuration_service import ConfigurationService, JiraConfig
+from src.daemon.jira.jira_client import JiraClient, JiraAuthError, JiraAPIError
+from src.daemon.jira.jira_sync_coordinator import JiraSyncCoordinator
 from src.core.exceptions import MKanbanError
 
 

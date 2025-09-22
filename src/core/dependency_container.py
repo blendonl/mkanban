@@ -10,6 +10,17 @@ from src.infrastructure.storage.markdown_storage_repository import (
 from src.services.board_service import BoardService
 from src.services.item_service import ItemService
 from src.services.validation_service import ValidationService
+from src.infrastructure.tmux.session_manager import TmuxSessionManager
+from src.infrastructure.git.repository import GitOperations
+from src.daemon.core.configuration_service import ConfigurationService
+from src.daemon.jira.jira_client import JiraClient
+from src.daemon.jira.jira_daemon import JiraDaemon
+from src.daemon.jira.jira_sync_coordinator import JiraSyncCoordinator
+from src.daemon.git_monitor import GitMonitor
+from src.daemon.core.session_context_manager import SessionContextManager
+# CLI components imported lazily to avoid circular imports
+from src.controllers.item_controller import ItemController
+from src.controllers.column_controller import ColumnController
 
 
 T = TypeVar("T")
@@ -40,6 +51,40 @@ class DependencyContainer:
             self.get(LoggerFactory).get_daemon_logger("file_operations")
         )
 
+        # Infrastructure services
+        self._factories[TmuxSessionManager] = lambda: TmuxSessionManager()
+
+        # Configuration service for daemon
+        self._factories[ConfigurationService] = lambda: ConfigurationService()
+
+        # Jira services
+        self._factories[JiraClient] = lambda: JiraClient(
+            self.get(ConfigurationService).get_jira_config()
+        )
+
+        self._factories[JiraSyncCoordinator] = lambda: JiraSyncCoordinator(
+            self.get(ConfigurationService)
+        )
+
+        self._factories[JiraDaemon] = lambda: JiraDaemon(
+            self.get(ConfigurationService)
+        )
+
+        # Session management
+        self._factories[SessionContextManager] = lambda: SessionContextManager(
+            self.get(ConfigurationService).config.tmux_session_only
+        )
+
+        # Git monitoring
+        self._factories[GitMonitor] = lambda: GitMonitor(
+            session_context_manager=self.get(SessionContextManager),
+            polling_interval=self.get(ConfigurationService).config.polling_interval,
+        )
+
+        # Git operations factory - requires repo_path parameter
+        # Note: GitOperations needs a repo_path, so this will be registered per-repo
+        # For common usage, a factory function can be provided
+
         # Repositories
         self._factories[MarkdownBoardRepository] = (
             lambda: MarkdownBoardRepository(
@@ -69,6 +114,23 @@ class DependencyContainer:
             self.get(ValidationService),
             self.get(LoggerFactory).get_daemon_logger("item_service"),
         )
+
+        # CLI components - using lazy imports to avoid circular dependencies
+        def _create_task_creator():
+            from src.infrastructure.cli.task_creator import TaskCreator
+            return TaskCreator(self, self.get(PathResolver).get_boards_path())
+
+        def _create_todo_selector():
+            from src.infrastructure.cli.todo_selector import TodoSelector
+            return TodoSelector(self, self.get(PathResolver).get_boards_path())
+
+        def _create_daemon_manager():
+            from src.infrastructure.cli.daemon_manager import DaemonManager
+            return DaemonManager()
+
+        self._factories["TaskCreator"] = _create_task_creator
+        self._factories["TodoSelector"] = _create_todo_selector
+        self._factories["DaemonManager"] = _create_daemon_manager
 
     def register_factory(self, interface: Type[T], factory: callable) -> None:
         """Register a factory function for an interface."""
@@ -165,3 +227,70 @@ def get_daemon_logger(name: str) -> ContextAwareLogger:
 
 def get_tui_logger(name: str) -> ContextAwareLogger:
     return get_container().get_tui_logger(name)
+
+
+def get_tmux_session_manager() -> TmuxSessionManager:
+    return get_container().get(TmuxSessionManager)
+
+
+def create_git_operations(repo_path) -> GitOperations:
+    """Factory function to create GitOperations for a specific repository path"""
+    return GitOperations(repo_path)
+
+
+def get_configuration_service() -> ConfigurationService:
+    return get_container().get(ConfigurationService)
+
+
+def get_jira_client() -> JiraClient:
+    return get_container().get(JiraClient)
+
+
+def get_jira_daemon() -> JiraDaemon:
+    return get_container().get(JiraDaemon)
+
+
+def get_jira_sync_coordinator() -> JiraSyncCoordinator:
+    return get_container().get(JiraSyncCoordinator)
+
+
+def get_git_monitor() -> GitMonitor:
+    return get_container().get(GitMonitor)
+
+
+def get_session_context_manager() -> SessionContextManager:
+    return get_container().get(SessionContextManager)
+
+
+def get_task_creator():
+    return get_container().get("TaskCreator")
+
+
+def get_todo_selector():
+    return get_container().get("TodoSelector")
+
+
+def get_daemon_manager():
+    return get_container().get("DaemonManager")
+
+
+def create_item_controller(board, item) -> ItemController:
+    """Factory function to create ItemController with specific board and item"""
+    container = get_container()
+    return ItemController(
+        board=board,
+        item=item,
+        board_service=container.get(BoardService),
+        item_service=container.get(ItemService),
+    )
+
+
+def create_column_controller(board, column) -> ColumnController:
+    """Factory function to create ColumnController with specific board and column"""
+    container = get_container()
+    return ColumnController(
+        board=board,
+        column=column,
+        board_service=container.get(BoardService),
+        item_service=container.get(ItemService),
+    )

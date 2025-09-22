@@ -9,8 +9,8 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime, timezone
 from dataclasses import dataclass
 
-from daemon.core.configuration_service import ConfigurationService
-from daemon.jira.jira_client import JiraTicket
+from src.daemon.core.configuration_service import ConfigurationService
+from src.daemon.jira.jira_client import JiraTicket
 
 
 @dataclass

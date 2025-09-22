@@ -76,14 +76,19 @@ def main_command(
     try:
         # Handle daemon commands first
         if daemon:
-            from src.infrastructure.cli.daemon_manager import DaemonManager
+            from src.core.dependency_container import get_daemon_manager
 
-            daemon_manager = DaemonManager()
+            daemon_manager = get_daemon_manager()
             daemon_manager.handle_daemon_command(daemon)
             return
 
-        from src.infrastructure.cli.task_creator import TaskCreator
-        from src.core.dependency_container import get_config_manager, get_container
+        from src.core.dependency_container import (
+            get_config_manager,
+            get_container,
+            get_task_creator,
+            get_todo_selector,
+            get_daemon_manager,
+        )
 
         config_manager = get_config_manager()
 
@@ -92,13 +97,10 @@ def main_command(
             config_manager.update_configuration(boards_path=str(boards_path))
 
         actual_boards_path = config_manager.get_boards_path()
-        container = get_container()
-        task_creator = TaskCreator(container, actual_boards_path)
+        task_creator = get_task_creator()
 
         if list_todos:
-            from src.infrastructure.cli.todo_selector import TodoSelector
-
-            todo_selector = TodoSelector(container, actual_boards_path)
+            todo_selector = get_todo_selector()
             todo_selector.run_todo_selector(selector_command, board)
             return
 

@@ -8,9 +8,9 @@ import logging
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone
 
-from daemon.core.configuration_service import ConfigurationService
-from daemon.jira.jira_client import JiraClient, JiraTicket
-from daemon.jira.jira_event_processor import JiraEventProcessor, ProcessedJiraEvent
+from src.daemon.core.configuration_service import ConfigurationService
+from src.daemon.jira.jira_client import JiraClient, JiraTicket
+from src.daemon.jira.jira_event_processor import JiraEventProcessor, ProcessedJiraEvent
 from src.domain.entities.board import Board
 from src.domain.entities.item import Item
 from src.domain.entities.column import Column

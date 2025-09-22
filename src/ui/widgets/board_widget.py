@@ -11,7 +11,7 @@ from src.core.types import RefreshType
 from src.ui.widgets.markdown_widget import MarkDownWidget
 from src.ui.widgets.item_widget import ItemWidget
 from src.ui.widgets.column_widget import ColumnWidget
-from controllers.column_controller import ColumnController
+from src.core.dependency_container import create_column_controller
 from src.utils.editor_utils import open_editor_for_app
 
 from src.ui.dialogs.help_dialog import HelpDialog
@@ -128,9 +128,7 @@ class BoardWidget(Widget):
             column_widget = ColumnWidget(
                 column,
                 items,
-                ColumnController(
-                    self.board, column, self.app._board_service, self.app._item_service
-                ),
+                create_column_controller(self.board, column),
             )
             columns_container.mount(column_widget)
 
@@ -205,9 +203,7 @@ class BoardWidget(Widget):
 
         column_widget = self._find_column_for_item(selected)
         column = column_widget.column if column_widget else None
-        column_controller = ColumnController(
-            self.board, column, self.app._board_service, self.app._item_service
-        )
+        column_controller = create_column_controller(self.board, column)
         if column_controller.delete_item(selected):
             self.refresh_board()
 
@@ -354,11 +350,8 @@ updated_at: {item.updated_at}
                 target_column = self.board.columns[index + 1]
 
                 column_widget = self._find_column_for_item(selected)
-                column_controller = ColumnController(
-                    self.board,
-                    column_widget.column,
-                    self.app._board_service,
-                    self.app._item_service,
+                column_controller = create_column_controller(
+                    self.board, column_widget.column
                 )
 
                 try:
@@ -380,11 +373,8 @@ updated_at: {item.updated_at}
                 target_column = self.board.columns[index - 1]
 
                 column_widget = self._find_column_for_item(selected)
-                column_controller = ColumnController(
-                    self.board,
-                    column_widget.column,
-                    self.app._board_service,
-                    self.app._item_service,
+                column_controller = create_column_controller(
+                    self.board, column_widget.column
                 )
 
                 try:

@@ -5,8 +5,8 @@ from src.domain.entities.column import Column
 from src.domain.entities.item import Item
 from src.ui.widgets.item_widget import ItemWidget
 from src.ui.widgets.editable_item_widget import EditableItemWidget
-from controllers.column_controller import ColumnController
-from controllers.item_controller import ItemController
+from src.controllers.column_controller import ColumnController
+from src.controllers.item_controller import ItemController
 
 
 class ColumnWidget(Vertical):

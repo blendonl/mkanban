@@ -2,7 +2,7 @@ import re
 from typing import Optional
 from textual.widgets import Markdown
 from src.domain.entities.item import Item
-from controllers.item_controller import ItemController
+from src.controllers.item_controller import ItemController
 
 
 class ItemWidget(Markdown):

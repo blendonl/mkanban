@@ -11,7 +11,7 @@ from datetime import datetime
 import aiohttp
 import base64
 
-from daemon.core.configuration_service import JiraConfig
+from src.daemon.core.configuration_service import JiraConfig
 from src.core.exceptions import MKanbanError
 
 
