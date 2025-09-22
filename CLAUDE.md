@@ -9,11 +9,13 @@ MKanban is a Terminal User Interface (TUI) Kanban board application built with P
 ## Development Commands
 
 ### Environment Setup
+
 ```bash
 make setup              # Create venv and install dependencies
 ```
 
 ### Code Quality
+
 ```bash
 make lint              # Run flake8 and mypy linting
 make format            # Format code with black
@@ -21,6 +23,7 @@ ruff check             # Run ruff linter (configured in ruff.toml)
 ```
 
 ### Testing
+
 ```bash
 make test              # Run pytest tests
 python test/test_operations.py  # Run specific debugging tests
@@ -28,12 +31,14 @@ pytest tests/unit/test_services/test_board_service.py::TestBoardService::test_cr
 ```
 
 ### Building
+
 ```bash
 make executable        # Build standalone executable with PyInstaller
 make dist             # Create distribution packages (sdist/bdist_wheel)
 ```
 
 ### Running the Application
+
 ```bash
 python main.py                        # Run with default data directory
 python main.py --data-dir /path/to/data  # Use custom data directory
@@ -100,6 +105,7 @@ logger.info("Loading board", board="my-project")
 ### Data Structure
 
 Boards are stored as markdown files with frontmatter metadata:
+
 ```
 data/boards/{board-name}/
 ├── kanban.md           # Board metadata and structure
@@ -124,6 +130,7 @@ data/boards/{board-name}/
 ### Vim-style Navigation
 
 The application uses vim-inspired keybindings:
+
 - `h/j/k/l`: Navigate left/down/up/right
 - `H/L`: Move items between columns
 - `o`: Create new item
@@ -149,13 +156,14 @@ The application uses vim-inspired keybindings:
 ### Session-Aware Paths
 
 Path resolution is handled by `PathResolver` which supports:
+
 - tmux session detection
-- `MKANBAN_PATH` environment variable
 - Fallback to configured data directory
 
 ### Error Handling
 
 Services return `None`/`False` for failures and use comprehensive logging:
+
 - All operations logged with relevant context
 - JIRA operations prefixed with `[JIRA:TICKET-123]`
 - Daemon vs TUI logging separation
@@ -163,6 +171,8 @@ Services return `None`/`False` for failures and use comprehensive logging:
 ## Testing
 
 Tests are organized by layer:
+
 - `tests/unit/`: Unit tests with mocked dependencies
 - `tests/integration/`: Integration tests with real storage
 - Use dependency injection for easy mocking in tests
+

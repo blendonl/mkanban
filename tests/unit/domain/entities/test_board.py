@@ -1,11 +1,6 @@
-import pytest
-from pathlib import Path
 from unittest.mock import patch
 
 from src.domain.entities.board import Board
-from src.domain.entities.column import Column
-from src.domain.entities.item import Item
-from src.domain.entities.parent import Parent
 from tests.fixtures.entity_factories import BoardFactory, ColumnFactory, ItemFactory, ParentFactory
 
 

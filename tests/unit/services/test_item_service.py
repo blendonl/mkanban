@@ -1,9 +1,8 @@
 import pytest
-from unittest.mock import MagicMock
 
 from src.services.item_service import ItemService
 from src.core.exceptions import ItemNotFoundError, ColumnNotFoundError, ValidationError
-from tests.fixtures.entity_factories import BoardFactory, ColumnFactory, ItemFactory, ParentFactory
+from tests.fixtures.entity_factories import BoardFactory, ItemFactory, ParentFactory
 from tests.fixtures.mock_factories import MockRepositoryFactory, MockServiceFactory
 
 

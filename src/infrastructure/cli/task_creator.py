@@ -214,9 +214,10 @@ updated_at: {timestamp}
             click.echo(f"Error opening editor: {e}")
 
     def _open_editor_for_current_task(self, file_path: str) -> None:
-        from src.config.environment import Environment
+        from src.config.configuration_manager import get_config
 
-        editor = Environment.get_editor()
+        config_manager = get_config()
+        editor = config_manager.get_editor()
 
         try:
             subprocess.run([editor, file_path], check=True)
@@ -230,11 +231,16 @@ updated_at: {timestamp}
             raise
 
     def _open_editor_for_cli(self, file_path: str) -> None:
+        from src.config.configuration_manager import get_config
+
+        config_manager = get_config()
+        cli_editor = config_manager.get_cli_editor()
+
         try:
-            subprocess.run(["neovide", file_path, "+10"], check=True)
+            subprocess.run([cli_editor, file_path, "+10"], check=True)
         except subprocess.CalledProcessError:
-            click.echo("Error: Failed to open neovide editor")
+            click.echo(f"Error: Failed to open {cli_editor} editor")
             raise
         except FileNotFoundError:
-            click.echo("Error: neovide not found. Please install neovide")
+            click.echo(f"Error: {cli_editor} not found. Please install {cli_editor}")
             raise

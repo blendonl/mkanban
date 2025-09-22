@@ -41,14 +41,18 @@ class DependencyContainer:
         )
 
         # Repositories
-        self._factories[MarkdownBoardRepository] = lambda: MarkdownBoardRepository(
-            self.get(PathResolver),
-            self.get(LoggerFactory).get_daemon_logger("board_repository"),
+        self._factories[MarkdownBoardRepository] = (
+            lambda: MarkdownBoardRepository(
+                self.get(PathResolver),
+                self.get(LoggerFactory).get_daemon_logger("board_repository"),
+            )
         )
 
-        self._factories[MarkdownStorageRepository] = lambda: MarkdownStorageRepository(
-            self.get(PathResolver),
-            self.get(LoggerFactory).get_daemon_logger("storage_repository"),
+        self._factories[MarkdownStorageRepository] = (
+            lambda: MarkdownStorageRepository(
+                self.get(PathResolver),
+                self.get(LoggerFactory).get_daemon_logger("storage_repository"),
+            )
         )
 
         # Services
@@ -88,7 +92,9 @@ class DependencyContainer:
 
         raise ValueError(f"No factory registered for {interface}")
 
-    def get_logger(self, name: str, component: str = "daemon") -> ContextAwareLogger:
+    def get_logger(
+        self, name: str, component: str = "daemon"
+    ) -> ContextAwareLogger:
         """Convenience method to get a logger."""
         logger_factory = self.get(LoggerFactory)
         return logger_factory.get_logger(name, component)
@@ -104,6 +110,9 @@ class DependencyContainer:
     def clear_instances(self) -> None:
         """Clear all singleton instances (useful for testing)."""
         self._instances.clear()
+        # Reset ConfigurationManager singleton state
+        ConfigurationManager._instance = None
+        ConfigurationManager._config = None
 
     def setup_for_testing(self) -> None:
         """Set up container for testing with mock dependencies."""
@@ -156,4 +165,3 @@ def get_daemon_logger(name: str) -> ContextAwareLogger:
 
 def get_tui_logger(name: str) -> ContextAwareLogger:
     return get_container().get_tui_logger(name)
-

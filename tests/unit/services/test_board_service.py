@@ -1,9 +1,9 @@
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from src.services.board_service import BoardService
 from src.core.exceptions import BoardNotFoundError, ValidationError
-from tests.fixtures.entity_factories import BoardFactory, ColumnFactory
+from tests.fixtures.entity_factories import BoardFactory
 from tests.fixtures.mock_factories import MockRepositoryFactory, MockServiceFactory
 
 

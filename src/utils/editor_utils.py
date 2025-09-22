@@ -1,9 +1,10 @@
 import subprocess
-from src.config.environment import Environment
+from src.config.configuration_manager import get_config
 
 
 def open_editor_for_app(file_path: str, app_instance) -> None:
-    editor = Environment.get_editor()
+    config_manager = get_config()
+    editor = config_manager.get_editor()
     try:
         with app_instance.suspend():
             subprocess.run([editor, str(file_path)], check=True)

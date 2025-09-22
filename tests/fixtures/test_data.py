@@ -1,5 +1,3 @@
-from pathlib import Path
-from typing import Dict, List, Any
 
 # Sample board data for testing
 SAMPLE_BOARD_MARKDOWN = """---

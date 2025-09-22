@@ -70,7 +70,9 @@ class DaemonConfiguration:
         ]
     )
     excluded_branches: List[str] = field(
-        default_factory=lambda: ["main", "master", "develop", "staging", "production"]
+        default_factory=lambda: [
+            "main", "master", "develop", "staging", "production"
+        ]
     )
     jira: JiraConfiguration = field(default_factory=JiraConfiguration)
 
@@ -83,8 +85,12 @@ class LoggingConfiguration:
     create_timestamped_daemon_logs: bool = True
     max_log_files: int = 30
     log_format: str = "[%(asctime)s] %(levelname)s %(name)s: %(message)s"
-    daemon_log_format: str = "[%(asctime)s] DAEMON %(levelname)s %(name)s: %(message)s"
-    tui_log_format: str = "[%(asctime)s] TUI %(levelname)s %(name)s: %(message)s"
+    daemon_log_format: str = (
+        "[%(asctime)s] DAEMON %(levelname)s %(name)s: %(message)s"
+    )
+    tui_log_format: str = (
+        "[%(asctime)s] TUI %(levelname)s %(name)s: %(message)s"
+    )
 
 
 @dataclass
@@ -98,17 +104,27 @@ class UnifiedConfiguration:
     show_parent_colors: bool = True
     default_parent_view: bool = False
     column_width: int = DEFAULT_COLUMN_WIDTH
-    shortcuts: Dict[str, str] = field(default_factory=lambda: VIM_KEYBINDINGS.copy())
+    editor: str = "nvim"
+    cli_editor: str = "neovide"
+    shortcuts: Dict[str, str] = field(
+        default_factory=lambda: VIM_KEYBINDINGS.copy()
+    )
     daemon: DaemonConfiguration = field(default_factory=DaemonConfiguration)
-    logging: LoggingConfiguration = field(default_factory=LoggingConfiguration)
+    logging: LoggingConfiguration = field(
+        default_factory=LoggingConfiguration
+    )
 
     def __post_init__(self):
         if not self.config_dir:
             self.config_dir = str(DEFAULT_CONFIG_DIR)
         if not self.logging.daemon_log_dir:
-            self.logging.daemon_log_dir = str(Path(self.config_dir) / "logs" / "daemon")
+            self.logging.daemon_log_dir = str(
+                Path(self.config_dir) / "logs" / "daemon"
+            )
         if not self.logging.tui_log_dir:
-            self.logging.tui_log_dir = str(Path(self.config_dir) / "logs" / "tui")
+            self.logging.tui_log_dir = str(
+                Path(self.config_dir) / "logs" / "tui"
+            )
 
 
 class ConfigurationManager:
@@ -136,22 +152,24 @@ class ConfigurationManager:
                 # Fallback to defaults if config is corrupted
                 pass
 
-        # Create default configuration with environment overrides
+        # Create default configuration
         config = UnifiedConfiguration()
-        self._apply_environment_overrides(config)
 
         # Auto-save the default config when it doesn't exist
         self._save_config_to_file(config, config_path)
         return config
 
-    def _create_config_from_dict(self, data: Dict[str, Any]) -> UnifiedConfiguration:
-        """Create UnifiedConfiguration from dict, properly handling nested dataclasses."""
+    def _create_config_from_dict(
+        self, data: Dict[str, Any]
+    ) -> UnifiedConfiguration:
+        """Create configuration from dict, handling nested dataclasses."""
         # Handle nested daemon configuration
         daemon_data = data.get("daemon", {})
         if daemon_data:
             jira_data = daemon_data.get("jira", {})
             daemon_data["jira"] = (
-                JiraConfiguration(**jira_data) if jira_data else JiraConfiguration()
+                JiraConfiguration(**jira_data)
+                if jira_data else JiraConfiguration()
             )
             data["daemon"] = DaemonConfiguration(**daemon_data)
         else:
@@ -166,25 +184,13 @@ class ConfigurationManager:
 
         return UnifiedConfiguration(**data)
 
-    def _save_config_to_file(self, config: UnifiedConfiguration, config_path: Path) -> None:
-        """Save configuration to specified path, creating directories as needed."""
+    def _save_config_to_file(
+        self, config: UnifiedConfiguration, config_path: Path
+    ) -> None:
+        """Save configuration to path, creating directories as needed."""
         config_path.parent.mkdir(parents=True, exist_ok=True)
         with open(config_path, "w") as f:
             json.dump(asdict(config), f, indent=2)
-
-    def _apply_environment_overrides(self, config: UnifiedConfiguration) -> None:
-        if mkanban_theme := os.environ.get("MKANBAN_THEME"):
-            config.theme = mkanban_theme
-
-        if mkanban_auto_save := os.environ.get("MKANBAN_AUTO_SAVE_INTERVAL"):
-            try:
-                config.auto_save_interval = int(mkanban_auto_save)
-            except ValueError:
-                pass
-
-        if mkanban_debug := os.environ.get("MKANBAN_DEBUG", "false").lower():
-            if mkanban_debug in ("true", "1", "yes"):
-                config.logging.level = "DEBUG"
 
     def _get_config_file_path(self) -> Path:
         return DEFAULT_CONFIG_FILE
@@ -202,14 +208,13 @@ class ConfigurationManager:
         return Path(self.config.config_dir).expanduser().resolve()
 
     def get_editor(self) -> str:
-        return os.environ.get("EDITOR") or os.environ.get("MKANBAN_EDITOR", "nvim")
+        return os.environ.get("EDITOR") or self.config.editor
 
     def get_cli_editor(self) -> str:
-        return os.environ.get("MKANBAN_CLI_EDITOR", "neovide")
+        return self.config.cli_editor
 
     def is_debug_mode(self) -> bool:
         return self.config.logging.level == "DEBUG"
-
 
     def save_configuration(self, config_path: Optional[Path] = None) -> None:
         if config_path is None:

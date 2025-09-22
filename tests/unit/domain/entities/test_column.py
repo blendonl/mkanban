@@ -1,8 +1,6 @@
-import pytest
 from unittest.mock import patch
 
 from src.domain.entities.column import Column
-from src.domain.entities.item import Item
 from tests.fixtures.entity_factories import ColumnFactory, ItemFactory
 
 

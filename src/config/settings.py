@@ -1,5 +1,4 @@
 import json
-import os
 from pathlib import Path
 from typing import Dict, Optional
 from dataclasses import dataclass, asdict
@@ -83,12 +82,6 @@ class Settings:
 
     def get_boards_directory(self) -> Path:
         data_dir = self.get_session_based_data_dir()
-
-        mkanban_path = os.environ.get("MKANBAN_PATH")
-
-        if mkanban_path:
-            return data_dir
-        else:
-            boards_dir = data_dir
-            boards_dir.mkdir(parents=True, exist_ok=True)
-            return boards_dir
+        boards_dir = data_dir
+        boards_dir.mkdir(parents=True, exist_ok=True)
+        return boards_dir

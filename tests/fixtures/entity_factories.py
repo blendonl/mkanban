@@ -1,5 +1,4 @@
 from typing import List, Optional
-from datetime import datetime
 
 from src.domain.entities.board import Board
 from src.domain.entities.column import Column

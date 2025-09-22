@@ -301,13 +301,13 @@ class TmuxSessionManager:
 
 
 def get_mkanban_data_path() -> Path:
-    """Get the MKanban data path from environment or default to home directory"""
-    mkanban_path = os.environ.get("MKANBAN_PATH")
+    """Get the MKanban data path from configuration or default to home directory"""
+    from src.config.configuration_manager import get_config
 
-    if mkanban_path:
-        return Path(mkanban_path).expanduser().resolve()
-    else:
-        return Path.home() / ".mkanban"
+    config_manager = get_config()
+    boards_path = config_manager.get_boards_path()
+    # Return the parent directory since boards_path points to boards subdirectory
+    return boards_path.parent
 
 
 def ensure_mkanban_directory() -> Path:

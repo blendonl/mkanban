@@ -1,4 +1,3 @@
-import pytest
 from unittest.mock import patch
 
 from src.domain.entities.parent import Parent

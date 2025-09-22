@@ -1,8 +1,7 @@
-from unittest.mock import MagicMock, Mock
+from unittest.mock import MagicMock
 from typing import List, Optional, Dict, Any
 
 from src.domain.entities.board import Board
-from src.domain.entities.column import Column
 from src.domain.entities.item import Item
 from src.domain.repositories.board_repository import BoardRepository
 from src.domain.repositories.storage_repository import StorageRepository

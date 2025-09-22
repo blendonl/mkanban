@@ -194,9 +194,7 @@ async def async_main():
     # Data path
     parser.add_argument(
         "--data-path",
-        help=f"Path for MKanban data (default: $MKANBAN_PATH or {
-            get_mkanban_data_path()
-        })",
+        help=f"Path for MKanban data (default: {get_mkanban_data_path()})",
     )
 
     # Jira integration options

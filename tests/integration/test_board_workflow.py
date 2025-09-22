@@ -1,9 +1,7 @@
 import pytest
-from pathlib import Path
 
 from src.services.board_service import BoardService
 from src.services.item_service import ItemService
-from src.core.dependency_container import DependencyContainer
 
 
 @pytest.mark.integration
