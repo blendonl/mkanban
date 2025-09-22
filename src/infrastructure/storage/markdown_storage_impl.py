@@ -32,10 +32,12 @@ class MarkdownStorageImpl(BoardRepository, StorageRepository):
 
         # Use centralized logic for boards directory resolution
         import os
+
         if os.environ.get("MKANBAN_PATH"):
             self.boards_dir = self.data_dir
         else:
-            self.boards_dir = self.data_dir / "boards"
+            self.boards_dir = self.data_dir
+
         ensure_directory_exists(self.boards_dir)
 
         self.persistence = BoardPersistence(data_dir)
@@ -259,10 +261,12 @@ class MarkdownStorageImpl(BoardRepository, StorageRepository):
             if metadata.get("is_git_managed"):
                 from domain.entities.item import GitMetadata
 
-                item_data.update({
-                    "is_git_managed": metadata.get("is_git_managed", False),
-                    "auto_sync_enabled": metadata.get("auto_sync_enabled", True),
-                })
+                item_data.update(
+                    {
+                        "is_git_managed": metadata.get("is_git_managed", False),
+                        "auto_sync_enabled": metadata.get("auto_sync_enabled", True),
+                    }
+                )
 
                 if metadata.get("git_metadata"):
                     item_data["git_metadata"] = GitMetadata(**metadata["git_metadata"])
@@ -271,13 +275,17 @@ class MarkdownStorageImpl(BoardRepository, StorageRepository):
             if metadata.get("is_jira_managed"):
                 from domain.entities.item import JiraMetadata
 
-                item_data.update({
-                    "is_jira_managed": metadata.get("is_jira_managed", False),
-                    "linked_tickets": metadata.get("linked_tickets", []),
-                })
+                item_data.update(
+                    {
+                        "is_jira_managed": metadata.get("is_jira_managed", False),
+                        "linked_tickets": metadata.get("linked_tickets", []),
+                    }
+                )
 
                 if metadata.get("jira_metadata"):
-                    item_data["jira_metadata"] = JiraMetadata(**metadata["jira_metadata"])
+                    item_data["jira_metadata"] = JiraMetadata(
+                        **metadata["jira_metadata"]
+                    )
 
             return Item(**item_data)
         except Exception:
@@ -300,8 +308,13 @@ class MarkdownStorageImpl(BoardRepository, StorageRepository):
 
         # Add debug logging
         import logging
+
         logger = logging.getLogger("mkanban-daemon")
-        logger.debug(f"Saving column {board.name} '{column.name}' (ID: {column.id}) with {len(column.items)} items")
+        logger.debug(
+            f"Saving column {board.name} '{column.name}' (ID: {column.id}) with {
+                len(column.items)
+            } items"
+        )
         for item in column.items:
             logger.debug(f"  Item: {item.title} (ID: {item.id})")
 

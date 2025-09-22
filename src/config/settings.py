@@ -76,7 +76,9 @@ class Settings:
                     session_path = Path(mkanban_path).expanduser().resolve()
                 else:
                     # Use ~/.mkanban/boards/{session_name} for default case
-                    session_path = Path.home() / ".mkanban" / "boards" / current_session.name
+                    session_path = (
+                        Path.home() / ".mkanban" / "boards" / current_session.name
+                    )
 
                 session_path.mkdir(parents=True, exist_ok=True)
                 return session_path

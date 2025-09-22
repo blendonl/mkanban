@@ -50,6 +50,17 @@ from core.exceptions import MKanbanError
     type=click.Choice(["start", "stop", "status", "restart"]),
     help="Daemon management commands",
 )
+@click.option(
+    "--list-todos",
+    is_flag=True,
+    help="List all todos from current board and pipe to selector command",
+)
+@click.option(
+    "--selector-command",
+    default="fzf",
+    help="External command to use for todo selection (e.g., 'rofi -dmenu', 'dmenu', 'fzf')",
+    type=str,
+)
 def main_command(
     data_dir: Path,
     board: Optional[str],
@@ -59,6 +70,8 @@ def main_command(
     new_item: bool,
     show_current_task: bool,
     daemon: Optional[str],
+    list_todos: bool,
+    selector_command: str,
 ) -> None:
     try:
         # Handle daemon commands first
@@ -83,6 +96,13 @@ def main_command(
             actual_data_dir = settings.get_session_based_data_dir()
 
         task_creator = TaskCreator(settings, actual_data_dir)
+
+        if list_todos:
+            from infrastructure.cli.todo_selector import TodoSelector
+
+            todo_selector = TodoSelector(settings, actual_data_dir)
+            todo_selector.run_todo_selector(selector_command, board)
+            return
 
         if show_current_task:
             if not board:
