@@ -5,7 +5,7 @@ configuration updates and data path resolution.
 """
 
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional, List, Dict
 from dataclasses import dataclass, field
 import logging
 
@@ -15,6 +15,32 @@ from infrastructure.tmux.session_manager import (
     ensure_mkanban_directory,
 )
 from utils.string_utils import get_safe_filename
+
+
+@dataclass
+class JiraConfig:
+    """Configuration for Jira integration"""
+    enabled: bool = False
+    api_url: str = ""
+    username: str = ""
+    api_token: str = ""
+    project_keys: List[str] = field(default_factory=list)
+    polling_interval: int = 300  # 5 minutes
+    bidirectional_sync: bool = False
+    backlog_limit: int = 50  # -1 for unlimited
+    status_mapping: Dict[str, str] = field(default_factory=lambda: {
+        "To Do": "to-do",
+        "In Progress": "in-progress",
+        "Done": "done",
+        "Backlog": "backlog"
+    })
+    jql_filter: str = ""
+    board_name: str = "jira-tickets"
+    branch_patterns: List[str] = field(default_factory=lambda: [
+        r".*[A-Z]+-\d+.*",  # Matches PROJ-123 anywhere in branch name
+        r"[A-Z]+-\d+/.*",   # Matches PROJ-123/feature-name
+        r".*/[A-Z]+-\d+.*", # Matches feature/PROJ-123-something
+    ])
 
 
 @dataclass
@@ -49,6 +75,9 @@ class DaemonConfiguration:
     excluded_branches: List[str] = field(default_factory=lambda: [
         "main", "master", "develop", "staging", "production"
     ])
+
+    # Jira integration
+    jira: JiraConfig = field(default_factory=JiraConfig)
 
     def __post_init__(self):
         """Ensure data path is resolved"""
@@ -164,6 +193,35 @@ class ConfigurationService:
             self._config.enable_session_task_management and
             self._config.auto_activate_on_session_switch
         )
+
+    def is_jira_enabled(self) -> bool:
+        """Check if Jira integration is enabled"""
+        return self._config.jira.enabled
+
+    def get_jira_config(self) -> JiraConfig:
+        """Get Jira configuration"""
+        return self._config.jira
+
+    def should_track_jira_ticket(self, ticket_key: str, project_keys: List[str] = None) -> bool:
+        """Check if a Jira ticket should be tracked based on configuration"""
+        if not self.is_jira_enabled():
+            return False
+
+        # Use provided project keys or fall back to config
+        projects = project_keys or self._config.jira.project_keys
+        if not projects:
+            return True  # Track all if no specific projects configured
+
+        # Extract project key from ticket (e.g., "PROJ-123" -> "PROJ")
+        if "-" in ticket_key:
+            ticket_project = ticket_key.split("-")[0]
+            return ticket_project in projects
+
+        return False
+
+    def get_jira_board_name(self) -> str:
+        """Get the board name for Jira tickets"""
+        return self._config.jira.board_name
 
     @classmethod
     def from_args(cls, args) -> 'ConfigurationService':

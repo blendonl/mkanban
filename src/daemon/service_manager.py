@@ -149,6 +149,12 @@ class ServiceManager:
         # Initialize sync coordinator
         self.services["sync_coordinator"] = SyncCoordinator(self.config_service)
 
+        # Initialize Jira daemon if enabled
+        if self.config_service.is_jira_enabled():
+            from daemon.jira.jira_daemon import JiraDaemon
+            self.services["jira_daemon"] = JiraDaemon(self.config_service)
+            self.logger.info("Jira daemon initialized")
+
         # Initialize IPC server with session-specific socket path
         ipc_socket_path = self.config_service.get_socket_path()
         ipc_server = IPCServer(socket_path=ipc_socket_path)
@@ -245,6 +251,24 @@ class ServiceManager:
             f"[{session_name}] Received signal {signum}, shutting down..."
         )
         self.running = False
+
+    def get_jira_daemon(self):
+        """Get the Jira daemon service"""
+        return self.services.get("jira_daemon")
+
+    async def force_jira_sync(self) -> int:
+        """Force Jira synchronization"""
+        jira_daemon = self.get_jira_daemon()
+        if jira_daemon:
+            return await jira_daemon.force_sync()
+        return 0
+
+    def get_jira_status(self) -> dict:
+        """Get Jira daemon status"""
+        jira_daemon = self.get_jira_daemon()
+        if jira_daemon:
+            return jira_daemon.get_status()
+        return {"running": False, "error": "Jira daemon not initialized"}
 
 
 async def run_daemon(config_service: ConfigurationService) -> None:

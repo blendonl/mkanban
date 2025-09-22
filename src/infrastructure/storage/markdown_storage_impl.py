@@ -267,6 +267,18 @@ class MarkdownStorageImpl(BoardRepository, StorageRepository):
                 if metadata.get("git_metadata"):
                     item_data["git_metadata"] = GitMetadata(**metadata["git_metadata"])
 
+            # Add Jira-specific fields if present
+            if metadata.get("is_jira_managed"):
+                from domain.entities.item import JiraMetadata
+
+                item_data.update({
+                    "is_jira_managed": metadata.get("is_jira_managed", False),
+                    "linked_tickets": metadata.get("linked_tickets", []),
+                })
+
+                if metadata.get("jira_metadata"):
+                    item_data["jira_metadata"] = JiraMetadata(**metadata["jira_metadata"])
+
             return Item(**item_data)
         except Exception:
             return None

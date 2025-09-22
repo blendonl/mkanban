@@ -38,6 +38,8 @@ def setup_logging(log_level: str = "INFO") -> None:
 def create_configuration_service(args) -> ConfigurationService:
     """Create configuration service from command line arguments"""
     from infrastructure.tmux.session_manager import TmuxSessionManager
+    from daemon.core.configuration_service import JiraConfig
+    import os
 
     # Determine board name and data path - use session name if in tmux and tmux_session_only is True
     board_name = args.board_name
@@ -53,6 +55,22 @@ def create_configuration_service(args) -> ConfigurationService:
             if not args.data_path:
                 data_path = get_mkanban_data_path()
 
+    # Create Jira configuration
+    jira_config = JiraConfig()
+    if args.enable_jira:
+        jira_config.enabled = True
+        jira_config.api_url = args.jira_url or os.getenv("JIRA_URL", "")
+        jira_config.username = args.jira_username or os.getenv("JIRA_USERNAME", "")
+        jira_config.api_token = args.jira_api_token or os.getenv("JIRA_API_TOKEN", "")
+        jira_config.board_name = args.jira_board_name
+        jira_config.polling_interval = args.jira_polling_interval
+        jira_config.bidirectional_sync = args.jira_bidirectional_sync
+        jira_config.jql_filter = args.jira_jql_filter or ""
+        jira_config.backlog_limit = args.jira_backlog_limit
+
+        if args.jira_projects:
+            jira_config.project_keys = [key.strip() for key in args.jira_projects.split(",")]
+
     config = DaemonConfiguration(
         enabled=not args.disable,
         polling_interval=args.polling_interval,
@@ -66,6 +84,7 @@ def create_configuration_service(args) -> ConfigurationService:
         in_progress_column=args.in_progress_column,
         done_column=args.done_column,
         data_path=data_path or get_mkanban_data_path(),
+        jira=jira_config,
     )
 
     if args.branch_patterns:
@@ -176,6 +195,56 @@ async def async_main():
         help=f"Path for MKanban data (default: $MKANBAN_PATH or {get_mkanban_data_path()})",
     )
 
+    # Jira integration options
+    jira_group = parser.add_argument_group("Jira Integration")
+    jira_group.add_argument(
+        "--enable-jira",
+        action="store_true",
+        help="Enable Jira integration",
+    )
+    jira_group.add_argument(
+        "--jira-url",
+        help="Jira instance URL (e.g., https://company.atlassian.net)",
+    )
+    jira_group.add_argument(
+        "--jira-username",
+        help="Jira username (or set JIRA_USERNAME env var)",
+    )
+    jira_group.add_argument(
+        "--jira-api-token",
+        help="Jira API token (or set JIRA_API_TOKEN env var)",
+    )
+    jira_group.add_argument(
+        "--jira-projects",
+        help="Comma-separated list of Jira project keys (e.g., 'PROJ,FEAT')",
+    )
+    jira_group.add_argument(
+        "--jira-board-name",
+        default="jira-tickets",
+        help="Name of the MKanban board for Jira tickets (default: jira-tickets)",
+    )
+    jira_group.add_argument(
+        "--jira-polling-interval",
+        type=int,
+        default=300,
+        help="Jira polling interval in seconds (default: 300)",
+    )
+    jira_group.add_argument(
+        "--jira-bidirectional-sync",
+        action="store_true",
+        help="Enable bidirectional sync (update Jira when MKanban items change)",
+    )
+    jira_group.add_argument(
+        "--jira-jql-filter",
+        help="Additional JQL filter for tickets (e.g., 'assignee = currentUser()')",
+    )
+    jira_group.add_argument(
+        "--jira-backlog-limit",
+        type=int,
+        default=50,
+        help="Maximum number of backlog tickets to fetch (-1 for unlimited, default: 50)",
+    )
+
     # Parse arguments
     args = parser.parse_args()
 
@@ -201,6 +270,19 @@ async def async_main():
         if config.enable_session_task_management:
             logger.info(f"  Auto-complete on session switch: {config.auto_complete_on_session_switch}")
             logger.info(f"  Auto-activate on session switch: {config.auto_activate_on_session_switch}")
+
+        # Log Jira configuration
+        if config.jira.enabled:
+            logger.info(f"Jira integration enabled:")
+            logger.info(f"  URL: {config.jira.api_url}")
+            logger.info(f"  Board: {config.jira.board_name}")
+            logger.info(f"  Projects: {config.jira.project_keys}")
+            logger.info(f"  Polling interval: {config.jira.polling_interval}s")
+            logger.info(f"  Bidirectional sync: {config.jira.bidirectional_sync}")
+            if config.jira.jql_filter:
+                logger.info(f"  JQL filter: {config.jira.jql_filter}")
+        else:
+            logger.info("Jira integration disabled")
 
         if config.enabled:
             # Run the daemon
