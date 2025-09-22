@@ -13,7 +13,7 @@ from typing import Optional
 
 import click
 
-from infrastructure.tmux.session_manager import (
+from src.infrastructure.tmux.session_manager import (
     get_mkanban_data_path,
     TmuxSessionManager,
 )

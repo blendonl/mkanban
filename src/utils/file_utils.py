@@ -1,8 +1,8 @@
 import frontmatter
 from pathlib import Path
 from typing import Optional, Dict, Any
-from core.exceptions import FileOperationError, ParseError
-from core.types import Metadata
+from src.core.exceptions import FileOperationError, ParseError
+from src.core.types import Metadata
 
 
 def read_frontmatter_file(file_path: Path) -> tuple[str, Metadata]:

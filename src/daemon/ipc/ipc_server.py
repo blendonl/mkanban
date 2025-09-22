@@ -10,11 +10,11 @@ from pathlib import Path
 from typing import Dict, Any, Optional, Callable
 from dataclasses import dataclass, asdict
 
-from infrastructure.tmux.session_manager import (
+from src.infrastructure.tmux.session_manager import (
     get_mkanban_data_path,
     TmuxSessionManager,
 )
-from utils.string_utils import get_safe_filename
+from src.utils.string_utils import get_safe_filename
 
 
 @dataclass
@@ -259,7 +259,7 @@ def setup_ipc_handlers(server: IPCServer, service_manager) -> None:
         """Handle current branch info command"""
         session_context = service_manager.session_manager.current_context
         if session_context and session_context.repository_path:
-            from infrastructure.git.repository import GitOperations
+            from src.infrastructure.git.repository import GitOperations
 
             git_ops = GitOperations(session_context.repository_path)
             current_branch = git_ops.get_current_branch()

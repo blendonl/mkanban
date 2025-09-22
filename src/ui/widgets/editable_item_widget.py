@@ -2,8 +2,8 @@ from typing import Optional
 from textual.containers import Vertical
 
 
-from domain.entities.item import Item
-from ui.widgets.vim_widgets import VimTextArea
+from src.domain.entities.item import Item
+from src.ui.widgets.vim_widgets import VimTextArea
 
 
 class EditableItemWidget(Vertical):

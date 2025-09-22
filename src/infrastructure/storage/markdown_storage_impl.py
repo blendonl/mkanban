@@ -1,25 +1,25 @@
 from pathlib import Path
 from typing import List, Optional
-from core.exceptions import StorageError, BoardNotFoundError
-from core.types import BoardId
-from core.constants import BOARD_FILENAME, COLUMN_METADATA_FILENAME
-from domain.entities.board import Board
-from domain.entities.column import Column
-from domain.entities.item import Item
-from domain.entities.parent import Parent
-from domain.repositories.board_repository import BoardRepository
-from domain.repositories.storage_repository import StorageRepository
-from utils.file_utils import find_files_by_pattern, ensure_directory_exists
-from utils.string_utils import generate_id_from_name, get_safe_filename
-from utils.date_utils import now
-from infrastructure.storage.board_persistence import BoardPersistence
-from infrastructure.storage.markdown_parser import (
+from src.core.exceptions import StorageError, BoardNotFoundError
+from src.core.types import BoardId
+from src.core.constants import BOARD_FILENAME, COLUMN_METADATA_FILENAME
+from src.domain.entities.board import Board
+from src.domain.entities.column import Column
+from src.domain.entities.item import Item
+from src.domain.entities.parent import Parent
+from src.domain.repositories.board_repository import BoardRepository
+from src.domain.repositories.storage_repository import StorageRepository
+from src.utils.file_utils import find_files_by_pattern, ensure_directory_exists
+from src.utils.string_utils import generate_id_from_name, get_safe_filename
+from src.utils.date_utils import now
+from src.infrastructure.storage.board_persistence import BoardPersistence
+from src.infrastructure.storage.markdown_parser import (
     parse_board_metadata,
     parse_item_metadata,
     parse_column_metadata,
     save_board_metadata,
 )
-from infrastructure.storage.file_operations import (
+from src.infrastructure.storage.file_operations import (
     get_board_directory_path,
     find_item_file_by_id,
 )
@@ -259,7 +259,7 @@ class MarkdownStorageImpl(BoardRepository, StorageRepository):
 
             # Add git-specific fields if present
             if metadata.get("is_git_managed"):
-                from domain.entities.item import GitMetadata
+                from src.domain.entities.item import GitMetadata
 
                 item_data.update(
                     {
@@ -273,7 +273,7 @@ class MarkdownStorageImpl(BoardRepository, StorageRepository):
 
             # Add Jira-specific fields if present
             if metadata.get("is_jira_managed"):
-                from domain.entities.item import JiraMetadata
+                from src.domain.entities.item import JiraMetadata
 
                 item_data.update(
                     {

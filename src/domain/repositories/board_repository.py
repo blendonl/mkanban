@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
-from core.types import BoardId
-from domain.entities.board import Board
+from src.core.types import BoardId
+from src.domain.entities.board import Board
 
 
 class BoardRepository(ABC):

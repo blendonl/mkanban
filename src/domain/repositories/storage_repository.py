@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
 from typing import Optional
-from core.types import ItemId, ColumnId, BoardId
-from domain.entities.board import Board
-from domain.entities.column import Column
-from domain.entities.item import Item
+from src.core.types import ItemId, ColumnId, BoardId
+from src.domain.entities.board import Board
+from src.domain.entities.column import Column
+from src.domain.entities.item import Item
 
 
 class StorageRepository(ABC):

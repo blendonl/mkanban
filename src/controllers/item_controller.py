@@ -1,9 +1,9 @@
-from domain.entities.board import Board
-from domain.entities.parent import Parent
-from domain.entities.item import Item
-from services.board_service import BoardService
-from services.item_service import ItemService
-from core.types import ItemId, ParentId
+from src.domain.entities.board import Board
+from src.domain.entities.parent import Parent
+from src.domain.entities.item import Item
+from src.services.board_service import BoardService
+from src.services.item_service import ItemService
+from src.core.types import ItemId, ParentId
 
 
 class ItemController:

@@ -1,6 +1,6 @@
 import subprocess
 from pathlib import Path
-from config.environment import Environment
+from src.config.environment import Environment
 
 
 def open_editor_for_app(file_path: str, app_instance) -> None:

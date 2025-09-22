@@ -1,10 +1,11 @@
 from typing import Optional, List
-from core.exceptions import ItemNotFoundError, ColumnNotFoundError, ValidationError
-from core.types import ItemId, ColumnId, ParentId
-from domain.entities.board import Board
-from domain.entities.item import Item
-from domain.repositories.storage_repository import StorageRepository
-from services.validation_service import ValidationService
+from src.core.exceptions import ItemNotFoundError, ColumnNotFoundError, ValidationError
+from src.core.types import ItemId, ColumnId, ParentId
+from src.domain.entities.board import Board
+from src.domain.entities.item import Item
+from src.domain.repositories.storage_repository import StorageRepository
+from src.services.validation_service import ValidationService
+from src.utils.logger_factory import ContextAwareLogger
 
 
 class ItemService:
@@ -12,9 +13,11 @@ class ItemService:
         self,
         storage_repository: StorageRepository,
         validation_service: ValidationService,
+        logger: ContextAwareLogger
     ):
         self._storage = storage_repository
         self._validator = validation_service
+        self._logger = logger
 
     def create_item(
         self,
@@ -24,10 +27,12 @@ class ItemService:
         description: str = "",
         parent_id: Optional[ParentId] = None,
     ) -> Item:
+        self._logger.info(f"Creating item", board=board.name, column=column_id, item=title)
         self._validator.validate_item_title(title)
 
         column = board.get_column_by_id(column_id)
         if not column:
+            self._logger.warning(f"Column not found", board=board.name, column=column_id)
             raise ColumnNotFoundError(f"Column with id '{column_id}' not found")
 
         # Check if column is at capacity before adding
@@ -36,12 +41,14 @@ class ItemService:
         if parent_id:
             parent = board.get_parent_by_id(parent_id)
             if not parent:
+                self._logger.warning(f"Parent not found", board=board.name, item=title)
                 raise ValidationError(f"Parent with id '{parent_id}' not found")
 
         item = column.add_item(title, parent_id)
         if description:
             item.description = description
 
+        self._logger.info(f"Successfully created item", board=board.name, column=column.name, item=title)
         return item
 
     def update_item(self, board: Board, item_id: ItemId, **kwargs) -> bool:
@@ -57,17 +64,24 @@ class ItemService:
         raise ItemNotFoundError(f"Item with id '{item_id}' not found")
 
     def delete_item(self, board: Board, item_id: ItemId) -> bool:
+        self._logger.info(f"Deleting item", board=board.name, item=item_id)
+
         for column in board.columns:
             item = column.get_item_by_id(item_id)
             if item:
+                self._logger.debug(f"Found item to delete", board=board.name, column=column.name, item=item.title)
+
                 if not self._storage.delete_item_from_column(board, item, column):
+                    self._logger.error(f"Failed to delete item from storage", board=board.name, column=column.name, item=item.title)
                     raise ValidationError("Failed to delete item from storage")
 
                 success = column.remove_item(item_id)
                 if success:
                     self._storage.save_board_to_storage(board)
+                    self._logger.info(f"Successfully deleted item", board=board.name, column=column.name, item=item.title)
                 return success
 
+        self._logger.warning(f"Item not found for deletion", board=board.name, item=item_id)
         raise ItemNotFoundError(f"Item with id '{item_id}' not found")
 
     def move_item_between_columns(

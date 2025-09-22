@@ -11,10 +11,10 @@ from pathlib import Path
 
 from daemon.core.configuration_service import ConfigurationService
 from daemon.jira.jira_client import JiraClient
-from domain.entities.item import Item
-from domain.entities.board import Board
-from infrastructure.storage.markdown_storage_impl import MarkdownStorageImpl
-from utils.date_utils import now
+from src.domain.entities.item import Item
+from src.domain.entities.board import Board
+from src.infrastructure.storage.markdown_storage_impl import MarkdownStorageImpl
+from src.utils.date_utils import now
 
 
 class BranchTicketLinker:

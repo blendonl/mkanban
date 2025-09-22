@@ -11,7 +11,7 @@ from dataclasses import dataclass
 
 from daemon.git_monitor import GitEvent, GitEventType
 from daemon.core.configuration_service import ConfigurationService
-from infrastructure.git.repository import GitOperations
+from src.infrastructure.git.repository import GitOperations
 
 
 @dataclass

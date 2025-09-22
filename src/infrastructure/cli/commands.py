@@ -1,7 +1,7 @@
 import click
 from pathlib import Path
 from typing import Optional
-from core.exceptions import MKanbanError
+from src.core.exceptions import MKanbanError
 
 
 @click.command()
@@ -76,31 +76,29 @@ def main_command(
     try:
         # Handle daemon commands first
         if daemon:
-            from infrastructure.cli.daemon_manager import DaemonManager
+            from src.infrastructure.cli.daemon_manager import DaemonManager
 
             daemon_manager = DaemonManager()
             daemon_manager.handle_daemon_command(daemon)
             return
 
-        from infrastructure.cli.task_creator import TaskCreator
-        from config.settings import Settings
+        from src.infrastructure.cli.task_creator import TaskCreator
+        from src.core.dependency_container import get_config_manager, get_container
 
-        settings = Settings.load()
+        config_manager = get_config_manager()
 
-        # Use session-based data directory if default is used
-        if data_dir == Path("./data"):
-            actual_data_dir = settings.get_session_based_data_dir()
-        else:
-            # Use provided data_dir
-            settings.data_dir = str(data_dir)
-            actual_data_dir = settings.get_session_based_data_dir()
+        # Update configuration with provided data directory if needed
+        if data_dir != Path("./data"):
+            config_manager.update_configuration(data_dir=str(data_dir))
 
-        task_creator = TaskCreator(settings, actual_data_dir)
+        actual_data_dir = config_manager.get_data_dir()
+        container = get_container()
+        task_creator = TaskCreator(container, actual_data_dir)
 
         if list_todos:
-            from infrastructure.cli.todo_selector import TodoSelector
+            from src.infrastructure.cli.todo_selector import TodoSelector
 
-            todo_selector = TodoSelector(settings, actual_data_dir)
+            todo_selector = TodoSelector(container, actual_data_dir)
             todo_selector.run_todo_selector(selector_command, board)
             return
 

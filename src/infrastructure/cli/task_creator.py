@@ -3,23 +3,18 @@ import tempfile
 import click
 from pathlib import Path
 from typing import Optional
-from core.exceptions import MKanbanError, BoardNotFoundError, ColumnNotFoundError
-from config.settings import Settings
-from services.board_service import BoardService
-from services.item_service import ItemService
-from services.validation_service import ValidationService
-from infrastructure.storage.markdown_storage_impl import MarkdownStorageImpl
+from src.core.exceptions import MKanbanError, BoardNotFoundError, ColumnNotFoundError
+from src.core.dependency_container import DependencyContainer
+from src.services.board_service import BoardService
+from src.services.item_service import ItemService
 
 
 class TaskCreator:
-    def __init__(self, settings: Settings, data_dir: Optional[Path] = None):
-        self.settings = settings
-        if data_dir is None:
-            data_dir = Path(settings.data_dir)
-        self._storage = MarkdownStorageImpl(data_dir)
-        self._validator = ValidationService()
-        self._board_service = BoardService(self._storage, self._validator)
-        self._item_service = ItemService(self._storage, self._validator)
+    def __init__(self, container: DependencyContainer, data_dir: Optional[Path] = None):
+        self.container = container
+        self.data_dir = data_dir
+        self._board_service = container.get(BoardService)
+        self._item_service = container.get(ItemService)
 
     def create_task_via_cli(
         self, board_name: str, title: str, description: str, column_name: str
@@ -133,7 +128,7 @@ class TaskCreator:
         return target_column
 
     def _create_item_template(self) -> str:
-        from utils.date_utils import now
+        from src.utils.date_utils import now
         from uuid import uuid4
 
         item_id = str(uuid4())[:8]
@@ -193,13 +188,15 @@ updated_at: {timestamp}
         first_item = target_column.items[0]
 
         # Find the item's file path
-        from infrastructure.storage.file_operations import (
+        from src.infrastructure.storage.file_operations import (
             get_board_directory_path,
             get_column_directory_path,
             find_item_file_by_id,
         )
 
-        boards_dir = self.settings.get_boards_directory()
+        from src.utils.path_resolver import PathResolver
+        path_resolver = self.container.get(PathResolver)
+        boards_dir = path_resolver.get_boards_directory()
         board_dir = get_board_directory_path(boards_dir, board_name)
         column_dir = get_column_directory_path(board_dir, target_column.name)
         item_file = find_item_file_by_id(column_dir, first_item.id)
@@ -217,7 +214,7 @@ updated_at: {timestamp}
             click.echo(f"Error opening editor: {e}")
 
     def _open_editor_for_current_task(self, file_path: str) -> None:
-        from config.environment import Environment
+        from src.config.environment import Environment
 
         editor = Environment.get_editor()
 

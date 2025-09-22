@@ -9,14 +9,14 @@ from pathlib import Path
 from typing import Optional, List, Dict, Any
 
 from daemon.core.configuration_service import ConfigurationService
-from domain.entities.board import Board
-from domain.entities.column import Column
-from domain.entities.item import Item
-from services.board_service import BoardService
-from services.validation_service import ValidationService
-from infrastructure.storage.markdown_storage_impl import MarkdownStorageImpl
-from infrastructure.git.repository import GitOperations
-from utils.string_utils import get_safe_filename
+from src.domain.entities.board import Board
+from src.domain.entities.column import Column
+from src.domain.entities.item import Item
+from src.services.board_service import BoardService
+from src.services.validation_service import ValidationService
+from src.infrastructure.storage.markdown_storage_impl import MarkdownStorageImpl
+from src.infrastructure.git.repository import GitOperations
+from src.utils.string_utils import get_safe_filename
 
 
 class TaskManager:

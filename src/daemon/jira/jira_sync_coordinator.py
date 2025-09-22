@@ -11,12 +11,12 @@ from datetime import datetime, timezone
 from daemon.core.configuration_service import ConfigurationService
 from daemon.jira.jira_client import JiraClient, JiraTicket
 from daemon.jira.jira_event_processor import JiraEventProcessor, ProcessedJiraEvent
-from domain.entities.board import Board
-from domain.entities.item import Item
-from domain.entities.column import Column
-from infrastructure.storage.markdown_storage_impl import MarkdownStorageImpl
-from utils.string_utils import get_safe_filename
-from utils.date_utils import now
+from src.domain.entities.board import Board
+from src.domain.entities.item import Item
+from src.domain.entities.column import Column
+from src.infrastructure.storage.markdown_storage_impl import MarkdownStorageImpl
+from src.utils.string_utils import get_safe_filename
+from src.utils.date_utils import now
 
 
 class JiraSyncCoordinator:

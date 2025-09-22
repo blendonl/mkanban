@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 from typing import Dict, Optional
 from dataclasses import dataclass, asdict
-from core.constants import (
+from src.core.constants import (
     DEFAULT_DATA_DIR,
     DEFAULT_CONFIG_FILE,
     DEFAULT_COLUMN_WIDTH,
@@ -11,8 +11,8 @@ from core.constants import (
     DEFAULT_BACKUP_COUNT,
     VIM_KEYBINDINGS,
 )
-from core.types import ThemeType
-from infrastructure.tmux.session_manager import TmuxSessionManager
+from src.core.types import ThemeType
+from src.infrastructure.tmux.session_manager import TmuxSessionManager
 
 
 @dataclass
@@ -47,7 +47,10 @@ class Settings:
 
             return cls(**data)
         except (json.JSONDecodeError, TypeError) as e:
-            print(f"Warning: Failed to load config from {config_path}: {e}")
+            # Use logging instead of print, but import at function level to avoid circular imports
+            import logging
+            logger = logging.getLogger("mkanban.config")
+            logger.warning(f"Failed to load config from {config_path}: {e}")
             return cls()
 
     def save(self, config_path: Optional[Path] = None) -> None:

@@ -2,11 +2,11 @@ import yaml
 from pathlib import Path
 from datetime import datetime
 from typing import Optional
-from core.exceptions import ParseError
-from core.types import Metadata
-from utils.file_utils import read_frontmatter_file, write_frontmatter_file
-from utils.string_utils import extract_title_from_content, ensure_title_header
-from utils.date_utils import ensure_datetime
+from src.core.exceptions import ParseError
+from src.core.types import Metadata
+from src.utils.file_utils import read_frontmatter_file, write_frontmatter_file
+from src.utils.string_utils import extract_title_from_content, ensure_title_header
+from src.utils.date_utils import ensure_datetime
 
 
 def parse_board_metadata(kanban_file: Path) -> tuple[str, Metadata]:

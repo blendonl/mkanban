@@ -9,12 +9,12 @@ from typing import Optional, List, Dict
 from dataclasses import dataclass, field
 import logging
 
-from config.settings import Settings
-from infrastructure.tmux.session_manager import (
+from src.config.settings import Settings
+from src.infrastructure.tmux.session_manager import (
     get_mkanban_data_path,
     ensure_mkanban_directory,
 )
-from utils.string_utils import get_safe_filename
+from src.utils.string_utils import get_safe_filename
 
 
 @dataclass

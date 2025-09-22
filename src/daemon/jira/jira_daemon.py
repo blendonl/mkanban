@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 from daemon.core.configuration_service import ConfigurationService, JiraConfig
 from daemon.jira.jira_client import JiraClient, JiraAuthError, JiraAPIError
 from daemon.jira.jira_sync_coordinator import JiraSyncCoordinator
-from core.exceptions import MKanbanError
+from src.core.exceptions import MKanbanError
 
 
 class JiraDaemonError(MKanbanError):

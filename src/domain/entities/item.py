@@ -1,9 +1,9 @@
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 from pydantic import BaseModel, Field
-from core.types import ItemId, ColumnId, ParentId, Timestamp, FilePath
-from utils.string_utils import generate_id_from_name, get_safe_filename
-from utils.date_utils import now
+from src.core.types import ItemId, ColumnId, ParentId, Timestamp, FilePath
+from src.utils.string_utils import generate_id_from_name, get_safe_filename
+from src.utils.date_utils import now
 
 
 class GitMetadata(BaseModel):

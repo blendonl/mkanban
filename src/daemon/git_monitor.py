@@ -11,7 +11,7 @@ from typing import List, Dict, Optional, Set
 from dataclasses import dataclass
 from enum import Enum
 
-from infrastructure.git.repository import GitOperations, find_git_repositories
+from src.infrastructure.git.repository import GitOperations, find_git_repositories
 
 
 class GitEventType(Enum):

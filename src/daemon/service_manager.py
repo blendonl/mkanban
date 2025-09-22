@@ -12,7 +12,7 @@ import signal
 from pathlib import Path
 from typing import Dict, Any
 
-from core.exceptions import MKanbanError
+from src.core.exceptions import MKanbanError
 from daemon.core.configuration_service import ConfigurationService
 from daemon.core.session_context_manager import SessionContextManager
 

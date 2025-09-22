@@ -5,14 +5,12 @@ from textual.containers import Horizontal, Vertical
 from textual.binding import Binding
 from textual.reactive import reactive
 
-from infrastructure.storage.markdown_storage_impl import MarkdownStorageImpl
-from domain.entities.board import Board
-from ui.widgets.board_widget import BoardWidget
-from controllers.board_controller import BoardController
-from services.board_service import BoardService
-from services.item_service import ItemService
-from services.validation_service import ValidationService
-from config.settings import Settings
+from src.domain.entities.board import Board
+from src.ui.widgets.board_widget import BoardWidget
+from src.services.board_service import BoardService
+from src.services.item_service import ItemService
+from src.core.dependency_container import get_container, get_config_manager
+from src.config.configuration_manager import ConfigurationManager
 
 
 class MKanbanApp(App):
@@ -50,33 +48,32 @@ class MKanbanApp(App):
 
     def __init__(self, data_dir: Path, initial_board: Optional[str] = None):
         super().__init__()
-        self.settings = Settings.load()
+        self.container = get_container()
+        self.config_manager = get_config_manager()
 
+        # Update configuration with provided data directory
         if data_dir != Path("./data"):
-            # If a specific data_dir is provided, use it
-            self.settings.data_dir = str(data_dir)
-            self.data_dir = Path(self.settings.data_dir).expanduser().resolve()
-        else:
-            # Use session-based data directory for default case
-            self.data_dir = self.settings.get_session_based_data_dir()
+            self.config_manager.update_configuration(data_dir=str(data_dir))
 
+        self.data_dir = self.config_manager.get_data_dir()
         self._setup_services()
 
         self.initial_board = initial_board
         self.current_board: Optional[Board] = None
         self.board_view: Optional[BoardWidget] = None
-        self.controller: Optional[BoardController] = None
         self.auto_save_timer = None
 
     def _setup_services(self):
-        self._storage = MarkdownStorageImpl(self.data_dir)
-        self._validator = ValidationService()
-        self._board_service = BoardService(self._storage, self._validator)
-        self._item_service = ItemService(self._storage, self._validator)
+        self._board_service = self.container.get(BoardService)
+        self._item_service = self.container.get(ItemService)
 
     @property
-    def storage(self):
-        return self._storage
+    def board_service(self):
+        return self._board_service
+
+    @property
+    def item_service(self):
+        return self._item_service
 
     def compose(self) -> ComposeResult:
         with Vertical(classes="main-container"):
@@ -119,32 +116,31 @@ class MKanbanApp(App):
                 )
 
         if self.current_board:
-            self.controller = BoardController(self.current_board, self._board_service)
             if self.board_view:
                 self.board_view.set_board(self.current_board)
 
     def action_new_item(self) -> None:
-        if self.controller and self.board_view:
+        if self.board_view:
             self.board_view.show_new_item_dialog()
 
     def action_new_item_editor(self) -> None:
-        if self.controller and self.board_view:
+        if self.board_view:
             self.board_view.create_new_item_with_editor()
 
     def action_delete_item(self) -> None:
-        if self.controller and self.board_view:
+        if self.board_view:
             self.board_view.delete_selected_item()
 
     def action_edit_item(self) -> None:
-        if self.controller and self.board_view:
+        if self.board_view:
             self.board_view.edit_selected_item()
 
     async def action_move_left(self) -> None:
-        if self.controller and self.board_view:
+        if self.board_view:
             await self.board_view.move_left()
 
     async def action_move_right(self) -> None:
-        if self.controller and self.board_view:
+        if self.board_view:
             await self.board_view.move_right()
 
     def action_toggle_parents(self) -> None:
@@ -152,16 +148,16 @@ class MKanbanApp(App):
             self.board_view.toggle_parent_grouping()
 
     def action_save(self) -> None:
-        if self.controller:
+        if self.current_board:
             try:
-                self.controller.save()
+                self._board_service.save_board(self.current_board)
                 self.notify("Board saved successfully")
             except Exception as e:
                 self.notify(f"Error saving board: {e}", severity="error")
 
     def action_refresh(self) -> None:
         if self.board_view and self.current_board:
-            from core.types import RefreshType
+            from src.core.types import RefreshType
 
             self.board_view.refresh_board(refresh_type=RefreshType.FULL)
 

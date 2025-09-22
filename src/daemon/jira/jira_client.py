@@ -14,7 +14,7 @@ import base64
 import json
 
 from daemon.core.configuration_service import JiraConfig
-from core.exceptions import MKanbanError
+from src.core.exceptions import MKanbanError
 
 
 class JiraError(MKanbanError):

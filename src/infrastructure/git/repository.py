@@ -10,7 +10,7 @@ from typing import List, Optional, Dict, Any
 from dataclasses import dataclass
 from enum import Enum
 
-from core.exceptions import MKanbanError
+from src.core.exceptions import MKanbanError
 
 
 class BranchType(Enum):

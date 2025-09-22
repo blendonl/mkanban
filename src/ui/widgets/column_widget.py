@@ -1,10 +1,10 @@
 from typing import List
 from textual.containers import Vertical, VerticalScroll
-from core.exceptions import ValidationError
-from domain.entities.column import Column
-from domain.entities.item import Item
-from ui.widgets.item_widget import ItemWidget
-from ui.widgets.editable_item_widget import EditableItemWidget
+from src.core.exceptions import ValidationError
+from src.domain.entities.column import Column
+from src.domain.entities.item import Item
+from src.ui.widgets.item_widget import ItemWidget
+from src.ui.widgets.editable_item_widget import EditableItemWidget
 from controllers.column_controller import ColumnController
 from controllers.item_controller import ItemController
 

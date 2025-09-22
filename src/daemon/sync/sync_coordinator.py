@@ -131,7 +131,7 @@ class SyncCoordinator:
         """Process Jira branch-ticket linking for git events"""
         try:
             from daemon.jira.branch_ticket_linker import BranchTicketLinker
-            from infrastructure.storage.markdown_storage_impl import MarkdownStorageImpl
+            from src.infrastructure.storage.markdown_storage_impl import MarkdownStorageImpl
 
             linker = BranchTicketLinker(self.config_service)
             storage = MarkdownStorageImpl(self.config_service.get_data_path())

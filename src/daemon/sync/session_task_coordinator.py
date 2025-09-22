@@ -11,9 +11,9 @@ from typing import Optional, List
 from daemon.core.session_context_manager import SessionContext
 from daemon.core.configuration_service import ConfigurationService
 from daemon.sync.task_manager import TaskManager
-from infrastructure.git.repository import GitOperations
-from infrastructure.tmux.session_manager import TmuxSessionManager
-from utils.string_utils import get_safe_filename
+from src.infrastructure.git.repository import GitOperations
+from src.infrastructure.tmux.session_manager import TmuxSessionManager
+from src.utils.string_utils import get_safe_filename
 
 
 class SessionTaskCoordinator:

@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Optional, Dict, List
 from dataclasses import dataclass
 
-from core.exceptions import MKanbanError
+from src.core.exceptions import MKanbanError
 
 
 @dataclass

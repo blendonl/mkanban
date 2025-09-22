@@ -3,16 +3,16 @@ import re
 import click
 from pathlib import Path
 from typing import Optional, List, Tuple
-from core.exceptions import MKanbanError, BoardNotFoundError
-from config.settings import Settings
-from services.board_service import BoardService
-from services.item_service import ItemService
-from services.validation_service import ValidationService
-from infrastructure.storage.markdown_storage_impl import MarkdownStorageImpl
-from infrastructure.git.repository import GitOperations
-from infrastructure.tmux.session_manager import TmuxSessionManager
-from domain.entities.item import Item
-from domain.entities.board import Board
+from src.core.exceptions import MKanbanError, BoardNotFoundError
+from src.config.settings import Settings
+from src.services.board_service import BoardService
+from src.services.item_service import ItemService
+from src.services.validation_service import ValidationService
+from src.infrastructure.storage.markdown_storage_impl import MarkdownStorageImpl
+from src.infrastructure.git.repository import GitOperations
+from src.infrastructure.tmux.session_manager import TmuxSessionManager
+from src.domain.entities.item import Item
+from src.domain.entities.board import Board
 
 
 class TodoSelector:

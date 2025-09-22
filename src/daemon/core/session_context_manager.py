@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Optional, Callable, Any
 from dataclasses import dataclass
 
-from infrastructure.tmux.session_manager import TmuxSessionManager
+from src.infrastructure.tmux.session_manager import TmuxSessionManager
 
 
 @dataclass

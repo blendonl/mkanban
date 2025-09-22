@@ -17,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from daemon.service_manager import ServiceManager, run_daemon
 from daemon.core.configuration_service import ConfigurationService, DaemonConfiguration
-from infrastructure.tmux.session_manager import (
+from src.infrastructure.tmux.session_manager import (
     get_mkanban_data_path,
     ensure_mkanban_directory,
 )
@@ -37,7 +37,7 @@ def setup_logging(log_level: str = "INFO") -> None:
 
 def create_configuration_service(args) -> ConfigurationService:
     """Create configuration service from command line arguments"""
-    from infrastructure.tmux.session_manager import TmuxSessionManager
+    from src.infrastructure.tmux.session_manager import TmuxSessionManager
     from daemon.core.configuration_service import JiraConfig
     import os
 
