@@ -169,38 +169,63 @@ class MarkdownBoardRepository(BoardRepository):
         column_dirs = [d for d in board_dir.iterdir() if d.is_dir()]
         column_dirs.sort(key=lambda d: d.name)
 
-        for idx, column_dir in enumerate(column_dirs):
+        # First pass: load columns with explicit positions from metadata
+        columns_with_positions = []
+        columns_without_positions = []
+        used_positions = set()
+
+        for column_dir in column_dirs:
             column_metadata_file = column_dir / COLUMN_METADATA_FILENAME
 
             if column_metadata_file.exists():
                 try:
                     metadata = parse_column_metadata(column_metadata_file)
+                    position = metadata.get("position")
                     column = Column(
                         id=metadata.get("id", column_dir.name),
                         name=metadata.get(
                             "name", column_dir.name.replace("-", " ").title()
                         ),
-                        position=metadata.get("position", idx),
+                        position=position,
                         limit=metadata.get("limit"),
                         created_at=metadata.get("created_at", now()),
                         updated_at=metadata.get("updated_at", now()),
                         file_path=column_metadata_file,
                     )
+                    if position is not None:
+                        used_positions.add(position)
+                        columns_with_positions.append((column, column_dir))
+                    else:
+                        columns_without_positions.append((column, column_dir))
                 except Exception:
                     column = Column(
                         id=column_dir.name,
                         name=column_dir.name.replace("-", " ").title(),
-                        position=idx,
+                        position=None,
                         file_path=column_dir,
                     )
+                    columns_without_positions.append((column, column_dir))
             else:
                 column = Column(
                     id=column_dir.name,
                     name=column_dir.name.replace("-", " ").title(),
-                    position=idx,
+                    position=None,
                     file_path=column_dir,
                 )
+                columns_without_positions.append((column, column_dir))
 
+        # Second pass: assign positions to columns without explicit positions
+        next_position = 0
+        for column, column_dir in columns_without_positions:
+            while next_position in used_positions:
+                next_position += 1
+            column.position = next_position
+            used_positions.add(next_position)
+            next_position += 1
+
+        # Load items for all columns
+        all_columns = columns_with_positions + columns_without_positions
+        for column, column_dir in all_columns:
             self._load_items_for_column(column, column_dir)
             board.columns.append(column)
 
