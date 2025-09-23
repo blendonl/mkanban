@@ -44,7 +44,7 @@ class LoggerFactory:
         daemon_log_dir = self.path_resolver.get_log_directory("daemon")
 
         if config.create_timestamped_daemon_logs:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            timestamp = datetime.now().strftime("%Y-%m-%d")
             log_filename = f"daemon_{timestamp}.log"
         else:
             log_filename = "daemon.log"

@@ -176,3 +176,272 @@ Tests are organized by layer:
 - `tests/unit/`: Unit tests with mocked dependencies
 - `tests/integration/`: Integration tests with real storage
 - Use dependency injection for easy mocking in tests
+
+---
+
+# COMPLETE FEATURES & CONFIGURATION REFERENCE
+
+## Core Application Features
+
+### TUI Kanban Board Interface
+- **Board Management**: Create, load, and manage multiple Kanban boards
+- **Column-based Task Organization**: Organize tasks in customizable columns (to-do, in-progress, done, etc.)
+- **Markdown-based Storage**: All data stored as markdown files with YAML frontmatter
+- **Parent/Child Task Grouping**: Hierarchical task organization with parent grouping toggle
+- **Real-time Visual Updates**: Live board updates with responsive layout
+- **Auto-save Functionality**: Configurable auto-save with custom intervals
+
+### Vim-style Navigation & Controls (Complete Keybinding Reference)
+- **Movement**: `h/j/k/l` for directional navigation
+- **Task Management**: `o` (new item), `i` (edit), `d` (delete)
+- **Board Navigation**: `H/L` (move items between columns)
+- **View Controls**: `p` (toggle parent grouping), `r` (refresh)
+- **Utility**: `g?` (help), `w` (save), `q` (quit), `ctrl+c` (quit)
+- **Advanced Navigation**: `gg` (first item), `G` (last item), `ctrl+d/u` (scroll)
+- **Column Controls**: `c` (column settings), `shift+j` (column scroll down)
+- **Item Creation**: `a` (new item with editor)
+
+### Task Creation & Management
+- **Multiple Creation Methods**:
+  - TUI dialog creation (`o`)
+  - CLI command creation (`new-task`)
+  - External editor integration (`a` - neovide, nvim)
+- **Rich Task Properties**: Title, description, metadata, parent relationships
+- **Task Movement**: Drag-and-drop style movement between columns (`H/L`)
+- **Task Editing**: In-place editing (`i`) and external editor support
+
+## CLI Commands & Options Reference
+
+### Main Application Launch
+```bash
+python main.py [OPTIONS] [COMMAND]
+```
+
+**Global Options:**
+- `--boards-path PATH`: Custom path to board files directory
+- `--board BOARD_NAME`: Open specific board directly (supports tab completion)
+- `--new-to-do`: Create new item with external editor (requires --board)
+- `--show-current-task`: Show/edit first task in specified column (requires --board)
+- `--column COLUMN_NAME`: Target column (default: "to-do", supports tab completion)
+- `--list-todos SELECTOR_CMD`: List todos with pipe to selector command
+- `--completion [bash|zsh|fish]`: Generate shell completion scripts
+
+### Task Creation Command
+```bash
+mkanban new-task "Task Title" --board BOARD_NAME [OPTIONS]
+```
+- `--description TEXT`: Task description
+- `--column COLUMN`: Target column (default: "to-do")
+- `--board BOARD`: Target board (required, tab completion available)
+
+### Daemon Management Commands
+```bash
+mkanban daemon [start|stop|status|restart] [OPTIONS]
+```
+
+**Daemon Start/Restart Options:**
+- `--board-name NAME`: Git branch board name (default: "git-branches")
+- `--polling-interval SECONDS`: Git polling frequency (default: 5)
+- `--no-tmux-session-only`: Monitor all repos, not just tmux session
+- `--disable-session-task-management`: Disable automatic session task management
+- `--data-path PATH`: Custom data directory path
+
+**JIRA Integration Options:**
+- `--enable-jira`: Enable JIRA integration
+- `--jira-url URL`: JIRA instance URL (e.g., https://company.atlassian.net)
+- `--jira-username USERNAME`: JIRA username (or set JIRA_USERNAME env var)
+- `--jira-api-token TOKEN`: JIRA API token (or set JIRA_API_TOKEN env var)
+- `--jira-projects KEYS`: Comma-separated project keys (e.g., 'PROJ,FEAT')
+- `--jira-board-name NAME`: JIRA board name (default: "jira-tickets")
+- `--jira-polling-interval SECONDS`: JIRA polling frequency (default: 300)
+- `--jira-bidirectional-sync`: Enable bidirectional JIRA sync
+- `--jira-jql-filter JQL`: Additional JQL filter (e.g., 'assignee = currentUser()')
+- `--jira-backlog-limit NUMBER`: Backlog ticket limit (default: 50, -1 for unlimited)
+
+## Complete Configuration Parameters
+
+### Main Configuration (`~/.config/mkanban/config.json`)
+
+**Storage & Paths:**
+- `boards_path`: Board files location (default: `~/.mkanban/boards`)
+- `config_dir`: Configuration directory (default: `~/.config/mkanban`)
+
+**UI & Behavior:**
+- `auto_save`: Enable auto-save (default: true)
+- `auto_save_interval`: Auto-save frequency in seconds (default: 30)
+- `backup_count`: Number of backups to retain (default: 5)
+- `theme`: UI theme ("dark" or "light", default: "dark")
+- `show_parent_colors`: Enable parent-based color coding (default: true)
+- `default_parent_view`: Start with parent grouping enabled (default: false)
+- `column_width`: Default column width (default: 30)
+
+**Editor Integration:**
+- `editor`: Default text editor (default: "nvim")
+- `cli_editor`: CLI editor for new items (default: "neovide")
+
+**Keyboard Shortcuts:**
+- `shortcuts`: Customizable vim-style keybindings dictionary with keys:
+  - `focus_next`: "j", `focus_previous`: "k"
+  - `focus_left`: "h", `focus_right`: "l"
+  - `focus_first`: "gg", `focus_last`: "G"
+  - `new_item`: "o", `edit_item`: "i", `delete_item`: "d"
+  - `move_left`: "ctrl+h", `move_right`: "ctrl+l"
+  - `toggle_parents`: "p", `save`: "w", `refresh`: "r"
+  - `help`: "g?", `quit`: "q"
+
+### Daemon Configuration
+- `enabled`: Enable daemon service (default: true)
+- `polling_interval`: Git monitoring frequency (default: 5 seconds)
+- `tmux_session_only`: Monitor only active tmux session (default: true)
+- `enable_session_task_management`: Auto task management on session switch (default: true)
+- `auto_complete_on_session_switch`: Auto-complete tasks when switching (default: true)
+- `auto_activate_on_session_switch`: Auto-activate tasks on switch (default: true)
+- `session_name`: Session identifier (default: "git-branches")
+- `default_board`: Default board name (default: "git-branches")
+- `default_column`: Default column name (default: "to-do")
+- `in_progress_column`: In-progress column name (default: "in-progress")
+- `done_column`: Completion column name (default: "done")
+
+**Git Branch Patterns:**
+- `branch_patterns`: Monitored branch patterns (default: ["feature/*", "bugfix/*", "hotfix/*", "fix/*", "feat/*", "test", "test/*", "*"])
+- `excluded_branches`: Ignored branches (default: ["main", "master", "develop", "staging", "production"])
+
+### JIRA Configuration
+- `enabled`: Enable JIRA integration (default: false)
+- `api_url`: JIRA instance URL
+- `username`: JIRA username
+- `api_token`: JIRA API token
+- `project_keys`: List of monitored project keys
+- `polling_interval`: JIRA polling frequency (default: 300 seconds)
+- `bidirectional_sync`: Enable two-way sync (default: false)
+- `backlog_limit`: Maximum backlog tickets (default: 50)
+- `jql_filter`: Additional JQL query filter
+- `board_name`: JIRA tickets board name (default: "jira-tickets")
+
+**JIRA Status Mapping:**
+- `status_mapping`: Maps JIRA statuses to board columns:
+  - "Backlog" → "backlog"
+  - "To Do" → "to-do"
+  - "In Progress" → "in-progress"
+  - "Done" → "done"
+
+**JIRA Branch Patterns:**
+- `branch_patterns`: Regex patterns for JIRA ticket detection:
+  - `.*[A-Z]+-\d+.*`
+  - `[A-Z]+-\d+/.*`
+  - `.*/[A-Z]+-\d+.*`
+
+### Logging Configuration
+- `level`: Log level ("DEBUG", "INFO", "WARNING", "ERROR", default: "INFO")
+- `daemon_log_dir`: Daemon log directory (default: `~/.config/mkanban/logs/daemon`)
+- `tui_log_dir`: TUI log directory (default: `~/.config/mkanban/logs/tui`)
+- `create_timestamped_daemon_logs`: Create timestamped daemon logs (default: true)
+- `max_log_files`: Maximum log files to retain (default: 30)
+- `log_format`: General log format string
+- `daemon_log_format`: Daemon-specific log format
+- `tui_log_format`: TUI-specific log format
+
+## Git Integration Features
+
+### Automatic Branch Monitoring
+- **Real-time Git Repository Monitoring**: Watches for branch changes, commits, checkouts
+- **Branch-based Task Creation**: Automatically creates tasks from branch names
+- **Session-aware Monitoring**: Focuses on current tmux session's repository
+- **Multi-repository Support**: Can monitor multiple repositories simultaneously
+
+### Git Branch Lifecycle Management
+- **Branch Creation Detection**: Creates tasks when new branches are made
+- **Branch Switch Tracking**: Moves tasks between columns based on branch status
+- **Completion Detection**: Marks tasks done when branches are merged/deleted
+- **Commit Tracking**: Updates tasks with latest commit information
+
+### Tmux Session Integration
+- **Session-based Board Isolation**: Each tmux session gets its own board
+- **Automatic Board Switching**: Boards change automatically with session switches
+- **Session Path Resolution**: Resolves project paths based on tmux session context
+- **Global vs Session Data**: Supports both session-specific and global data storage
+
+## JIRA Integration Features
+
+### Bidirectional Synchronization
+- **JIRA to MKanban Sync**: Automatically imports JIRA tickets as kanban tasks
+- **MKanban to JIRA Sync**: Updates JIRA ticket status when tasks are moved
+- **Real-time Polling**: Configurable polling intervals for JIRA updates
+- **Conflict Resolution**: Handles conflicts between local and JIRA changes
+
+### Advanced JIRA Features
+- **Multi-project Support**: Monitors multiple JIRA projects simultaneously
+- **Custom JQL Filtering**: Additional filtering with custom JQL queries
+- **Status Mapping**: Configurable mapping between JIRA statuses and board columns
+- **Branch-ticket Linking**: Automatically links git branches to JIRA tickets
+- **Backlog Management**: Configurable limits for backlog ticket fetching
+
+### JIRA Authentication & Security
+- **API Token Authentication**: Secure authentication using JIRA API tokens
+- **Environment Variable Support**: Credentials can be set via environment variables
+- **Connection Validation**: Validates JIRA connection on daemon startup
+
+## Daemon Mode Capabilities
+
+### Background Service Management
+- **PID File Management**: Proper daemon lifecycle management
+- **Signal Handling**: Graceful shutdown on system signals
+- **IPC Communication**: Inter-process communication for status/control
+- **Logging Separation**: Separate logs for daemon vs TUI operations
+
+### Automatic Task Management
+- **Branch Lifecycle Tracking**: Automatically manages task states based on git branches
+- **Session Context Switching**: Manages tasks across different development sessions
+- **Intelligent Task State Transitions**: Smart movement between to-do, in-progress, and done states
+- **Conflict Prevention**: Prevents duplicate tasks and handles state conflicts
+
+### Service Coordination
+- **Multi-service Architecture**: Coordinates Git monitoring, JIRA sync, and session management
+- **Configurable Polling**: Independent polling intervals for different services
+- **Error Recovery**: Resilient error handling and automatic service recovery
+- **Resource Management**: Efficient resource usage with intelligent scheduling
+
+## UI & UX Features
+
+### Responsive Design
+- **Adaptive Column Widths**: Automatically adjusts to terminal size
+- **Compact Mode**: Optimized layout for smaller terminals (min width: 18)
+- **Dynamic Resizing**: Real-time layout updates on terminal resize
+- **Column Width Constants**: Default: 27, Min: 20, Max: 50
+
+### Visual Enhancements
+- **Parent Color Coding**: Visual grouping with color-coded parent relationships
+- **Status Indicators**: Visual indicators for task states and metadata
+- **Help System**: Built-in help dialog with keybinding reference (`g?`)
+- **Theme Support**: Dark and light theme options
+
+### User Experience
+- **Vim-inspired Workflow**: Familiar navigation for vim users
+- **Minimal Cognitive Load**: Clean, distraction-free interface
+- **Keyboard-first Design**: Complete functionality available via keyboard
+- **Context-aware Actions**: Smart defaults based on current selection and state
+
+---
+
+# MAINTENANCE GUIDELINES
+
+## When Adding New Features
+
+**IMPORTANT**: When implementing new features, update this CLAUDE.md file to include:
+
+1. **New CLI Options**: Add to CLI Commands & Options Reference section
+2. **New Configuration Parameters**: Add to Complete Configuration Parameters section
+3. **New Keybindings**: Update Vim-style Navigation & Controls section
+4. **New Integration Features**: Update Git/JIRA Integration Features sections
+5. **New UI Elements**: Update UI & UX Features section
+6. **Architecture Changes**: Update Architecture section if patterns change
+
+## Documentation Update Process
+
+1. Implement the feature
+2. Update CLAUDE.md with feature documentation
+3. Ensure examples and defaults are accurate
+4. Test that all documented functionality works as described
+5. Commit changes together with feature implementation
+
+This keeps the documentation accurate and ensures Claude Code always has current information about the application's capabilities.

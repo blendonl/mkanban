@@ -38,6 +38,7 @@ executable: clean
 		--hidden-import click \
 		--hidden-import pydantic \
 		--hidden-import frontmatter \
+		--hidden-import logging.handlers \
 		$(MAIN_FILE)
 	@echo "Executable built: $(DIST_DIR)/$(APP_NAME)"
 
