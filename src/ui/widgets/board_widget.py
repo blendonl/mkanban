@@ -8,6 +8,12 @@ from src.core.exceptions import ValidationError
 from src.domain.entities.board import Board
 from src.domain.entities.item import Item
 from src.core.types import RefreshType
+from src.core.constants import (
+    BOARD_WIDGET_DEFAULT_COLUMN_WIDTH,
+    BOARD_WIDGET_MIN_COLUMN_WIDTH,
+    BOARD_WIDGET_MAX_COLUMN_WIDTH,
+    BOARD_WIDGET_COMPACT_MIN_WIDTH,
+)
 from src.ui.widgets.markdown_widget import MarkDownWidget
 from src.ui.widgets.item_widget import ItemWidget
 from src.ui.widgets.column_widget import ColumnWidget
@@ -25,7 +31,7 @@ class BoardWidget(Widget):
         super().__init__(classes="board-view")
         self.board: Optional[Board] = None
         self.selected_item: Optional[Item] = None
-        self._current_column_width = 27
+        self._current_column_width = BOARD_WIDGET_DEFAULT_COLUMN_WIDTH
 
     def set_board(self, board: Board) -> None:
         self.board = board
@@ -752,11 +758,11 @@ updated_at: {item.updated_at}
 
         # Calculate responsive column width
         available_width = terminal_width - 6  # Account for padding and margins
-        column_width = max(20, min(50, available_width // num_columns))
+        column_width = max(BOARD_WIDGET_MIN_COLUMN_WIDTH, min(BOARD_WIDGET_MAX_COLUMN_WIDTH, available_width // num_columns))
 
         # Ensure minimum usable width
-        if column_width < 20 and num_columns > 1:
-            column_width = max(18, available_width // min(num_columns, 3))
+        if column_width < BOARD_WIDGET_MIN_COLUMN_WIDTH and num_columns > 1:
+            column_width = max(BOARD_WIDGET_COMPACT_MIN_WIDTH, available_width // min(num_columns, 3))
 
         # Update column widths if changed
         if column_width != self._current_column_width:

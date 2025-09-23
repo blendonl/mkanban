@@ -64,9 +64,7 @@ class TodoSelector:
         """Get all todos from all columns in the board"""
         todos = []
         for column in board.columns:
-            click.echo(f"Debug: Column '{column.name}' has {len(column.items)} items")
             todos.extend(column.items)
-        click.echo(f"Debug: Total todos found: {len(todos)}")
         return todos
 
     def _format_todos_for_display(self, todos: List[Item]) -> List[str]:

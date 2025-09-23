@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Dict, Any
 
 from src.core.exceptions import MKanbanError
+from src.core.constants import DAEMON_SHUTDOWN_SLEEP
 from src.daemon.core.configuration_service import ConfigurationService
 from src.daemon.core.session_context_manager import SessionContextManager
 from src.core.dependency_container import (
@@ -145,8 +146,8 @@ class ServiceManager:
 
     async def _initialize_services(self) -> None:
         """Initialize all daemon services"""
-        from daemon.sync.sync_coordinator import SyncCoordinator
-        from daemon.ipc.ipc_server import IPCServer, setup_ipc_handlers
+        from src.daemon.sync.sync_coordinator import SyncCoordinator
+        from src.daemon.ipc.ipc_server import IPCServer, setup_ipc_handlers
 
         # Initialize git monitor using DI
         self.services["git_monitor"] = get_git_monitor()
@@ -243,7 +244,7 @@ class ServiceManager:
                 session_name = self.config_service.get_board_name()
                 self.logger.error(f"[{session_name}] Error in service loop: {e}")
                 # Continue running unless it's a critical error
-                await asyncio.sleep(1)
+                await asyncio.sleep(DAEMON_SHUTDOWN_SLEEP)
 
     async def _handle_session_change(self, old_context, new_context) -> None:
         """Handle session context change"""

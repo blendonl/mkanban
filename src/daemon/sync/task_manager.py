@@ -8,13 +8,13 @@ import logging
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 
-from daemon.core.configuration_service import ConfigurationService
+from src.daemon.core.configuration_service import ConfigurationService
 from src.domain.entities.board import Board
 from src.domain.entities.column import Column
 from src.domain.entities.item import Item
 from src.services.board_service import BoardService
 from src.services.validation_service import ValidationService
-from src.infrastructure.storage.markdown_storage_impl import MarkdownStorageImpl
+from src.core.dependency_container import get_container
 from src.infrastructure.git.repository import GitOperations
 from src.utils.string_utils import get_safe_filename
 
@@ -34,10 +34,9 @@ class TaskManager:
 
         self.logger.debug(f"[{board_name}] TaskManager initializing services")
 
-        # Initialize storage and services
-        markdown_storage = MarkdownStorageImpl(settings.get_data_dir())
-        validation_service = ValidationService()
-        self.board_service = BoardService(markdown_storage, validation_service)
+        # Initialize services using DI container
+        container = get_container()
+        self.board_service = container.get(BoardService)
 
         self.logger.debug(f"[{board_name}] TaskManager services initialized")
 

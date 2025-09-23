@@ -8,9 +8,9 @@ import logging
 from pathlib import Path
 from typing import Optional
 
-from daemon.core.session_context_manager import SessionContext
-from daemon.core.configuration_service import ConfigurationService
-from daemon.sync.task_manager import TaskManager
+from src.daemon.core.session_context_manager import SessionContext
+from src.daemon.core.configuration_service import ConfigurationService
+from src.daemon.sync.task_manager import TaskManager
 from src.infrastructure.git.repository import GitOperations
 from src.infrastructure.tmux.session_manager import TmuxSessionManager
 from src.utils.string_utils import get_safe_filename

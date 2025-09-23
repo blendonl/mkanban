@@ -1,130 +1,13 @@
 import json
 import os
 from pathlib import Path
-from typing import Dict, Optional, List, Any
-from dataclasses import dataclass, field, asdict
-from src.core.constants import (
-    DEFAULT_BOARDS_PATH,
-    DEFAULT_CONFIG_DIR,
-    DEFAULT_CONFIG_FILE,
-    DEFAULT_COLUMN_WIDTH,
-    DEFAULT_AUTO_SAVE_INTERVAL,
-    DEFAULT_BACKUP_COUNT,
-    VIM_KEYBINDINGS,
-)
-from src.core.types import ThemeType
-
-
-@dataclass
-class JiraConfiguration:
-    enabled: bool = False
-    api_url: str = ""
-    username: str = ""
-    api_token: str = ""
-    project_keys: List[str] = field(default_factory=list)
-    polling_interval: int = 300
-    bidirectional_sync: bool = False
-    backlog_limit: int = 50
-    status_mapping: Dict[str, str] = field(
-        default_factory=lambda: {
-            "Backlog": "backlog",
-            "To Do": "to-do",
-            "In Progress": "in-progress",
-            "Done": "done",
-        }
-    )
-    jql_filter: str = ""
-    board_name: str = "jira-tickets"
-    branch_patterns: List[str] = field(
-        default_factory=lambda: [
-            r".*[A-Z]+-\d+.*",
-            r"[A-Z]+-\d+/.*",
-            r".*/[A-Z]+-\d+.*",
-        ]
-    )
-
-
-@dataclass
-class DaemonConfiguration:
-    enabled: bool = True
-    polling_interval: int = 5
-    tmux_session_only: bool = True
-    enable_session_task_management: bool = True
-    auto_complete_on_session_switch: bool = True
-    auto_activate_on_session_switch: bool = True
-    session_name: str = "git-branches"
-    default_board: str = "git-branches"
-    default_column: str = "to-do"
-    in_progress_column: str = "in-progress"
-    done_column: str = "done"
-    branch_patterns: List[str] = field(
-        default_factory=lambda: [
-            "feature/*",
-            "bugfix/*",
-            "hotfix/*",
-            "fix/*",
-            "feat/*",
-            "test",
-            "test/*",
-            "*",
-        ]
-    )
-    excluded_branches: List[str] = field(
-        default_factory=lambda: [
-            "main", "master", "develop", "staging", "production"
-        ]
-    )
-    jira: JiraConfiguration = field(default_factory=JiraConfiguration)
-
-
-@dataclass
-class LoggingConfiguration:
-    level: str = "INFO"
-    daemon_log_dir: str = ""
-    tui_log_dir: str = ""
-    create_timestamped_daemon_logs: bool = True
-    max_log_files: int = 30
-    log_format: str = "[%(asctime)s] %(levelname)s %(name)s: %(message)s"
-    daemon_log_format: str = (
-        "[%(asctime)s] DAEMON %(levelname)s %(name)s: %(message)s"
-    )
-    tui_log_format: str = (
-        "[%(asctime)s] TUI %(levelname)s %(name)s: %(message)s"
-    )
-
-
-@dataclass
-class UnifiedConfiguration:
-    boards_path: str = str(DEFAULT_BOARDS_PATH)
-    config_dir: str = ""
-    auto_save: bool = True
-    auto_save_interval: int = DEFAULT_AUTO_SAVE_INTERVAL
-    backup_count: int = DEFAULT_BACKUP_COUNT
-    theme: str = ThemeType.DARK.value
-    show_parent_colors: bool = True
-    default_parent_view: bool = False
-    column_width: int = DEFAULT_COLUMN_WIDTH
-    editor: str = "nvim"
-    cli_editor: str = "neovide"
-    shortcuts: Dict[str, str] = field(
-        default_factory=lambda: VIM_KEYBINDINGS.copy()
-    )
-    daemon: DaemonConfiguration = field(default_factory=DaemonConfiguration)
-    logging: LoggingConfiguration = field(
-        default_factory=LoggingConfiguration
-    )
-
-    def __post_init__(self):
-        if not self.config_dir:
-            self.config_dir = str(DEFAULT_CONFIG_DIR)
-        if not self.logging.daemon_log_dir:
-            self.logging.daemon_log_dir = str(
-                Path(self.config_dir) / "logs" / "daemon"
-            )
-        if not self.logging.tui_log_dir:
-            self.logging.tui_log_dir = str(
-                Path(self.config_dir) / "logs" / "tui"
-            )
+from typing import Dict, Optional, Any
+from dataclasses import asdict
+from src.core.constants import DEFAULT_CONFIG_FILE
+from .jira_config import JiraConfiguration
+from .daemon_config import DaemonConfiguration
+from .logging_config import LoggingConfiguration
+from .unified_config import UnifiedConfiguration
 
 
 class ConfigurationManager:

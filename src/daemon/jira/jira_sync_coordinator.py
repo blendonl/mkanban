@@ -14,6 +14,7 @@ from src.daemon.jira.jira_event_processor import JiraEventProcessor, ProcessedJi
 from src.domain.entities.board import Board
 from src.domain.entities.item import Item
 from src.domain.entities.column import Column
+# Note: Some imports moved to methods to avoid circular dependencies
 from src.infrastructure.storage.markdown_storage_impl import MarkdownStorageImpl
 from src.utils.date_utils import now
 
@@ -25,57 +26,57 @@ class JiraSyncCoordinator:
         self.config_service = config_service
         self.logger = logging.getLogger("mkanban-daemon")
         self.event_processor = JiraEventProcessor(config_service)
-        self._storage: Optional[MarkdownStorageImpl] = None
+        self._board_service = None
         self._board: Optional[Board] = None
         self._last_sync: Optional[datetime] = None
 
-    def _get_storage(self) -> MarkdownStorageImpl:
-        """Get or create storage instance"""
-        if not self._storage:
-            data_path = self.config_service.get_data_path()
-            self._storage = MarkdownStorageImpl(data_path)
-        return self._storage
+    def _get_board_service(self):
+        """Get or create board service instance"""
+        if not self._board_service:
+            from src.core.dependency_container import get_container
+            from src.services.board_service import BoardService
+            container = get_container()
+            self._board_service = container.get(BoardService)
+        return self._board_service
+
+    def _get_storage(self):
+        """Compatibility method - returns MarkdownStorageImpl for legacy code"""
+        from src.infrastructure.storage.markdown_storage_impl import MarkdownStorageImpl
+        data_path = self.config_service.get_data_path()
+        return MarkdownStorageImpl(data_path)
 
     def _get_or_create_board(self) -> Board:
         """Get or create the Jira board"""
         if self._board:
             return self._board
 
-        storage = self._get_storage()
+        board_service = self._get_board_service()
         jira_config = self.config_service.get_jira_config()
         board_name = jira_config.board_name
 
         # Try to load existing board
-        self._board = storage.load_board_by_name(board_name)
+        try:
+            self._board = board_service.get_board_by_name(board_name)
+        except:
+            self._board = None
 
         if not self._board:
-            # Create new board
+            # Create new board using BoardService
             self.logger.info(f"Creating new Jira board: {board_name}")
-            self._board = Board(
-                name=board_name,
-                description="Automatically managed Jira tickets"
-            )
+            self._board = board_service.create_board(board_name, "Automatically managed Jira tickets")
 
-            # Create default columns based on status mapping
+            # Add custom columns based on status mapping if needed
             column_names = set(jira_config.status_mapping.values())
-            default_columns = ["backlog", "to-do", "in-progress", "review", "done"]
+            existing_columns = {col.name.lower().replace(" ", "-") for col in self._board.columns}
 
-            # Ensure we have the mapped columns in the right order
-            all_columns = []
-            for default_col in default_columns:
-                all_columns.append(default_col)
-
-            # Add any additional mapped columns that weren't in defaults
             for mapped_col in column_names:
-                if mapped_col not in all_columns:
-                    all_columns.append(mapped_col)
+                if mapped_col not in existing_columns:
+                    # Add missing columns for JIRA status mapping
+                    display_name = mapped_col.replace("-", " ").title()
+                    board_service.add_column_to_board(self._board.name, display_name)
 
-            for i, column_name in enumerate(all_columns):
-                display_name = column_name.replace("-", " ").title()
-                self._board.add_column(display_name, i + 1)
-
-            # Save the board
-            storage.save_board(self._board)
+            # Reload board to get updated columns
+            self._board = board_service.get_board_by_name(board_name)
 
         return self._board
 

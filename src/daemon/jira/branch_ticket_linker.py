@@ -8,8 +8,8 @@ import logging
 import re
 from typing import List, Dict, Optional
 
-from daemon.core.configuration_service import ConfigurationService
-from daemon.jira.jira_client import JiraClient
+from src.daemon.core.configuration_service import ConfigurationService
+from src.daemon.jira.jira_client import JiraClient
 from src.domain.entities.item import Item
 from src.domain.entities.board import Board
 from src.infrastructure.storage.markdown_storage_impl import MarkdownStorageImpl

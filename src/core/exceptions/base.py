@@ -1,0 +1,2 @@
+class MKanbanError(Exception):
+    pass

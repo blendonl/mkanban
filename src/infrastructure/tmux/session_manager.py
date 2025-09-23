@@ -8,31 +8,9 @@ import os
 import subprocess
 from pathlib import Path
 from typing import Optional, List
-from dataclasses import dataclass
+from src.core.constants import TMUX_COMMAND_TIMEOUT
 
-
-@dataclass
-class TmuxSession:
-    """Represents a tmux session"""
-
-    name: str
-    id: str
-    attached: bool
-    windows: int
-    working_directory: Optional[Path] = None
-
-
-@dataclass
-class TmuxPane:
-    """Represents a tmux pane"""
-
-    id: str
-    session_name: str
-    window_index: int
-    pane_index: int
-    working_directory: Path
-    command: str
-    active: bool = False
+from .session import TmuxSession, TmuxPane
 
 
 class TmuxSessionManager:
@@ -45,7 +23,7 @@ class TmuxSessionManager:
         """Check if tmux is available and we're in a tmux session"""
         try:
             subprocess.run(
-                ["tmux", "list-sessions"], capture_output=True, check=True, timeout=5
+                ["tmux", "list-sessions"], capture_output=True, check=True, timeout=TMUX_COMMAND_TIMEOUT
             )
         except (
             subprocess.CalledProcessError,
@@ -75,7 +53,7 @@ class TmuxSessionManager:
                 ],
                 capture_output=True,
                 text=True,
-                timeout=5,
+                timeout=TMUX_COMMAND_TIMEOUT,
             )
 
             if result.returncode == 0:
@@ -108,7 +86,7 @@ class TmuxSessionManager:
                 ],
                 capture_output=True,
                 text=True,
-                timeout=5,
+                timeout=TMUX_COMMAND_TIMEOUT,
             )
 
             if result.returncode == 0:
@@ -158,7 +136,7 @@ class TmuxSessionManager:
                 ],
                 capture_output=True,
                 text=True,
-                timeout=5,
+                timeout=TMUX_COMMAND_TIMEOUT,
             )
 
             if result.returncode == 0:
@@ -182,7 +160,7 @@ class TmuxSessionManager:
                 ],
                 capture_output=True,
                 text=True,
-                timeout=5,
+                timeout=TMUX_COMMAND_TIMEOUT,
             )
 
             if result.returncode == 0:
@@ -242,7 +220,7 @@ class TmuxSessionManager:
                     ["tmux", "display-message", "-p", "#{client_session}"],
                     capture_output=True,
                     text=True,
-                    timeout=5,
+                    timeout=TMUX_COMMAND_TIMEOUT,
                 )
 
                 if result.returncode == 0:
@@ -277,7 +255,7 @@ class TmuxSessionManager:
                 ],
                 capture_output=True,
                 text=True,
-                timeout=5,
+                timeout=TMUX_COMMAND_TIMEOUT,
             )
 
             if result.returncode == 0:

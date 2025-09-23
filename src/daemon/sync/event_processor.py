@@ -8,8 +8,8 @@ import logging
 from typing import List, Optional, Dict, Any
 from dataclasses import dataclass
 
-from daemon.git_monitor import GitEvent, GitEventType
-from daemon.core.configuration_service import ConfigurationService
+from src.daemon.git_monitor import GitEvent, GitEventType
+from src.daemon.core.configuration_service import ConfigurationService
 from src.infrastructure.git.repository import GitOperations
 
 

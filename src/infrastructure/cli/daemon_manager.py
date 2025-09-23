@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Optional
 
 import click
+from src.core.constants import DAEMON_STARTUP_WAIT
 
 from src.infrastructure.tmux.session_manager import (
     get_mkanban_data_path,
@@ -113,7 +114,7 @@ class DaemonManager:
                 )
 
             # Give it a moment to start and create its own PID file
-            time.sleep(2)
+            time.sleep(DAEMON_STARTUP_WAIT)
 
             if self.is_daemon_running():
                 pid = self.get_daemon_pid()

@@ -4,68 +4,8 @@ from pydantic import BaseModel, Field
 from src.core.types import ItemId, ColumnId, ParentId, Timestamp, FilePath
 from src.utils.string_utils import generate_id_from_name, get_safe_filename
 from src.utils.date_utils import now
-
-
-class GitMetadata(BaseModel):
-    """Git-specific metadata for tasks"""
-    repository_path: str
-    branch_name: str
-    branch_full_name: str
-    last_commit_hash: Optional[str] = None
-    last_commit_message: Optional[str] = None
-    last_commit_author: Optional[str] = None
-    last_commit_date: Optional[str] = None
-    is_current_branch: bool = False
-    branch_created_at: Optional[Timestamp] = None
-    branch_deleted_at: Optional[Timestamp] = None
-
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary for serialization"""
-        return {
-            "repository_path": self.repository_path,
-            "branch_name": self.branch_name,
-            "branch_full_name": self.branch_full_name,
-            "last_commit_hash": self.last_commit_hash,
-            "last_commit_message": self.last_commit_message,
-            "last_commit_author": self.last_commit_author,
-            "last_commit_date": self.last_commit_date,
-            "is_current_branch": self.is_current_branch,
-            "branch_created_at": self.branch_created_at,
-            "branch_deleted_at": self.branch_deleted_at,
-        }
-
-
-class JiraMetadata(BaseModel):
-    """Jira-specific metadata for tasks"""
-    ticket_key: str  # PROJ-123
-    ticket_id: str   # Internal Jira ID
-    ticket_url: str
-    project_key: str
-    issue_type: str
-    priority: Optional[str] = None
-    assignee: Optional[str] = None
-    reporter: Optional[str] = None
-    labels: List[str] = Field(default_factory=list)
-    components: List[str] = Field(default_factory=list)
-    last_sync: Optional[Timestamp] = None
-    jira_status: str = ""
-
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary for serialization"""
-        return {
-            "ticket_key": self.ticket_key,
-            "ticket_id": self.ticket_id,
-            "ticket_url": self.ticket_url,
-            "project_key": self.project_key,
-            "issue_type": self.issue_type,
-            "priority": self.priority,
-            "assignee": self.assignee,
-            "reporter": self.reporter,
-            "labels": self.labels,
-            "components": self.components,
-            "last_sync": self.last_sync,
-            "jira_status": self.jira_status,
-        }
+from .git_metadata import GitMetadata
+from .jira_metadata import JiraMetadata
 
 
 class Item(BaseModel):

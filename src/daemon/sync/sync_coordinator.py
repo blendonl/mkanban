@@ -7,12 +7,12 @@ coordinating between EventProcessor and TaskManager.
 import logging
 from typing import List
 
-from daemon.git_monitor import GitEvent
-from daemon.core.configuration_service import ConfigurationService
-from daemon.core.session_context_manager import SessionContext
-from daemon.sync.event_processor import EventProcessor
-from daemon.sync.task_manager import TaskManager
-from daemon.sync.session_task_coordinator import SessionTaskCoordinator
+from src.daemon.git_monitor import GitEvent
+from src.daemon.core.configuration_service import ConfigurationService
+from src.daemon.core.session_context_manager import SessionContext
+from src.daemon.sync.event_processor import EventProcessor
+from src.daemon.sync.task_manager import TaskManager
+from src.daemon.sync.session_task_coordinator import SessionTaskCoordinator
 
 
 class SyncCoordinator:
@@ -130,18 +130,30 @@ class SyncCoordinator:
     async def _process_jira_linking(self, events: List[GitEvent]) -> None:
         """Process Jira branch-ticket linking for git events"""
         try:
-            from daemon.jira.branch_ticket_linker import BranchTicketLinker
+            from src.daemon.jira.branch_ticket_linker import BranchTicketLinker
+            from src.core.dependency_container import get_container
+            from src.services.board_service import BoardService
             from src.infrastructure.storage.markdown_storage_impl import MarkdownStorageImpl
 
             linker = BranchTicketLinker(self.config_service)
+            container = get_container()
+            board_service = container.get(BoardService)
+            # Keep MarkdownStorageImpl for BranchTicketLinker compatibility
             storage = MarkdownStorageImpl(self.config_service.get_data_path())
 
             # Get both boards
             git_board_name = self.config_service.get_board_name()
             jira_board_name = self.config_service.get_jira_config().board_name
 
-            git_board = storage.load_board_by_name(git_board_name)
-            jira_board = storage.load_board_by_name(jira_board_name)
+            try:
+                git_board = board_service.get_board_by_name(git_board_name)
+            except:
+                git_board = None
+
+            try:
+                jira_board = board_service.get_board_by_name(jira_board_name)
+            except:
+                jira_board = None
 
             if not git_board or not jira_board:
                 self.logger.debug("Git or Jira board not available for linking")
