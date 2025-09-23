@@ -3,7 +3,9 @@ from src.config.configuration_manager import ConfigurationManager
 from src.utils.path_resolver import PathResolver
 from src.utils.logger_factory import LoggerFactory, ContextAwareLogger
 from src.utils.file_operations import FileOperations
-from src.infrastructure.storage.markdown_board_repository import MarkdownBoardRepository
+from src.infrastructure.storage.markdown_board_repository import (
+    MarkdownBoardRepository,
+)
 from src.infrastructure.storage.markdown_storage_repository import (
     MarkdownStorageRepository,
 )
@@ -18,6 +20,7 @@ from src.daemon.jira.jira_daemon import JiraDaemon
 from src.daemon.jira.jira_sync_coordinator import JiraSyncCoordinator
 from src.daemon.git_monitor import GitMonitor
 from src.daemon.core.session_context_manager import SessionContextManager
+
 # CLI components imported lazily to avoid circular imports
 from src.controllers.item_controller import ItemController
 from src.controllers.column_controller import ColumnController
@@ -82,18 +85,26 @@ class DependencyContainer:
             self.get(ConfigurationService).config.tmux_session_only
         )
         self._factories[GitMonitor] = lambda: GitMonitor(
-            polling_interval=self.get(ConfigurationService).config.polling_interval,
+            polling_interval=self.get(
+                ConfigurationService
+            ).config.polling_interval,
         )
 
     def _setup_repository_factories(self):
         """Set up repository factories."""
-        self._factories[MarkdownBoardRepository] = lambda: MarkdownBoardRepository(
-            self.get(PathResolver),
-            self.get(LoggerFactory).get_daemon_logger("board_repository"),
+        self._factories[MarkdownBoardRepository] = (
+            lambda: MarkdownBoardRepository(
+                self.get(PathResolver),
+                self.get(LoggerFactory).get_daemon_logger("board_repository"),
+            )
         )
-        self._factories[MarkdownStorageRepository] = lambda: MarkdownStorageRepository(
-            self.get(PathResolver),
-            self.get(LoggerFactory).get_daemon_logger("storage_repository"),
+        self._factories[MarkdownStorageRepository] = (
+            lambda: MarkdownStorageRepository(
+                self.get(PathResolver),
+                self.get(LoggerFactory).get_daemon_logger(
+                    "storage_repository"
+                ),
+            )
         )
 
     def _setup_service_factories(self):
@@ -112,16 +123,20 @@ class DependencyContainer:
 
     def _setup_cli_factories(self):
         """Set up CLI component factories with lazy imports."""
+
         def _create_task_creator():
             from src.infrastructure.cli.task_creator import TaskCreator
+
             return TaskCreator(self, self.get(PathResolver).get_boards_path())
 
         def _create_todo_selector():
             from src.infrastructure.cli.todo_selector import TodoSelector
+
             return TodoSelector(self, self.get(PathResolver).get_boards_path())
 
         def _create_daemon_manager():
             from src.infrastructure.cli.daemon_manager import DaemonManager
+
             return DaemonManager()
 
         self._factories["TaskCreator"] = _create_task_creator
@@ -199,6 +214,7 @@ def set_container(container: DependencyContainer) -> None:
 # Convenience functions
 # NOTE: For new code, prefer using get_container().get(ServiceType) directly
 # to reduce indirection and improve clarity
+
 
 def get_config_manager() -> ConfigurationManager:
     return get_container().get(ConfigurationManager)

@@ -13,7 +13,6 @@ from src.domain.entities.board import Board
 from src.domain.entities.column import Column
 from src.domain.entities.item import Item
 from src.services.board_service import BoardService
-from src.services.validation_service import ValidationService
 from src.core.dependency_container import get_container
 from src.infrastructure.git.repository import GitOperations
 from src.utils.string_utils import get_safe_filename
@@ -29,7 +28,6 @@ class TaskManager:
 
     def _initialize_services(self) -> None:
         """Initialize required services with current configuration"""
-        settings = self.config_service.settings
         board_name = self.config_service.get_board_name()
 
         self.logger.debug(f"[{board_name}] TaskManager initializing services")
@@ -503,7 +501,7 @@ class TaskManager:
         try:
             board_name = self.config_service.get_board_name()
             return self.board_service.get_board_by_name(board_name)
-        except:
+        except Exception:
             return None
 
     def _find_or_create_column(self, board: Board, column_name: str) -> Column:

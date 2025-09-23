@@ -6,13 +6,13 @@ ticket fetching, status updates, and error handling.
 
 import logging
 import re
-from typing import List, Dict, Any, Optional
+from typing import List, Optional
 from datetime import datetime
 import aiohttp
 import base64
 
 from src.daemon.core.configuration_service import JiraConfig
-from .exceptions import JiraError, JiraAuthError, JiraAPIError
+from .exceptions import JiraAuthError, JiraAPIError
 from .ticket import JiraTicket
 
 

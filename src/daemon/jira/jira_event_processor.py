@@ -60,7 +60,7 @@ class JiraEventProcessor:
 
     async def _process_single_event(self, event: JiraEvent) -> Optional[ProcessedJiraEvent]:
         """Process a single Jira event"""
-        jira_config = self.config_service.get_jira_config()
+        self.config_service.get_jira_config()
 
         # Check if we should track this ticket
         if not self.config_service.should_track_jira_ticket(event.ticket.key):

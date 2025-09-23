@@ -75,8 +75,7 @@ class Item(BaseModel):
             return ""
 
         branch_name = self.git_metadata.branch_name
-        repository_path = Path(self.git_metadata.repository_path)
-        repo_name = repository_path.name
+        Path(self.git_metadata.repository_path)
 
         # Remove common prefixes
         prefixes = ["feature/", "bugfix/", "hotfix/", "fix/", "feat/"]

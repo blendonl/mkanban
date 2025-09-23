@@ -147,12 +147,12 @@ class SyncCoordinator:
 
             try:
                 git_board = board_service.get_board_by_name(git_board_name)
-            except:
+            except Exception:
                 git_board = None
 
             try:
                 jira_board = board_service.get_board_by_name(jira_board_name)
-            except:
+            except Exception:
                 jira_board = None
 
             if not git_board or not jira_board:

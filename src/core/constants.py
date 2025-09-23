@@ -1,8 +1,21 @@
-from pathlib import Path
+from pathlib import (
+    Path,
+)
 
-DEFAULT_CONFIG_DIR = Path.home() / ".config" / "mkanban"
-DEFAULT_BOARDS_PATH = Path.home() / ".mkanban" / "boards"
-DEFAULT_CONFIG_FILE = DEFAULT_CONFIG_DIR / "config.json"
+DEFAULT_CONFIG_DIR = (
+    Path.home()
+    / ".config"
+    / "mkanban"
+)
+DEFAULT_BOARDS_PATH = (
+    Path.home()
+    / ".mkanban"
+    / "boards"
+)
+DEFAULT_CONFIG_FILE = (
+    DEFAULT_CONFIG_DIR
+    / "config.json"
+)
 
 BOARD_FILENAME = "kanban.md"
 COLUMN_METADATA_FILENAME = "column.md"

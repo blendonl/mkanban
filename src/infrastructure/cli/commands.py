@@ -2,13 +2,13 @@ import click
 from pathlib import Path
 from typing import Optional
 from src.core.exceptions import MKanbanError
+from src.core.dependency_container import get_config_manager, get_board_service
+from .daemon_commands import daemon_command
 
 
 def get_board_names(ctx, param, incomplete):
     """Completion function for board names."""
     try:
-        from src.core.dependency_container import get_config_manager, get_board_service
-
         config_manager = get_config_manager()
         boards_path = Path(config_manager.get_boards_path())
 
@@ -28,7 +28,7 @@ def get_column_names(ctx, param, incomplete):
     try:
         from src.core.dependency_container import get_board_service
 
-        board_name = ctx.params.get('board')
+        board_name = ctx.params.get("board")
         if not board_name:
             return []
 
@@ -103,7 +103,7 @@ def main_command(
         if completion:
             shell_name = completion.lower()
             completion_script = {
-                'bash': '''_mkanban_completion() {
+                "bash": """_mkanban_completion() {
     local cur prev words cword
     _init_completion || return
 
@@ -113,23 +113,22 @@ def main_command(
     return 0
 }
 
-complete -F _mkanban_completion mkanban''',
-                'zsh': '''#compdef mkanban
+complete -F _mkanban_completion mkanban""",
+                "zsh": """#compdef mkanban
 
 _mkanban() {
     eval $(env COMMANDLINE="${words[*]}" _MKANBAN_COMPLETE=zsh_complete mkanban)
 }
 
-compdef _mkanban mkanban''',
-                'fish': '''function __fish_mkanban_complete
+compdef _mkanban mkanban""",
+                "fish": '''function __fish_mkanban_complete
     env _MKANBAN_COMPLETE=fish_complete mkanban (commandline -cp)
 end
 
-complete --command mkanban --no-files --arguments "(__fish_mkanban_complete)"'''
+complete --command mkanban --no-files --arguments "(__fish_mkanban_complete)"''',
             }
-            click.echo(completion_script.get(shell_name, ''))
+            click.echo(completion_script.get(shell_name, ""))
             return
-
 
         # If a subcommand was invoked, don't run the main app
         if ctx.invoked_subcommand is not None:
@@ -137,10 +136,8 @@ complete --command mkanban --no-files --arguments "(__fish_mkanban_complete)"'''
 
         from src.core.dependency_container import (
             get_config_manager,
-            get_container,
             get_task_creator,
             get_todo_selector,
-            get_daemon_manager,
         )
 
         config_manager = get_config_manager()
@@ -226,7 +223,7 @@ def new_task_command(
 
 
 # Import and add daemon command group
-from .daemon_commands import daemon_command
+
 main_command.add_command(daemon_command)
 
 

@@ -121,7 +121,7 @@ class MarkdownStorageRepository(StorageRepository):
                 self.logger.debug("Saving column", board=board.name, column=column.name)
 
                 # Ensure column directory exists
-                column_dir = self.path_resolver.get_column_directory(
+                self.path_resolver.get_column_directory(
                     board.name, column.name
                 )
 

@@ -40,7 +40,7 @@ class GitOperations:
         try:
             result = self._run_git_command(["rev-parse", "--git-dir"])
             return result.returncode == 0
-        except:
+        except Exception:
             return False
 
     def get_repository_info(self) -> GitRepository:
@@ -64,7 +64,7 @@ class GitOperations:
                 branch_name = result.stdout.strip()
                 return branch_name if branch_name != "HEAD" else None
             return None
-        except:
+        except Exception:
             return None
 
     def get_all_branches(self) -> List[GitBranch]:
@@ -83,7 +83,7 @@ class GitOperations:
                         )
                         if branch:
                             branches.append(branch)
-        except:
+        except Exception:
             pass
 
         # Get remote branches
@@ -97,7 +97,7 @@ class GitOperations:
                         )
                         if branch:
                             branches.append(branch)
-        except:
+        except Exception:
             pass
 
         return branches
@@ -111,7 +111,7 @@ class GitOperations:
                     line.strip() for line in result.stdout.split("\n") if line.strip()
                 ]
             return []
-        except:
+        except Exception:
             return []
 
     def branch_exists(self, branch_name: str) -> bool:
@@ -121,7 +121,7 @@ class GitOperations:
                 ["rev-parse", "--verify", f"refs/heads/{branch_name}"]
             )
             return result.returncode == 0
-        except:
+        except Exception:
             return False
 
     def get_branch_info(self, branch_name: str) -> Optional[GitBranch]:
@@ -150,7 +150,7 @@ class GitOperations:
                         last_commit_author=author,
                         last_commit_date=date,
                     )
-        except:
+        except Exception:
             pass
 
         return GitBranch(

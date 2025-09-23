@@ -290,7 +290,7 @@ updated_at: {item.updated_at}
                 new_item.description = edited_content.strip()
 
                 # Save the board
-                self.app.storage.save_board(self.board)
+                self.app.board_service.save_board(self.board)
 
                 # Refresh the board and focus the new item
                 self.refresh_board(focus_item_id=new_item.id)
@@ -336,7 +336,7 @@ updated_at: {item.updated_at}
             self._update_item_from_file(selected, item_file_path)
 
             # Save the board to trigger filename update and persist changes
-            self.app.storage.save_board(self.board)
+            self.app.board_service.save_board(self.board)
 
             # Refresh the board to reflect all changes
             self.refresh_board(focus_item_id=original_item_id)
@@ -666,14 +666,20 @@ updated_at: {item.updated_at}
 
         column = column_widget.column
 
-        # Get the storage instance to access paths
-        storage = self.app.storage
-        board_dir = storage._get_board_directory(self.board)
-        column_safe_name = storage._get_safe_name(column.name)
-        column_dir = board_dir / column_safe_name
+        # Get the item file path using file operations
+        from src.infrastructure.storage.file_operations import (
+            find_item_file_by_id
+        )
+        from src.core.dependency_container import get_container
 
-        # Find the item file by scanning metadata for the ID
-        item_file_path = storage._find_item_file_by_id(column_dir, item.id)
+        from src.utils.path_resolver import PathResolver
+
+        container = get_container()
+        path_resolver = container.get(PathResolver)
+        column_dir = path_resolver.get_column_directory(
+            self.board.name, column.name
+        )
+        item_file_path = find_item_file_by_id(column_dir, item.id)
         return item_file_path
 
     def _update_item_from_file(self, item: Item, item_file_path: Path) -> None:
@@ -682,15 +688,26 @@ updated_at: {item.updated_at}
             return
 
         # Load the updated item from the file
-        updated_item = self.app.storage.load_item_from_title_file(
-            item_file_path, item.column_id
+        from src.infrastructure.storage.markdown_parser import (
+            parse_item_metadata
         )
-        if updated_item:
+
+        try:
+            content_title, content, metadata = parse_item_metadata(
+                item_file_path
+            )
             # Update the existing item's properties
-            item.title = updated_item.title
-            item.description = updated_item.description
-            item.updated_at = updated_item.updated_at
-            item.parent_id = updated_item.parent_id
+            item.title = content_title
+            item.description = content
+            item.updated_at = metadata.get(
+                'updated_at', item.updated_at
+            )
+            item.parent_id = metadata.get(
+                'parent_id', item.parent_id
+            )
+        except Exception:
+            # If parsing fails, keep existing item data
+            pass
 
     def call_after_refresh(self, callback, *args) -> None:
         self.set_timer(0.01, lambda: callback(*args))
@@ -734,7 +751,7 @@ updated_at: {item.updated_at}
             target_column.column.limit = limit
             target_column.column.update()
             target_column.update_title()
-            self.app.storage.save_board(self.board)
+            self.app.board_service.save_board(self.board)
             self.app.notify(f"Column limit updated for '{target_column.column.name}'")
 
         dialog = ColumnSettingsDialog(target_column.column, on_save)

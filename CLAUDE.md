@@ -17,9 +17,9 @@ make setup              # Create venv and install dependencies
 ### Code Quality
 
 ```bash
-make lint              # Run flake8 and mypy linting
+make lint              # Run ruff linting
 make format            # Format code with black
-ruff check             # Run ruff linter (configured in ruff.toml)
+ruff check             # Run ruff linter directly (configured in ruff.toml)
 ```
 
 ### Testing
@@ -176,4 +176,3 @@ Tests are organized by layer:
 - `tests/unit/`: Unit tests with mocked dependencies
 - `tests/integration/`: Integration tests with real storage
 - Use dependency injection for easy mocking in tests
-

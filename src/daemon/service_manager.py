@@ -15,13 +15,14 @@ from typing import Dict, Any
 from src.core.exceptions import MKanbanError
 from src.core.constants import DAEMON_SHUTDOWN_SLEEP
 from src.daemon.core.configuration_service import ConfigurationService
-from src.daemon.core.session_context_manager import SessionContextManager
 from src.core.dependency_container import (
     get_container,
     get_git_monitor,
     get_jira_daemon,
     get_session_context_manager,
 )
+
+from src.daemon.ipc.messages import IPCResponse, IPCResponseStatus
 
 
 class ServiceManager:
@@ -58,9 +59,7 @@ class ServiceManager:
         console_handler.setLevel(logging.DEBUG)
 
         # Formatter
-        formatter = logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-        )
+        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
         file_handler.setFormatter(formatter)
         console_handler.setFormatter(formatter)
 
@@ -114,9 +113,7 @@ class ServiceManager:
             await self._initialize_services()
 
             self.running = True
-            self.logger.info(
-                f"MKanban daemon started successfully for session '{session_name}'"
-            )
+            self.logger.info(f"MKanban daemon started successfully for session '{session_name}'")
 
             # Main service loop
             await self._run_service_loop()
@@ -153,11 +150,8 @@ class ServiceManager:
         git_monitor = get_git_monitor()
 
         # Add current session repository to monitoring if available
-        if (self.session_manager.current_context and
-                self.session_manager.current_context.repository_path):
-            git_monitor.add_repository(
-                self.session_manager.current_context.repository_path
-            )
+        if self.session_manager.current_context and self.session_manager.current_context.repository_path:
+            git_monitor.add_repository(self.session_manager.current_context.repository_path)
 
         self.services["git_monitor"] = git_monitor
 
@@ -178,19 +172,13 @@ class ServiceManager:
         # Register session change callbacks
         self.session_manager.add_change_callback(self._handle_session_change)
         if "git_monitor" in self.services:
-            self.session_manager.add_change_callback(
-                self.services["git_monitor"].handle_session_change
-            )
+            self.session_manager.add_change_callback(self.services["git_monitor"].handle_session_change)
         if "sync_coordinator" in self.services:
-            self.session_manager.add_change_callback(
-                self.services["sync_coordinator"].handle_session_change
-            )
+            self.session_manager.add_change_callback(self.services["sync_coordinator"].handle_session_change)
 
         # Register session switch callbacks for task management
         if "sync_coordinator" in self.services:
-            self.session_manager.add_session_switch_callback(
-                self.services["sync_coordinator"].handle_session_switch
-            )
+            self.session_manager.add_session_switch_callback(self.services["sync_coordinator"].handle_session_switch)
 
         # Start services
         for service in self.services.values():
@@ -216,9 +204,7 @@ class ServiceManager:
                 loop_count += 1
                 if loop_count % 12 == 1:  # Log every minute (5s * 12 = 60s)
                     session_name = self.config_service.get_board_name()
-                    self.logger.debug(
-                        f"[{session_name}] Service loop iteration {loop_count}"
-                    )
+                    self.logger.debug(f"[{session_name}] Service loop iteration {loop_count}")
 
                 # Check for session changes
                 await self.session_manager.check_for_changes()
@@ -230,21 +216,14 @@ class ServiceManager:
                     if events:
                         session_name = self.config_service.get_board_name()
                         event_types = [e.event_type.value for e in events]
-                        self.logger.debug(
-                            f"[{session_name}] Got {len(events)} git events: {event_types}"
-                        )
+                        self.logger.debug(f"[{session_name}] Got {len(events)} git events: {event_types}")
 
                     # Process events
                     if events and "sync_coordinator" in self.services:
                         session_name = self.config_service.get_board_name()
-                        self.logger.debug(
-                            f"[{session_name}] Processing {len(events)} events "
-                            f"with sync coordinator"
-                        )
+                        self.logger.debug(f"[{session_name}] Processing {len(events)} events with sync coordinator")
                         await self.services["sync_coordinator"].process_events(events)
-                        self.logger.debug(
-                            f"[{session_name}] Finished processing {len(events)} events"
-                        )
+                        self.logger.debug(f"[{session_name}] Finished processing {len(events)} events")
 
                 # Sleep for polling interval
                 await asyncio.sleep(self.config_service.config.polling_interval)
@@ -258,16 +237,16 @@ class ServiceManager:
     async def _handle_session_change(self, old_context, new_context) -> None:
         """Handle session context change"""
         self.logger.info(
-            f"ServiceManager handling session change: "
-            f"'{old_context.session_name}' -> '{new_context.session_name}'"
+            f"ServiceManager handling session change: '{old_context.session_name}' -> '{new_context.session_name}'"
         )
 
-    def _handle_ipc_request(self, message) -> "IPCResponse":
+    def _handle_ipc_request(self, message) -> IPCResponse:
         """Handle IPC request messages"""
-        from src.daemon.ipc.messages import IPCResponse, IPCResponseStatus
 
         try:
-            message_type = message.message_type.value if hasattr(message.message_type, 'value') else str(message.message_type)
+            message_type = (
+                message.message_type.value if hasattr(message.message_type, "value") else str(message.message_type)
+            )
 
             if message_type == "status":
                 # Return daemon status
@@ -275,27 +254,20 @@ class ServiceManager:
                     status=IPCResponseStatus.SUCCESS,
                     data={
                         "running": self.running,
-                        "session": self.session_manager.current_context.session_name if self.session_manager.current_context else None,
-                        "services": list(self.services.keys())
-                    }
+                        "session": self.session_manager.current_context.session_name
+                        if self.session_manager.current_context
+                        else None,
+                        "services": list(self.services.keys()),
+                    },
                 )
             elif message_type == "stop":
                 # Stop the daemon
                 self.running = False
-                return IPCResponse(
-                    status=IPCResponseStatus.SUCCESS,
-                    data={"message": "Stopping daemon"}
-                )
+                return IPCResponse(status=IPCResponseStatus.SUCCESS, data={"message": "Stopping daemon"})
             else:
-                return IPCResponse(
-                    status=IPCResponseStatus.ERROR,
-                    error=f"Unknown message type: {message_type}"
-                )
+                return IPCResponse(status=IPCResponseStatus.ERROR, error=f"Unknown message type: {message_type}")
         except Exception as e:
-            return IPCResponse(
-                status=IPCResponseStatus.ERROR,
-                error=f"Error processing request: {e}"
-            )
+            return IPCResponse(status=IPCResponseStatus.ERROR, error=f"Error processing request: {e}")
 
     def _signal_handler(self, signum: int, frame) -> None:
         """Handle system signals"""

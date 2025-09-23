@@ -2,10 +2,9 @@ import json
 import asyncio
 import logging
 from pathlib import Path
-from typing import Optional, Callable, Any, Dict
-import socket
+from typing import Optional, Callable
 
-from .messages import IPCMessage, IPCResponse, IPCMessageType
+from .messages import IPCMessage, IPCResponse
 
 
 class IPCServer:

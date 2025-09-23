@@ -36,9 +36,7 @@ class ColumnController:
         parent_id: ParentId | None = None,
         description: str = "",
     ) -> Item:
-        return self._item_service.create_item(
-            self.board, self.column.id, title, description, parent_id
-        )
+        return self._item_service.create_item(self.board, self.column.id, title, description, parent_id)
 
     def get_item_by_id(self, item_id: ItemId) -> Item | None:
         return self.column.get_item_by_id(item_id)
@@ -47,13 +45,9 @@ class ColumnController:
         return self._item_service.delete_item(self.board, item.id)
 
     def move_item(self, item_id: ItemId, target_column_id: ColumnId) -> bool:
-        return self._item_service.move_item_between_columns(
-            self.board, item_id, target_column_id
-        )
+        return self._item_service.move_item_between_columns(self.board, item_id, target_column_id)
 
-    def get_column_items(
-        self, column_id: ColumnId, grouped_by_parent: bool = False
-    ) -> list[Item]:
+    def get_column_items(self, column_id: ColumnId, grouped_by_parent: bool = False) -> list[Item]:
         if grouped_by_parent:
             return self._item_service.get_items_grouped_by_parent(self.board, column_id)
         else:

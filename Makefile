@@ -51,8 +51,7 @@ test:
 
 # Run linting
 lint:
-	$(VENV_BIN)/flake8 src/ main.py
-	$(VENV_BIN)/mypy src/ main.py
+	$(VENV_BIN)/ruff check src/ main.py --fix
 
 # Format code
 format:

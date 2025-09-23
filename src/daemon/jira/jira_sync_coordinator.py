@@ -57,7 +57,7 @@ class JiraSyncCoordinator:
         # Try to load existing board
         try:
             self._board = board_service.get_board_by_name(board_name)
-        except:
+        except Exception:
             self._board = None
 
         if not self._board:
@@ -242,9 +242,9 @@ class JiraSyncCoordinator:
         # Get last update times
         local_updated = item.updated_at
         if item.jira_metadata and item.jira_metadata.last_sync:
-            jira_last_sync = item.jira_metadata.last_sync
+            pass
         else:
-            jira_last_sync = datetime.fromtimestamp(0, tz=timezone.utc)  # Very old date
+            datetime.fromtimestamp(0, tz=timezone.utc)  # Very old date
 
         # Parse Jira ticket updated time
         jira_updated = ticket.updated
@@ -261,7 +261,7 @@ class JiraSyncCoordinator:
 
         # Calculate time differences
         time_since_local_update = datetime.now(timezone.utc) - local_updated
-        time_since_jira_update = datetime.now(timezone.utc) - jira_updated
+        datetime.now(timezone.utc) - jira_updated
         time_diff = abs(local_updated - jira_updated)
 
         # If local item was updated very recently (within last sync interval), check for conflicts

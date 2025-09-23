@@ -56,7 +56,7 @@ class DaemonManager:
             )
             if result.returncode == 0:
                 return Path(result.stdout.strip())
-        except:
+        except Exception:
             pass
 
         return None
@@ -109,7 +109,7 @@ class DaemonManager:
             with open(log_file, 'w') as f:
                 # Run as a module to avoid import path issues
                 cmd = [sys.executable, "-m", "src.scripts.mkanban_daemon"] + daemon_args
-                process = subprocess.Popen(
+                subprocess.Popen(
                     cmd,
                     stdout=f,
                     stderr=subprocess.STDOUT,
