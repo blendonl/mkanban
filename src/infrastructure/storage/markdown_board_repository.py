@@ -239,15 +239,15 @@ class MarkdownBoardRepository(BoardRepository):
                 continue
 
             try:
-                item_data = parse_item_metadata(item_file)
+                title, content, metadata = parse_item_metadata(item_file)
                 item = Item(
-                    id=item_data.get("id", generate_id_from_name(item_file.stem)),
-                    title=item_data.get("title", item_file.stem),
-                    description=item_data.get("description", ""),
+                    id=metadata.get("id", generate_id_from_name(item_file.stem)),
+                    title=metadata.get("title", title),
+                    description=metadata.get("description", ""),
                     column_id=column.id,
-                    parent_id=item_data.get("parent_id"),
-                    created_at=item_data.get("created_at", now()),
-                    updated_at=item_data.get("updated_at", now()),
+                    parent_id=metadata.get("parent_id"),
+                    created_at=metadata.get("created_at", now()),
+                    updated_at=metadata.get("updated_at", now()),
                     file_path=item_file,
                 )
                 column.items.append(item)

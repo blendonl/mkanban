@@ -11,8 +11,7 @@ def parse_board_metadata(kanban_file: Path) -> tuple[str, Metadata]:
     try:
         content, metadata = read_frontmatter_file(kanban_file)
         board_name = metadata.get("name", kanban_file.parent.name)
-        content_title = extract_title_from_content(content, board_name)
-        return content_title, metadata
+        return board_name, metadata
     except Exception as e:
         raise ParseError(f"Failed to parse board metadata from {kanban_file}: {e}")
 
