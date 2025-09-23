@@ -19,6 +19,7 @@ class GitMonitor:
         self.logger = logging.getLogger("mkanban-daemon")
         self._running = False
         self._task: Optional[asyncio.Task] = None
+        self._pending_events: List[GitEvent] = []
 
     def add_repository(self, repo_path: Path) -> bool:
         """Add a repository to monitor"""
@@ -77,6 +78,9 @@ class GitMonitor:
     def _emit_event(self, event: GitEvent):
         """Emit an event to all registered handlers"""
         self.logger.debug(f"Emitting git event: {event}")
+        # Store event for get_events() method
+        self._pending_events.append(event)
+        # Also call event handlers for backward compatibility
         for handler in self.event_handlers:
             try:
                 handler(event)
@@ -224,6 +228,12 @@ class GitMonitor:
             }
             for path, state in self.repositories.items()
         }
+
+    async def get_events(self) -> List[GitEvent]:
+        """Get and clear pending events"""
+        events = self._pending_events.copy()
+        self._pending_events.clear()
+        return events
 
     async def handle_session_change(self, old_context, new_context) -> None:
         """Handle session context change"""
