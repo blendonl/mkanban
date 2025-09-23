@@ -4,7 +4,52 @@ from typing import Optional
 from src.core.exceptions import MKanbanError
 
 
+def get_board_names(ctx, param, incomplete):
+    """Completion function for board names."""
+    try:
+        from src.core.dependency_container import get_config_manager, get_board_service
+
+        config_manager = get_config_manager()
+        boards_path = Path(config_manager.get_boards_path())
+
+        if not boards_path.exists():
+            return []
+
+        board_service = get_board_service()
+        board_names = board_service.list_board_names()
+
+        return [name for name in board_names if name.startswith(incomplete)]
+    except Exception:
+        return []
+
+
+def get_column_names(ctx, param, incomplete):
+    """Completion function for column names."""
+    try:
+        from src.core.dependency_container import get_board_service
+
+        board_name = ctx.params.get('board')
+        if not board_name:
+            return []
+
+        board_service = get_board_service()
+        board = board_service.get_board(board_name)
+
+        if not board:
+            return []
+
+        column_names = [col.name for col in board.columns]
+        return [name for name in column_names if name.startswith(incomplete)]
+    except Exception:
+        return []
+
+
 @click.command()
+@click.option(
+    "--completion",
+    type=click.Choice(["bash", "zsh", "fish"]),
+    help="Show completion script for the specified shell",
+)
 @click.option(
     "--boards-path",
     default=None,
@@ -16,6 +61,7 @@ from src.core.exceptions import MKanbanError
     default=None,
     help="Specific board file to open",
     type=str,
+    shell_complete=get_board_names,
 )
 @click.option(
     "--new-task-title",
@@ -34,6 +80,7 @@ from src.core.exceptions import MKanbanError
     default="to-do",
     help="Column to add the new task to (default: to-do)",
     type=str,
+    shell_complete=get_column_names,
 )
 @click.option(
     "--new-item",
@@ -52,16 +99,13 @@ from src.core.exceptions import MKanbanError
 )
 @click.option(
     "--list-todos",
-    is_flag=True,
+    default=None,
     help="List all todos from current board and pipe to selector command",
-)
-@click.option(
-    "--selector-command",
-    default="fzf",
-    help="External command to use for todo selection (e.g., 'rofi -dmenu', 'dmenu', 'fzf')",
     type=str,
+    metavar="SELECTOR_COMMAND",
 )
 def main_command(
+    completion: Optional[str],
     boards_path: Optional[Path],
     board: Optional[str],
     new_task_title: Optional[str],
@@ -70,10 +114,40 @@ def main_command(
     new_item: bool,
     show_current_task: bool,
     daemon: Optional[str],
-    list_todos: bool,
-    selector_command: str,
+    list_todos: Optional[str],
 ) -> None:
     try:
+        # Handle completion commands first
+        if completion:
+            shell_name = completion.lower()
+            completion_script = {
+                'bash': '''_mkanban_completion() {
+    local cur prev words cword
+    _init_completion || return
+
+    COMPREPLY=( $( env COMP_WORDS="${COMP_WORDS[*]}" \\
+                   COMP_CWORD=$COMP_CWORD \\
+                   _MKANBAN_COMPLETE=bash_complete $1 ) )
+    return 0
+}
+
+complete -F _mkanban_completion mkanban''',
+                'zsh': '''#compdef mkanban
+
+_mkanban() {
+    eval $(env COMMANDLINE="${words[*]}" _MKANBAN_COMPLETE=zsh_complete mkanban)
+}
+
+compdef _mkanban mkanban''',
+                'fish': '''function __fish_mkanban_complete
+    env _MKANBAN_COMPLETE=fish_complete mkanban (commandline -cp)
+end
+
+complete --command mkanban --no-files --arguments "(__fish_mkanban_complete)"'''
+            }
+            click.echo(completion_script.get(shell_name, ''))
+            return
+
         # Handle daemon commands first
         if daemon:
             from src.core.dependency_container import get_daemon_manager
@@ -101,7 +175,7 @@ def main_command(
 
         if list_todos:
             todo_selector = get_todo_selector()
-            todo_selector.run_todo_selector(selector_command, board)
+            todo_selector.run_todo_selector(list_todos, board)
             return
 
         if show_current_task:

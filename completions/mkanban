@@ -1,0 +1,13 @@
+# Bash completion for mkanban
+_mkanban_completion() {
+    local cur prev words cword
+    _init_completion || return
+
+    # Use Click's built-in completion
+    COMPREPLY=( $( env COMP_WORDS="${COMP_WORDS[*]}" \
+                   COMP_CWORD=$COMP_CWORD \
+                   _MKANBAN_COMPLETE=bash_complete $1 ) )
+    return 0
+}
+
+complete -F _mkanban_completion mkanban
