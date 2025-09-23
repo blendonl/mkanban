@@ -1,7 +1,7 @@
 import logging
 import asyncio
 from pathlib import Path
-from typing import Dict, List, Set, Optional, Callable, Any
+from typing import Dict, List, Optional, Callable, Any
 from datetime import datetime
 
 from src.infrastructure.git.repository import GitOperations
@@ -241,5 +241,26 @@ class GitMonitor:
             f"GitMonitor handling session change: "
             f"'{old_context.session_name}' -> '{new_context.session_name}'"
         )
-        # GitMonitor doesn't need to do anything special for session changes
-        # since it monitors repositories globally
+
+        # Remove old repository if it exists and is different from new one
+        if (old_context.repository_path and
+                old_context.repository_path != new_context.repository_path):
+            self.remove_repository(old_context.repository_path)
+            self.logger.info(
+                f"Removed repository from monitoring: "
+                f"{old_context.repository_path}"
+            )
+
+        # Add new repository if it exists and is not already monitored
+        if (new_context.repository_path and
+                new_context.repository_path not in self.repositories):
+            success = self.add_repository(new_context.repository_path)
+            if success:
+                self.logger.info(
+                    f"Added repository to monitoring: "
+                    f"{new_context.repository_path}"
+                )
+            else:
+                self.logger.warning(
+                    f"Failed to add repository: {new_context.repository_path}"
+                )

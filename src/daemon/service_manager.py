@@ -150,7 +150,16 @@ class ServiceManager:
         from src.daemon.ipc.ipc_server import IPCServer, setup_ipc_handlers
 
         # Initialize git monitor using DI
-        self.services["git_monitor"] = get_git_monitor()
+        git_monitor = get_git_monitor()
+
+        # Add current session repository to monitoring if available
+        if (self.session_manager.current_context and
+                self.session_manager.current_context.repository_path):
+            git_monitor.add_repository(
+                self.session_manager.current_context.repository_path
+            )
+
+        self.services["git_monitor"] = git_monitor
 
         # Initialize sync coordinator (not yet in DI - still manual)
         self.services["sync_coordinator"] = SyncCoordinator(self.config_service)
