@@ -43,7 +43,8 @@ make dist             # Create distribution packages (sdist/bdist_wheel)
 python main.py                        # Run with default data directory
 python main.py --data-dir /path/to/data  # Use custom data directory
 python main.py --board "board-name"     # Open specific board
-python main.py --new-task-title "Task" --board "board-name"  # Create task via CLI
+python main.py new-task "Task" --board "board-name"  # Create task via CLI
+python main.py new-task "Task" --board "board-name" --description "Task description" --column "in-progress"  # Create task with description and specific column
 ```
 
 ## Architecture

@@ -44,7 +44,7 @@ def get_column_names(ctx, param, incomplete):
         return []
 
 
-@click.command()
+@click.group(invoke_without_command=True)
 @click.option(
     "--completion",
     type=click.Choice(["bash", "zsh", "fish"]),
@@ -64,26 +64,7 @@ def get_column_names(ctx, param, incomplete):
     shell_complete=get_board_names,
 )
 @click.option(
-    "--new-task-title",
-    default=None,
-    help="Create a new task with this title (requires --board)",
-    type=str,
-)
-@click.option(
-    "--new-task-description",
-    default="",
-    help="Description for the new task",
-    type=str,
-)
-@click.option(
-    "--column",
-    default="to-do",
-    help="Column to add the new task to (default: to-do)",
-    type=str,
-    shell_complete=get_column_names,
-)
-@click.option(
-    "--new-item",
+    "--new-to-do",
     is_flag=True,
     help="Create a new item with neovide editor (requires --board)",
 )
@@ -93,9 +74,11 @@ def get_column_names(ctx, param, incomplete):
     help="Show and edit the first task in the specified column (requires --board and --column)",
 )
 @click.option(
-    "--daemon",
-    type=click.Choice(["start", "stop", "status", "restart"]),
-    help="Daemon management commands",
+    "--column",
+    default="to-do",
+    help="Column for --show-current-task (default: to-do)",
+    type=str,
+    shell_complete=get_column_names,
 )
 @click.option(
     "--list-todos",
@@ -104,16 +87,15 @@ def get_column_names(ctx, param, incomplete):
     type=str,
     metavar="SELECTOR_COMMAND",
 )
+@click.pass_context
 def main_command(
+    ctx: click.Context,
     completion: Optional[str],
     boards_path: Optional[Path],
     board: Optional[str],
-    new_task_title: Optional[str],
-    new_task_description: str,
-    column: str,
-    new_item: bool,
+    new_to_do: bool,
     show_current_task: bool,
-    daemon: Optional[str],
+    column: str,
     list_todos: Optional[str],
 ) -> None:
     try:
@@ -148,12 +130,9 @@ complete --command mkanban --no-files --arguments "(__fish_mkanban_complete)"'''
             click.echo(completion_script.get(shell_name, ''))
             return
 
-        # Handle daemon commands first
-        if daemon:
-            from src.core.dependency_container import get_daemon_manager
 
-            daemon_manager = get_daemon_manager()
-            daemon_manager.handle_daemon_command(daemon)
+        # If a subcommand was invoked, don't run the main app
+        if ctx.invoked_subcommand is not None:
             return
 
         from src.core.dependency_container import (
@@ -186,22 +165,12 @@ complete --command mkanban --no-files --arguments "(__fish_mkanban_complete)"'''
             task_creator.show_current_task(board, column)
             return
 
-        if new_item:
+        if new_to_do:
             if not board:
-                click.echo("Error: --board is required when using --new-item")
+                click.echo("Error: --board is required when using --new-to-do")
                 return
 
             task_creator.create_item_with_editor(board, column)
-            return
-
-        if new_task_title:
-            if not board:
-                click.echo("Error: --board is required when creating a new task")
-                return
-
-            task_creator.create_task_via_cli(
-                board, new_task_title, new_task_description, column
-            )
             return
 
         from app import MKanbanApp
@@ -213,6 +182,52 @@ complete --command mkanban --no-files --arguments "(__fish_mkanban_complete)"'''
         click.echo(f"Error: {e}")
     except Exception as e:
         click.echo(f"Unexpected error: {e}")
+
+
+@main_command.command("new-task")
+@click.argument("title", type=str)
+@click.option(
+    "--description",
+    default="",
+    help="Description for the new task",
+    type=str,
+)
+@click.option(
+    "--column",
+    default="to-do",
+    help="Column to add the new task to (default: to-do)",
+    type=str,
+    shell_complete=get_column_names,
+)
+@click.option(
+    "--board",
+    required=True,
+    help="Board to add the new task to",
+    type=str,
+    shell_complete=get_board_names,
+)
+def new_task_command(
+    title: str,
+    description: str,
+    column: str,
+    board: str,
+) -> None:
+    """Create a new task with the specified title."""
+    try:
+        from src.core.dependency_container import get_task_creator
+
+        task_creator = get_task_creator()
+        task_creator.create_task_via_cli(board, title, description, column)
+
+    except MKanbanError as e:
+        click.echo(f"Error: {e}")
+    except Exception as e:
+        click.echo(f"Unexpected error: {e}")
+
+
+# Import and add daemon command group
+from .daemon_commands import daemon_command
+main_command.add_command(daemon_command)
 
 
 if __name__ == "__main__":

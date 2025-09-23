@@ -76,7 +76,11 @@ class DaemonManager:
             sys.exit(1)
 
     def start_daemon(self) -> None:
-        """Start the daemon"""
+        """Start the daemon with default arguments"""
+        self.start_daemon_with_args([])
+
+    def start_daemon_with_args(self, daemon_args: list[str]) -> None:
+        """Start the daemon with custom arguments"""
         if self.is_daemon_running():
             click.echo("Daemon is already running")
             return
@@ -104,8 +108,9 @@ class DaemonManager:
 
             with open(log_file, 'w') as f:
                 # Run as a module to avoid import path issues
+                cmd = [sys.executable, "-m", "src.scripts.mkanban_daemon"] + daemon_args
                 process = subprocess.Popen(
-                    [sys.executable, "-m", "src.scripts.mkanban_daemon"],
+                    cmd,
                     stdout=f,
                     stderr=subprocess.STDOUT,
                     start_new_session=True,
@@ -120,6 +125,8 @@ class DaemonManager:
                 pid = self.get_daemon_pid()
                 click.echo(f"Daemon started successfully (PID: {pid})")
                 click.echo(f"Data directory: {self.data_path}")
+                if daemon_args:
+                    click.echo(f"Additional arguments: {' '.join(daemon_args)}")
             else:
                 click.echo("Error: Daemon failed to start")
                 sys.exit(1)
