@@ -89,23 +89,23 @@ class DaemonManager:
         try:
             # Find the project root directory (containing main.py)
             project_root = Path(__file__).parent.parent.parent.parent
-            src_dir = project_root / "src"
 
-            # Set environment with Python path
+            # Set environment with Python path to include project root
             env = dict(os.environ)
             current_pythonpath = env.get('PYTHONPATH', '')
             if current_pythonpath:
-                env['PYTHONPATH'] = f"{src_dir}:{current_pythonpath}"
+                env['PYTHONPATH'] = f"{project_root}:{current_pythonpath}"
             else:
-                env['PYTHONPATH'] = str(src_dir)
+                env['PYTHONPATH'] = str(project_root)
 
             # Start daemon as background process with temporary stderr capture for debugging
             log_file = self.data_path / "logs" / "daemon_startup.log"
             log_file.parent.mkdir(parents=True, exist_ok=True)
 
             with open(log_file, 'w') as f:
+                # Run as a module to avoid import path issues
                 process = subprocess.Popen(
-                    [sys.executable, str(self.daemon_script)],
+                    [sys.executable, "-m", "src.scripts.mkanban_daemon"],
                     stdout=f,
                     stderr=subprocess.STDOUT,
                     start_new_session=True,

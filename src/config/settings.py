@@ -62,7 +62,7 @@ class Settings:
             json.dump(asdict(self), f, indent=2)
 
     def get_data_dir(self) -> Path:
-        return Path(self.data_dir).expanduser().resolve()
+        return Path(self.boards_path).expanduser().resolve()
 
     def get_session_based_data_dir(self) -> Path:
         tmux_manager = TmuxSessionManager()

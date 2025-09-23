@@ -111,3 +111,14 @@ class IPCServer:
     def is_running(self) -> bool:
         """Check if the server is running"""
         return self._running
+
+
+def setup_ipc_handlers(ipc_server: IPCServer, daemon_manager) -> None:
+    """Setup IPC handlers for the daemon
+
+    This function was previously used to configure handlers, but
+    the new IPCServer design requires the handler to be passed
+    during construction. This is kept for backward compatibility.
+    """
+    # For now, this is a no-op since the handler is passed in constructor
+    pass

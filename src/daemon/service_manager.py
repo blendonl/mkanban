@@ -162,7 +162,7 @@ class ServiceManager:
 
         # Initialize IPC server with session-specific socket path
         ipc_socket_path = self.config_service.get_socket_path()
-        ipc_server = IPCServer(socket_path=ipc_socket_path)
+        ipc_server = IPCServer(socket_path=ipc_socket_path, request_handler=self._handle_ipc_request)
         setup_ipc_handlers(ipc_server, self)
         self.services["ipc_server"] = ipc_server
 
@@ -252,6 +252,41 @@ class ServiceManager:
             f"ServiceManager handling session change: "
             f"'{old_context.session_name}' -> '{new_context.session_name}'"
         )
+
+    def _handle_ipc_request(self, message) -> "IPCResponse":
+        """Handle IPC request messages"""
+        from src.daemon.ipc.messages import IPCResponse, IPCResponseStatus
+
+        try:
+            message_type = message.message_type.value if hasattr(message.message_type, 'value') else str(message.message_type)
+
+            if message_type == "status":
+                # Return daemon status
+                return IPCResponse(
+                    status=IPCResponseStatus.SUCCESS,
+                    data={
+                        "running": self.running,
+                        "session": self.session_manager.current_context.session_name if self.session_manager.current_context else None,
+                        "services": list(self.services.keys())
+                    }
+                )
+            elif message_type == "stop":
+                # Stop the daemon
+                self.running = False
+                return IPCResponse(
+                    status=IPCResponseStatus.SUCCESS,
+                    data={"message": "Stopping daemon"}
+                )
+            else:
+                return IPCResponse(
+                    status=IPCResponseStatus.ERROR,
+                    error=f"Unknown message type: {message_type}"
+                )
+        except Exception as e:
+            return IPCResponse(
+                status=IPCResponseStatus.ERROR,
+                error=f"Error processing request: {e}"
+            )
 
     def _signal_handler(self, signum: int, frame) -> None:
         """Handle system signals"""

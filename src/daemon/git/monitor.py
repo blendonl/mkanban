@@ -224,3 +224,12 @@ class GitMonitor:
             }
             for path, state in self.repositories.items()
         }
+
+    async def handle_session_change(self, old_context, new_context) -> None:
+        """Handle session context change"""
+        self.logger.info(
+            f"GitMonitor handling session change: "
+            f"'{old_context.session_name}' -> '{new_context.session_name}'"
+        )
+        # GitMonitor doesn't need to do anything special for session changes
+        # since it monitors repositories globally

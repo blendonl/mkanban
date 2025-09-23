@@ -6,21 +6,21 @@ manages kanban tasks based on git branch state, focusing on the
 active tmux session.
 """
 
-from daemon.service_manager import run_daemon
-from daemon.core.configuration_service import ConfigurationService, DaemonConfiguration
-from src.infrastructure.tmux.session_manager import (
-    get_mkanban_data_path,
-    ensure_mkanban_directory,
-)
-
 import asyncio
 import argparse
 import logging
 import sys
 from pathlib import Path
 
-# Add src to path for imports
+# Add src to path for imports BEFORE importing daemon modules
 sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from daemon.service_manager import run_daemon
+from daemon.core.configuration_service import ConfigurationService, DaemonConfiguration
+from src.infrastructure.tmux.session_manager import (
+    get_mkanban_data_path,
+    ensure_mkanban_directory,
+)
 
 
 def setup_logging(log_level: str = "INFO") -> None:

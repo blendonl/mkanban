@@ -110,7 +110,7 @@ class ConfigurationService:
     def settings(self) -> Settings:
         """Get Settings instance for current configuration"""
         if self._settings is None:
-            self._settings = Settings(data_dir=str(self._config.data_path))
+            self._settings = Settings(boards_path=str(self._config.data_path))
         return self._settings
 
     def update_session_context(self, session_name: str) -> bool:

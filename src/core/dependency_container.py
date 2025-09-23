@@ -82,7 +82,6 @@ class DependencyContainer:
             self.get(ConfigurationService).config.tmux_session_only
         )
         self._factories[GitMonitor] = lambda: GitMonitor(
-            session_context_manager=self.get(SessionContextManager),
             polling_interval=self.get(ConfigurationService).config.polling_interval,
         )
 
