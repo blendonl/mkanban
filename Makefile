@@ -6,7 +6,7 @@ VENV := venv
 VENV_BIN := $(VENV)/bin
 PIP := $(VENV_BIN)/pip
 APP_NAME := mkanban
-MAIN_FILE := main.py
+MAIN_FILE := src/main.py
 DIST_DIR := dist
 BUILD_DIR := build
 
@@ -27,7 +27,7 @@ setup:
 	$(PYTHON) -m venv $(VENV)
 	$(PIP) install --upgrade pip
 	$(PIP) install -r requirements.txt
-	$(PIP) install pyinstaller
+	$(PIP) install build pyinstaller
 
 # Build standalone executable
 executable: clean
@@ -47,7 +47,7 @@ executable: clean
 
 # Create distribution package
 dist: clean
-	$(VENV_BIN)/python setup.py sdist bdist_wheel
+	$(VENV_BIN)/python -m build
 
 # Run tests
 test:
@@ -59,7 +59,7 @@ lint:
 
 # Format code
 format:
-	$(VENV_BIN)/black src/ main.py
+	$(VENV_BIN)/black src/
 
 # Clean build artifacts
 clean:
