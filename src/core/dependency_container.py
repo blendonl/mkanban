@@ -220,6 +220,10 @@ def get_config_manager() -> ConfigurationManager:
     return get_container().get(ConfigurationManager)
 
 
+def get_board_service() -> BoardService:
+    return get_container().get(BoardService)
+
+
 def get_logger_factory() -> LoggerFactory:
     return get_container().get(LoggerFactory)
 

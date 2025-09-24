@@ -39,6 +39,9 @@ executable: clean
 		--hidden-import pydantic \
 		--hidden-import frontmatter \
 		--hidden-import logging.handlers \
+		--hidden-import aiohttp \
+		--hidden-import aiohttp.connector \
+		--hidden-import aiohttp.client \
 		$(MAIN_FILE)
 	@echo "Executable built: $(DIST_DIR)/$(APP_NAME)"
 
