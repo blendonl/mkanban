@@ -2,14 +2,9 @@
 
 from setuptools import setup, find_packages
 
-with open("requirements.txt", "r") as f:
-    requirements = [
-        line.strip() for line in f if line.strip() and not line.startswith("#")
-    ]
-
 setup(
     name="mkanban",
-    version="0.1.9",
+    version="0.2.0",
     description="A Terminal User Interface Kanban Board",
     long_description="MKanban is a TUI Kanban board application for managing tasks in a terminal interface.",
     author="blendonl",
@@ -21,7 +16,6 @@ setup(
     package_data={
         "src.ui": ["*.css"],
     },
-    install_requires=requirements,
     entry_points={
         "console_scripts": [
             "mkanban=main:main",

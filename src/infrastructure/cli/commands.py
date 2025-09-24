@@ -170,7 +170,7 @@ complete --command mkanban --no-files --arguments "(__fish_mkanban_complete)"'''
             task_creator.create_item_with_editor(board, column)
             return
 
-        from app import MKanbanApp
+        from src.app import MKanbanApp
 
         app = MKanbanApp(boards_path=actual_boards_path, initial_board=board)
         app.run()
