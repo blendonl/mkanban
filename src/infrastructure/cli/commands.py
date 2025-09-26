@@ -222,6 +222,35 @@ def new_task_command(
         click.echo(f"Unexpected error: {e}")
 
 
+# List command
+@main_command.command("list")
+@click.option(
+    "--columns",
+    default=None,
+    help="Comma-separated list of columns to include (default: all)",
+    type=str,
+)
+@click.option(
+    "--board",
+    default=None,
+    help="Board to list tasks from (default: current tmux session board)",
+    type=str,
+    shell_complete=get_board_names,
+)
+def list_command(columns: Optional[str], board: Optional[str]) -> None:
+    """List tasks from the board in a format suitable for piping to external tools."""
+    try:
+        from src.core.dependency_container import get_container
+        from .list_command import ListCommand
+
+        container = get_container()
+        list_cmd = ListCommand(container)
+        list_cmd.list_tasks(board, columns)
+
+    except Exception as e:
+        click.echo(f"Error: {e}", err=True)
+
+
 # Import and add daemon command group
 
 main_command.add_command(daemon_command)

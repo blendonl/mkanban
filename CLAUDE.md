@@ -267,6 +267,29 @@ mkanban daemon [start|stop|status|restart] [OPTIONS]
 - `--jira-jql-filter JQL`: Additional JQL filter (e.g., 'assignee = currentUser()')
 - `--jira-backlog-limit NUMBER`: Backlog ticket limit (default: 50, -1 for unlimited)
 
+### Task Listing Command
+
+```bash
+mkanban list [OPTIONS]
+```
+
+- `--board BOARD_NAME`: Board to list tasks from (default: current tmux session board, tab completion available)
+- `--columns COLUMN_LIST`: Comma-separated list of columns to include (default: all columns)
+
+**Usage Examples:**
+
+```bash
+# List all tasks from a specific board
+python -m src.main list --board my-project
+
+# List tasks from specific columns
+python -m src.main list --board my-project --columns "to-do,in-progress"
+
+# Pipe to external tools for selection
+python -m src.main list --board my-project | fzf
+python -m src.main list --columns "to-do" --board my-project | rofi -dmenu
+```
+
 ## Complete Configuration Parameters
 
 ### Main Configuration (`~/.config/mkanban/config.json`)
@@ -466,6 +489,10 @@ mkanban daemon [start|stop|status|restart] [OPTIONS]
 4. **New Integration Features**: Update Git/JIRA Integration Features sections
 5. **New UI Elements**: Update UI & UX Features section
 6. **Architecture Changes**: Update Architecture section if patterns change
+
+Also for each feature, create a new branch named `feature/<short-description>` and ensure all changes are committed with clear messages. The same for fixes
+
+And for each feature, create or update tasks in the project management board to track progress. using this app's cli
 
 ## Documentation Update Process
 
