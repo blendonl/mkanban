@@ -290,6 +290,43 @@ python -m src.main list --board my-project | fzf
 python -m src.main list --columns "to-do" --board my-project | rofi -dmenu
 ```
 
+### Branch Checkout Command
+
+```bash
+mkanban checkout TASK [OPTIONS]
+```
+
+Creates or checks out a git branch based on a task, automatically managing task states in the kanban board.
+
+**Options:**
+
+- `TASK`: Task title, ID, or partial match (required)
+- `--board BOARD_NAME`: Board to use (default: current tmux session board, tab completion available)
+
+**Behavior:**
+
+- Converts task title to git-safe branch name (lowercase, hyphens, no special chars)
+- Creates branch if it doesn't exist, checks out if it does
+- Moves all tasks from "in-progress" column to "to-do" column
+- Moves the selected task to "in-progress" column
+- Works with current tmux session's repository or specified board
+
+**Usage Examples:**
+
+```bash
+# Checkout branch for a task (uses active tmux session board)
+mkanban checkout "fix login bug"
+
+# Checkout with specific board
+mkanban checkout "implement feature X" --board my-project
+
+# Partial match on task title
+mkanban checkout "login"
+
+# Using task ID
+mkanban checkout task-123
+```
+
 ## Complete Configuration Parameters
 
 ### Main Configuration (`~/.config/mkanban/config.json`)

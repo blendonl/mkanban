@@ -257,6 +257,30 @@ def list_command(columns: Optional[str], board: Optional[str], format: str) -> N
         click.echo(f"Error: {e}", err=True)
 
 
+# Checkout command
+@main_command.command("checkout")
+@click.argument("task", type=str)
+@click.option(
+    "--board",
+    default=None,
+    help="Board to use (default: current tmux session board)",
+    type=str,
+    shell_complete=get_board_names,
+)
+def checkout_command(task: str, board: Optional[str]) -> None:
+    """Checkout or create a git branch for a task and move it to in-progress."""
+    try:
+        from src.core.dependency_container import get_container
+        from .branch_command import BranchCommand
+
+        container = get_container()
+        branch_cmd = BranchCommand(container)
+        branch_cmd.checkout_task_branch(task, board)
+
+    except Exception as e:
+        click.echo(f"Error: {e}", err=True)
+
+
 # Import and add daemon command group
 
 main_command.add_command(daemon_command)

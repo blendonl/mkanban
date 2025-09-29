@@ -12,6 +12,7 @@ from src.infrastructure.storage.markdown_storage_repository import (
 from src.services.board_service import BoardService
 from src.services.item_service import ItemService
 from src.services.validation_service import ValidationService
+from src.services.branch_service import BranchService
 from src.infrastructure.tmux.session_manager import TmuxSessionManager
 from src.infrastructure.git.repository import GitOperations
 from src.daemon.core.configuration_service import ConfigurationService
@@ -119,6 +120,9 @@ class DependencyContainer:
             self.get(MarkdownStorageRepository),
             self.get(ValidationService),
             self.get(LoggerFactory).get_daemon_logger("item_service"),
+        )
+        self._factories[BranchService] = lambda: BranchService(
+            self.get(LoggerFactory).get_daemon_logger("branch_service"),
         )
 
     def _setup_cli_factories(self):
