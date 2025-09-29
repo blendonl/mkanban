@@ -14,7 +14,7 @@ class ListCommand:
         self._board_service = container.get(BoardService)
         self._tmux_manager = TmuxSessionManager()
 
-    def list_tasks(self, board_name: Optional[str], columns: Optional[str]) -> None:
+    def list_tasks(self, board_name: Optional[str], columns: Optional[str], format: str = "default") -> None:
         """List tasks from the specified board and columns."""
         try:
             # Determine board to use
@@ -30,7 +30,7 @@ class ListCommand:
             tasks = self._get_tasks_from_columns(board, target_columns)
 
             # Output tasks (one per line, title only)
-            self._output_tasks(tasks)
+            self._output_tasks(tasks, format)
 
         except MKanbanError as e:
             click.echo(f"Error: {e}", err=True)
@@ -88,8 +88,35 @@ class ListCommand:
                 tasks.extend(column.items)
         return tasks
 
-    def _output_tasks(self, tasks: List[Item]) -> None:
+    def _output_tasks(self, tasks: List[Item], format: str) -> None:
         """Output tasks in a format suitable for piping to external tools."""
         for task in tasks:
-            # Output just the title, one per line
-            click.echo(task.title)
+            if format == "git_branch":
+                # Format for git branch: lowercase, replace spaces/special chars with hyphens
+                formatted_title = self._format_for_git_branch(task.title)
+                click.echo(formatted_title)
+            else:
+                # Default: output just the title, one per line
+                click.echo(task.title)
+
+    def _format_for_git_branch(self, title: str) -> str:
+        """Format a task title for use as a git branch name."""
+        import re
+
+        # Convert to lowercase
+        formatted = title.lower()
+
+        # Replace spaces and special characters with hyphens
+        formatted = re.sub(r'[^\w\-]', '-', formatted)
+
+        # Replace multiple consecutive hyphens with single hyphen
+        formatted = re.sub(r'-+', '-', formatted)
+
+        # Remove leading/trailing hyphens
+        formatted = formatted.strip('-')
+
+        # Limit length to reasonable git branch name length (50 chars)
+        if len(formatted) > 50:
+            formatted = formatted[:50].rstrip('-')
+
+        return formatted

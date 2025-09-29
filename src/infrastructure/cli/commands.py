@@ -237,7 +237,13 @@ def new_task_command(
     type=str,
     shell_complete=get_board_names,
 )
-def list_command(columns: Optional[str], board: Optional[str]) -> None:
+@click.option(
+    "--format",
+    default="default",
+    help="Output format: 'default' for plain titles, 'git_branch' for git branch names",
+    type=click.Choice(['default', 'git_branch']),
+)
+def list_command(columns: Optional[str], board: Optional[str], format: str) -> None:
     """List tasks from the board in a format suitable for piping to external tools."""
     try:
         from src.core.dependency_container import get_container
@@ -245,7 +251,7 @@ def list_command(columns: Optional[str], board: Optional[str]) -> None:
 
         container = get_container()
         list_cmd = ListCommand(container)
-        list_cmd.list_tasks(board, columns)
+        list_cmd.list_tasks(board, columns, format)
 
     except Exception as e:
         click.echo(f"Error: {e}", err=True)
