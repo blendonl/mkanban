@@ -201,7 +201,6 @@ class MarkdownBoardRepository(BoardRepository):
                     column = Column(
                         id=column_dir.name,
                         name=column_dir.name.replace("-", " ").title(),
-                        position=None,
                         file_path=column_dir,
                     )
                     columns_without_positions.append((column, column_dir))
@@ -209,7 +208,6 @@ class MarkdownBoardRepository(BoardRepository):
                 column = Column(
                     id=column_dir.name,
                     name=column_dir.name.replace("-", " ").title(),
-                    position=None,
                     file_path=column_dir,
                 )
                 columns_without_positions.append((column, column_dir))
