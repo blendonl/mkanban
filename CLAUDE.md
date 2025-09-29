@@ -325,6 +325,11 @@ mkanban checkout "login"
 
 # Using task ID
 mkanban checkout task-123
+
+# Pipe task from another command
+mkanban list --columns "to-do" | fzf | mkanban checkout
+echo "fix login bug" | mkanban checkout
+mkanban list | rofi -dmenu | mkanban checkout --board my-project
 ```
 
 ## Complete Configuration Parameters

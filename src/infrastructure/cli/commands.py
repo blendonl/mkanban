@@ -259,7 +259,7 @@ def list_command(columns: Optional[str], board: Optional[str], format: str) -> N
 
 # Checkout command
 @main_command.command("checkout")
-@click.argument("task", type=str)
+@click.argument("task", type=str, required=False)
 @click.option(
     "--board",
     default=None,
@@ -267,11 +267,27 @@ def list_command(columns: Optional[str], board: Optional[str], format: str) -> N
     type=str,
     shell_complete=get_board_names,
 )
-def checkout_command(task: str, board: Optional[str]) -> None:
-    """Checkout or create a git branch for a task and move it to in-progress."""
+def checkout_command(task: Optional[str], board: Optional[str]) -> None:
+    """Checkout or create a git branch for a task and move it to in-progress.
+
+    TASK can be provided as an argument or piped via stdin.
+    """
     try:
+        import sys
         from src.core.dependency_container import get_container
         from .branch_command import BranchCommand
+
+        # Check if input is piped via stdin
+        if task is None:
+            if not sys.stdin.isatty():
+                # Read from stdin
+                task = sys.stdin.read().strip()
+                if not task:
+                    click.echo("Error: No task provided via argument or stdin", err=True)
+                    return
+            else:
+                click.echo("Error: TASK argument is required or pipe input via stdin", err=True)
+                return
 
         container = get_container()
         branch_cmd = BranchCommand(container)

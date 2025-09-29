@@ -187,17 +187,35 @@ class BranchCommand:
         todo_column = None
         in_progress_column = None
 
+        # Common variations for todo column
+        todo_names = ["to-do", "todo", "to do", "backlog", "planned"]
+        # Common variations for in-progress column
+        in_progress_names = ["in-progress", "in progress", "inprogress", "doing", "wip", "work in progress"]
+
         for column in board.columns:
-            if column.name.lower() == "to-do":
+            column_lower = column.name.lower()
+
+            # Check for todo column
+            if not todo_column and any(name in column_lower for name in todo_names):
                 todo_column = column
-            elif column.name.lower() == "in-progress":
+
+            # Check for in-progress column
+            if not in_progress_column and any(name in column_lower for name in in_progress_names):
                 in_progress_column = column
 
         if not todo_column:
-            raise MKanbanError("Could not find 'to-do' column in board")
+            available_columns = ", ".join([col.name for col in board.columns])
+            raise MKanbanError(
+                f"Could not find 'to-do' or similar column in board. "
+                f"Available columns: {available_columns}"
+            )
 
         if not in_progress_column:
-            raise MKanbanError("Could not find 'in-progress' column in board")
+            available_columns = ", ".join([col.name for col in board.columns])
+            raise MKanbanError(
+                f"Could not find 'in-progress' or similar column in board. "
+                f"Available columns: {available_columns}"
+            )
 
         # Move all tasks from in-progress to to-do
         tasks_to_move = list(in_progress_column.items)  # Create a copy to avoid modification during iteration
