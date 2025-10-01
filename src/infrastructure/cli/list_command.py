@@ -96,8 +96,10 @@ class ListCommand:
                 formatted_title = self._format_for_git_branch(task.title)
                 click.echo(formatted_title)
             else:
-                # Default: output just the title, one per line
-                click.echo(task.title)
+                # Default: output file path and title (tab-separated)
+                # Path comes first so fzf can use it with {1} in preview
+                file_path = task.file_path if task.file_path else ""
+                click.echo(f"{file_path}\t{task.title}")
 
     def _format_for_git_branch(self, title: str) -> str:
         """Format a task title for use as a git branch name."""
