@@ -17,12 +17,20 @@ class TaskCreator:
         self._item_service = container.get(ItemService)
 
     def create_task_via_cli(
-        self, board_name: str, title: str, description: str, column_name: str
+        self, board_name: Optional[str], title: str, description: str, column_name: str
     ) -> None:
+        # Determine board to use
+        board_resolver = self.container.get("BoardResolver")
         try:
-            board = self._board_service.get_board_by_name(board_name)
+            target_board_name = board_resolver.determine_board_name(board_name)
+        except MKanbanError as e:
+            click.echo(f"Error: {e}")
+            return
+
+        try:
+            board = self._board_service.get_board_by_name(target_board_name)
         except BoardNotFoundError:
-            click.echo(f"Error: Board '{board_name}' not found")
+            click.echo(f"Error: Board '{target_board_name}' not found")
             available_boards = self._board_service.list_board_names()
             if available_boards:
                 click.echo(f"Available boards: {', '.join(available_boards)}")
@@ -39,7 +47,7 @@ class TaskCreator:
 
         if not target_column:
             click.echo(
-                f"Error: Column '{column_name}' not found in board '{board_name}'"
+                f"Error: Column '{column_name}' not found in board '{target_board_name}'"
             )
             click.echo(
                 f"Available columns: {', '.join([col.name for col in board.columns])}"
@@ -51,21 +59,29 @@ class TaskCreator:
             self._board_service.save_board(board)
 
             click.echo(
-                f"Successfully created task '{title}' in column '{target_column.name}' of board '{board_name}'"
+                f"Successfully created task '{title}' in column '{target_column.name}' of board '{target_board_name}'"
             )
         except MKanbanError as e:
             click.echo(f"Error: {e}")
 
-    def create_item_with_editor(self, board_name: str, column_name: str) -> None:
+    def create_item_with_editor(self, board_name: Optional[str], column_name: str) -> None:
+        # Determine board to use
+        board_resolver = self.container.get("BoardResolver")
         try:
-            board = self._board_service.get_or_create_sample_board(board_name)
+            target_board_name = board_resolver.determine_board_name(board_name)
+        except MKanbanError as e:
+            click.echo(f"Error: {e}")
+            return
+
+        try:
+            board = self._board_service.get_or_create_sample_board(target_board_name)
         except MKanbanError as e:
             click.echo(f"Error: {e}")
             return
 
         target_column = self._find_target_column(board, column_name)
         if not target_column:
-            click.echo(f"Error: No columns found in board '{board_name}'")
+            click.echo(f"Error: No columns found in board '{target_board_name}'")
             return
 
         template_content = self._create_item_template()
@@ -93,7 +109,7 @@ class TaskCreator:
             self._board_service.save_board(board)
 
             click.echo(
-                f"Successfully created item '{title}' in column '{target_column.name}' of board '{board_name}'"
+                f"Successfully created item '{title}' in column '{target_column.name}' of board '{target_board_name}'"
             )
 
         except (subprocess.CalledProcessError, FileNotFoundError):
@@ -152,11 +168,19 @@ updated_at: {timestamp}
         )
         return title_line.replace("# ", "").strip() if title_line else "New Item"
 
-    def show_current_task(self, board_name: str, column_name: str) -> None:
+    def show_current_task(self, board_name: Optional[str], column_name: str) -> None:
+        # Determine board to use
+        board_resolver = self.container.get("BoardResolver")
         try:
-            board = self._board_service.get_board_by_name(board_name)
+            target_board_name = board_resolver.determine_board_name(board_name)
+        except MKanbanError as e:
+            click.echo(f"Error: {e}")
+            return
+
+        try:
+            board = self._board_service.get_board_by_name(target_board_name)
         except BoardNotFoundError:
-            click.echo(f"Error: Board '{board_name}' not found")
+            click.echo(f"Error: Board '{target_board_name}' not found")
             available_boards = self._board_service.list_board_names()
             if available_boards:
                 click.echo(f"Available boards: {', '.join(available_boards)}")

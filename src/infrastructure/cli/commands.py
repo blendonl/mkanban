@@ -66,12 +66,12 @@ def get_column_names(ctx, param, incomplete):
 @click.option(
     "--new-to-do",
     is_flag=True,
-    help="Create a new item with neovide editor (requires --board)",
+    help="Create a new item with neovide editor (default: current tmux session board)",
 )
 @click.option(
     "--show-current-task",
     is_flag=True,
-    help="Show and edit the first task in the specified column (requires --board and --column)",
+    help="Show and edit the first task in the specified column (default: current tmux session board)",
 )
 @click.option(
     "--column",
@@ -155,18 +155,10 @@ complete --command mkanban --no-files --arguments "(__fish_mkanban_complete)"'''
             return
 
         if show_current_task:
-            if not board:
-                click.echo("Error: --board is required when using --show-current-task")
-                return
-
             task_creator.show_current_task(board, column)
             return
 
         if new_to_do:
-            if not board:
-                click.echo("Error: --board is required when using --new-to-do")
-                return
-
             task_creator.create_item_with_editor(board, column)
             return
 
@@ -198,8 +190,8 @@ complete --command mkanban --no-files --arguments "(__fish_mkanban_complete)"'''
 )
 @click.option(
     "--board",
-    required=True,
-    help="Board to add the new task to",
+    default=None,
+    help="Board to add the new task to (default: current tmux session board)",
     type=str,
     shell_complete=get_board_names,
 )
@@ -207,7 +199,7 @@ def new_task_command(
     title: str,
     description: str,
     column: str,
-    board: str,
+    board: Optional[str],
 ) -> None:
     """Create a new task with the specified title."""
     try:

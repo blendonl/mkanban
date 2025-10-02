@@ -128,6 +128,11 @@ class DependencyContainer:
     def _setup_cli_factories(self):
         """Set up CLI component factories with lazy imports."""
 
+        def _create_board_resolver():
+            from src.infrastructure.cli.board_resolver import BoardResolver
+
+            return BoardResolver()
+
         def _create_task_creator():
             from src.infrastructure.cli.task_creator import TaskCreator
 
@@ -143,6 +148,7 @@ class DependencyContainer:
 
             return DaemonManager()
 
+        self._factories["BoardResolver"] = _create_board_resolver
         self._factories["TaskCreator"] = _create_task_creator
         self._factories["TodoSelector"] = _create_todo_selector
         self._factories["DaemonManager"] = _create_daemon_manager
