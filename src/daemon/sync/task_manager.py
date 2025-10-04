@@ -383,11 +383,15 @@ class TaskManager:
 
     async def _move_task_to_column(self, repository_path: Path, branch_name: str, column_name: str, friendly_name: str) -> bool:
         """Move a task to a specific column"""
+        board_name = self.config_service.get_board_name()
+
         git_task = self._find_git_task(repository_path, branch_name)
         if not git_task:
+            self.logger.warning(
+                f"[{board_name}] Cannot move task to {friendly_name}: "
+                f"task not found for branch '{branch_name}' in repository '{repository_path}'"
+            )
             return False
-
-        board_name = self.config_service.get_board_name()
 
         try:
             board = await self._get_git_board()
@@ -414,20 +418,31 @@ class TaskManager:
             board_name = self.config_service.get_board_name()
             board = self.board_service.get_board_by_name(board_name)
 
+            # Normalize the search path for consistent comparison
+            search_path = Path(repository_path).resolve()
+
             for column in board.columns:
                 for item in column.items:
-                    if (item.is_git_managed and
-                        item.git_metadata and
-                        item.git_metadata.repository_path == str(repository_path) and
-                        item.git_metadata.branch_name == branch_name):
-                        return item
+                    if item.is_git_managed and item.git_metadata:
+                        # Normalize the stored path for comparison
+                        stored_path = Path(item.git_metadata.repository_path).resolve()
 
+                        if stored_path == search_path and item.git_metadata.branch_name == branch_name:
+                            self.logger.debug(
+                                f"[{board_name}] Found git task '{item.title}' for branch '{branch_name}'"
+                            )
+                            return item
+
+            self.logger.debug(
+                f"[{board_name}] No git task found for branch '{branch_name}' in repository '{search_path}'"
+            )
             return None
 
         except Exception as e:
             board_name = self.config_service.get_board_name()
-            self.logger.debug(
-                f"[{board_name}] Could not find git task for {repository_path}:{branch_name}: {e}"
+            self.logger.error(
+                f"[{board_name}] Error finding git task for {repository_path}:{branch_name}: {e}",
+                exc_info=True
             )
             return None
 

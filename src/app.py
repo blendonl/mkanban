@@ -10,6 +10,7 @@ from src.ui.widgets.board_widget import BoardWidget
 from src.services.board_service import BoardService
 from src.services.item_service import ItemService
 from src.core.dependency_container import get_container, get_config_manager
+from src.utils.board_resolver import determine_board_name
 
 
 class MKanbanApp(App):
@@ -95,23 +96,15 @@ class MKanbanApp(App):
         self.terminal_height = size.height
 
     def load_initial_board(self) -> None:
-        if self.initial_board:
-            try:
-                self.current_board = self._board_service.get_board_by_name(
-                    self.initial_board
-                )
-            except Exception:
-                self.current_board = self._board_service.get_or_create_sample_board(
-                    self.initial_board
-                )
-        else:
-            boards = self._board_service.get_all_boards()
-            if boards:
-                self.current_board = boards[0]
-            else:
-                self.current_board = self._board_service.get_or_create_sample_board(
-                    "default"
-                )
+        # Use unified board resolution logic
+        # Priority: explicit board > tmux session > config default
+        board_name = determine_board_name(self.initial_board)
+
+        try:
+            self.current_board = self._board_service.get_board_by_name(board_name)
+        except Exception:
+            # Board doesn't exist, create it
+            self.current_board = self._board_service.get_or_create_sample_board(board_name)
 
         if self.current_board:
             if self.board_view:

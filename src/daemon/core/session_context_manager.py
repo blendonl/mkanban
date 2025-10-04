@@ -22,8 +22,13 @@ class SessionContext:
 
     def __post_init__(self):
         """Ensure repository path is resolved if provided"""
-        if self.repository_path and isinstance(self.repository_path, str):
-            self.repository_path = Path(self.repository_path).resolve()
+        if self.repository_path:
+            # Always resolve path, whether it's a string or Path object
+            if isinstance(self.repository_path, str):
+                self.repository_path = Path(self.repository_path).resolve()
+            else:
+                # Already a Path object, but ensure it's resolved
+                self.repository_path = self.repository_path.resolve()
 
 
 class SessionContextManager:
