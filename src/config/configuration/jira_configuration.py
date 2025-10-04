@@ -29,3 +29,19 @@ class JiraConfiguration:
             r".*/[A-Z]+-\d+.*",
         ]
     )
+
+    # Hierarchy and filtering options
+    include_subtasks: bool = True
+    include_epics: bool = True
+    fetch_strategy: str = "assigned"  # "assigned" | "all_in_projects" | "custom_jql"
+    max_hierarchy_depth: int = 2
+
+    # Subtask handling
+    subtask_column_strategy: str = "same_as_jira"  # "same_as_parent" | "same_as_jira" | "custom"
+    move_subtasks_with_parent: bool = False
+    auto_complete_subtasks: bool = False
+
+    # Metadata sync
+    sync_priority: bool = True
+    sync_labels: bool = True
+    sync_components: bool = True

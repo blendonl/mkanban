@@ -388,6 +388,8 @@ mkanban list | rofi -dmenu | mkanban checkout --board my-project
 
 ### JIRA Configuration
 
+**Basic Settings:**
+
 - `enabled`: Enable JIRA integration (default: false)
 - `api_url`: JIRA instance URL
 - `username`: JIRA username
@@ -398,6 +400,34 @@ mkanban list | rofi -dmenu | mkanban checkout --board my-project
 - `backlog_limit`: Maximum backlog tickets (default: 50)
 - `jql_filter`: Additional JQL query filter
 - `board_name`: JIRA tickets board name (default: "jira-tickets")
+
+**Hierarchy and Filtering:**
+
+- `include_subtasks`: Fetch subtasks with parent tickets (default: true)
+- `include_epics`: Fetch epic children with epics (default: true)
+- `fetch_strategy`: Fetching strategy (default: "assigned")
+  - `"assigned"`: Fetch tickets assigned to current user or unassigned
+  - `"all_in_projects"`: Fetch all tickets in configured projects
+  - `"custom_jql"`: Use custom JQL filter
+- `max_hierarchy_depth`: Maximum hierarchy depth to fetch (default: 2)
+  - `1`: No children, parent tickets only
+  - `2`: Parent tickets and their direct children
+  - `3+`: Multi-level nested hierarchy
+
+**Subtask Handling:**
+
+- `subtask_column_strategy`: How to place subtasks in columns (default: "same_as_jira")
+  - `"same_as_parent"`: Always place subtasks in same column as parent
+  - `"same_as_jira"`: Respect JIRA status for subtasks independently
+  - `"custom"`: Custom column placement logic
+- `move_subtasks_with_parent`: Move subtasks when parent moves (default: false)
+- `auto_complete_subtasks`: Auto-complete subtasks when parent marked done (default: false)
+
+**Metadata Synchronization:**
+
+- `sync_priority`: Sync priority changes back to JIRA (default: true)
+- `sync_labels`: Sync label changes back to JIRA (default: true)
+- `sync_components`: Sync component changes back to JIRA (default: true)
 
 **JIRA Status Mapping:**
 
@@ -464,6 +494,26 @@ mkanban list | rofi -dmenu | mkanban checkout --board my-project
 - **Status Mapping**: Configurable mapping between JIRA statuses and board columns
 - **Branch-ticket Linking**: Automatically links git branches to JIRA tickets
 - **Backlog Management**: Configurable limits for backlog ticket fetching
+
+### JIRA Hierarchy Support (NEW)
+
+- **Epic Management**: Automatically fetches and syncs epics with their child stories
+- **Subtask Support**: Fetches subtasks with parent tickets, preserving hierarchy
+- **Multi-level Hierarchy**: Configurable depth for nested ticket structures (epic → story → subtask)
+- **Parent-Child Relationships**: Automatically links items based on JIRA parent/epic relationships
+- **Issue Links**: Syncs JIRA issue links (blocks, relates to, etc.) as cross-references
+- **Smart Fetching**: Intelligent hierarchical fetching with configurable depth control
+
+### JIRA Metadata Display (NEW)
+
+- **Visual Indicators**: Issue type icons (📚 Epic, 📖 Story, 🐛 Bug, ☑️ Subtask, 📋 Task)
+- **Priority Badges**: Color-coded priority indicators (🔴 Highest, 🟠 High, 🟡 Medium, 🟢 Low, 🔵 Lowest)
+- **Story Points**: Display story points on items
+- **Sprint Information**: Show current sprint assignment
+- **Subtask Count**: Display number of subtasks (☑️3)
+- **Link Count**: Show number of issue links (🔗5)
+- **Components & Labels**: Display first component/label with count of additional ones
+- **Versions**: Track fix versions and affects versions
 
 ### JIRA Authentication & Security
 

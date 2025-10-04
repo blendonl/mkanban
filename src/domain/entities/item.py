@@ -188,6 +188,42 @@ class Item(BaseModel):
             return self.jira_metadata.ticket_key
         return None
 
+    def get_parent_ticket_key(self) -> Optional[str]:
+        """Get the parent JIRA ticket key"""
+        if self.jira_metadata:
+            return self.jira_metadata.parent_ticket_key
+        return None
+
+    def get_epic_key(self) -> Optional[str]:
+        """Get the epic key this ticket belongs to"""
+        if self.jira_metadata:
+            return self.jira_metadata.epic_key
+        return None
+
+    def get_subtask_keys(self) -> List[str]:
+        """Get list of subtask ticket keys"""
+        if self.jira_metadata:
+            return self.jira_metadata.subtask_keys
+        return []
+
+    def get_linked_ticket_keys(self) -> List[str]:
+        """Get all linked ticket keys from issue links"""
+        if self.jira_metadata and self.jira_metadata.issue_links:
+            return [link.get("key", "") for link in self.jira_metadata.issue_links if link.get("key")]
+        return []
+
+    def has_jira_parent(self) -> bool:
+        """Check if this item has a JIRA parent"""
+        return self.jira_metadata is not None and self.jira_metadata.parent_ticket_key is not None
+
+    def has_jira_subtasks(self) -> bool:
+        """Check if this item has JIRA subtasks"""
+        return self.jira_metadata is not None and len(self.jira_metadata.subtask_keys) > 0
+
+    def is_jira_subtask(self) -> bool:
+        """Check if this is a JIRA subtask"""
+        return self.jira_metadata is not None and self.jira_metadata.is_subtask
+
     def should_sync_to_jira(self) -> bool:
         """Check if this item should sync back to Jira"""
         return (
@@ -235,6 +271,19 @@ class Item(BaseModel):
             components=ticket_data.get("components", []),
             jira_status=ticket_data.get("status", ""),
             last_sync=now(),
+            # Hierarchy fields
+            parent_ticket_key=ticket_data.get("parent"),
+            epic_key=ticket_data.get("epic_link"),
+            subtask_keys=ticket_data.get("subtasks", []),
+            is_subtask=ticket_data.get("is_subtask", False),
+            # Issue links
+            issue_links=ticket_data.get("issue_links", []),
+            # Sprint and planning
+            sprint_name=ticket_data.get("sprint"),
+            story_points=ticket_data.get("story_points"),
+            # Versions
+            fix_versions=ticket_data.get("fix_versions", []),
+            affects_versions=ticket_data.get("affects_versions", []),
         )
 
         return cls(

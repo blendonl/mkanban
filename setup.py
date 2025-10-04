@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="mkanban",
-    version="0.2.2",
+    version="0.2.4",
     description="A Terminal User Interface Kanban Board",
     long_description="MKanban is a TUI Kanban board application for managing tasks in a terminal interface.",
     author="blendonl",

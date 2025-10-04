@@ -17,6 +17,7 @@ from src.domain.entities.column import Column
 # Note: Some imports moved to methods to avoid circular dependencies
 from src.infrastructure.storage.markdown_storage_impl import MarkdownStorageImpl
 from src.utils.date_utils import now
+from src.services.jira_hierarchy_service import JiraHierarchyService
 
 
 class JiraSyncCoordinator:
@@ -26,9 +27,11 @@ class JiraSyncCoordinator:
         self.config_service = config_service
         self.logger = logging.getLogger("mkanban-daemon")
         self.event_processor = JiraEventProcessor(config_service)
+        self.hierarchy_service = JiraHierarchyService()
         self._board_service = None
         self._board: Optional[Board] = None
         self._last_sync: Optional[datetime] = None
+        self._hierarchy_synced = False
 
     def _get_board_service(self):
         """Get or create board service instance"""
@@ -85,14 +88,25 @@ class JiraSyncCoordinator:
         self.logger.info("Starting Jira synchronization")
 
         try:
+            jira_config = self.config_service.get_jira_config()
+
             # Get current tickets from Jira
             if self._last_sync:
                 # Incremental sync - only get tickets updated since last sync
                 new_tickets = await jira_client.get_tickets_updated_since(self._last_sync)
                 self.logger.debug(f"Found {len(new_tickets)} tickets updated since last sync")
             else:
-                # Full sync - get all tickets
-                new_tickets = await jira_client.search_tickets()
+                # Full sync - use smart fetching with hierarchy if enabled
+                if jira_config.max_hierarchy_depth > 1 and (jira_config.include_subtasks or jira_config.include_epics):
+                    self.logger.debug(f"Using hierarchical fetch (depth: {jira_config.max_hierarchy_depth})")
+                    new_tickets = await jira_client.get_tickets_with_hierarchy(
+                        base_jql="",
+                        include_subtasks=jira_config.include_subtasks,
+                        include_epic_children=jira_config.include_epics,
+                        max_depth=jira_config.max_hierarchy_depth
+                    )
+                else:
+                    new_tickets = await jira_client.search_tickets()
                 self.logger.debug(f"Found {len(new_tickets)} total tickets")
 
             if not new_tickets:
@@ -135,6 +149,11 @@ class JiraSyncCoordinator:
                 success = await self._execute_actions(processed_event)
                 if success:
                     actions_executed += 1
+
+            # Sync hierarchy relationships after initial sync
+            if actions_executed > 0 or not self._hierarchy_synced:
+                await self._sync_hierarchy(jira_client)
+                self._hierarchy_synced = True
 
             self._last_sync = datetime.now(timezone.utc)
             self.logger.info(f"Jira sync completed: {actions_executed} actions executed")
@@ -217,6 +236,18 @@ class JiraSyncCoordinator:
             item.jira_metadata.assignee = ticket.assignee
             item.jira_metadata.labels = ticket.labels
             item.jira_metadata.components = ticket.components
+            # Update hierarchy fields
+            item.jira_metadata.parent_ticket_key = ticket.parent
+            item.jira_metadata.epic_key = ticket.epic_link
+            item.jira_metadata.subtask_keys = ticket.subtasks
+            item.jira_metadata.is_subtask = ticket.is_subtask
+            item.jira_metadata.issue_links = ticket.issue_links
+            # Update sprint and planning fields
+            item.jira_metadata.sprint_name = ticket.sprint
+            item.jira_metadata.story_points = ticket.story_points
+            # Update versions
+            item.jira_metadata.fix_versions = ticket.fix_versions
+            item.jira_metadata.affects_versions = ticket.affects_versions
             item.jira_metadata.last_sync = now()
 
         # Update item fields
@@ -432,6 +463,28 @@ class JiraSyncCoordinator:
             return "In Review"
 
         return None
+
+    async def _sync_hierarchy(self, jira_client: JiraClient) -> None:
+        """Sync JIRA hierarchy relationships to board items"""
+        try:
+            board = self._get_or_create_board()
+            storage = self._get_storage()
+
+            # Link parent-child relationships
+            linked_count = await self.hierarchy_service.link_parent_child_relationships(board, jira_client)
+            self.logger.debug(f"Linked {linked_count} parent-child relationships")
+
+            # Sync issue links
+            links_count = await self.hierarchy_service.sync_issue_links(board, jira_client)
+            self.logger.debug(f"Synced {links_count} issue links")
+
+            # Save board if any relationships were updated
+            if linked_count > 0 or links_count > 0:
+                storage.save_board(board)
+                self.logger.info(f"Hierarchy sync completed: {linked_count} parent links, {links_count} issue links")
+
+        except Exception as e:
+            self.logger.error(f"Failed to sync hierarchy: {e}", exc_info=True)
 
     def get_board_name(self) -> str:
         """Get the name of the Jira board"""

@@ -99,7 +99,7 @@ class JiraClient:
             params = {
                 "jql": jql,
                 "maxResults": effective_max,
-                "fields": "id,key,summary,description,status,issuetype,priority,assignee,reporter,project,labels,components,created,updated"
+                "fields": "id,key,summary,description,status,issuetype,priority,assignee,reporter,project,labels,components,created,updated,subtasks,parent,issuelinks,customfield_10014,customfield_10016,customfield_10020,customfield_10026,customfield_10002,sprint,fixVersions,versions"
             }
 
             self.logger.debug(f"Searching Jira tickets with JQL: {jql}")
@@ -124,7 +124,7 @@ class JiraClient:
         try:
             url = f"{self.config.api_url}/rest/api/3/issue/{ticket_key}"
             params = {
-                "fields": "id,key,summary,description,status,issuetype,priority,assignee,reporter,project,labels,components,created,updated"
+                "fields": "id,key,summary,description,status,issuetype,priority,assignee,reporter,project,labels,components,created,updated,subtasks,parent,issuelinks,customfield_10014,customfield_10016,customfield_10020,customfield_10026,customfield_10002,sprint,fixVersions,versions"
             }
 
             async with self.session.get(url, params=params) as response:
@@ -298,3 +298,103 @@ class JiraClient:
             max_results = 1000  # Large but reasonable limit for unlimited
 
         return await self.search_tickets(jql, max_results=max_results)
+
+    async def get_subtasks(self, ticket_key: str, recursive: bool = False) -> List[JiraTicket]:
+        """Get all subtasks for a ticket, optionally recursively"""
+        ticket = await self.get_ticket(ticket_key)
+        if not ticket or not ticket.subtasks:
+            return []
+
+        subtasks = []
+        for subtask_key in ticket.subtasks:
+            subtask = await self.get_ticket(subtask_key)
+            if subtask:
+                subtasks.append(subtask)
+                # Recursively get subtasks of subtasks if requested
+                if recursive and subtask.subtasks:
+                    nested_subtasks = await self.get_subtasks(subtask_key, recursive=True)
+                    subtasks.extend(nested_subtasks)
+
+        return subtasks
+
+    async def get_epic_children(self, epic_key: str, max_results: int = 100) -> List[JiraTicket]:
+        """Get all issues that belong to an epic"""
+        try:
+            # Use JQL to find all issues linked to this epic
+            # The epic link field varies by JIRA instance
+            jql = f'"Epic Link" = {epic_key} OR parent = {epic_key} ORDER BY rank ASC, created DESC'
+
+            return await self.search_tickets(jql, max_results=max_results)
+
+        except Exception as e:
+            self.logger.error(f"Failed to get epic children for {epic_key}: {e}")
+            return []
+
+    async def get_tickets_with_hierarchy(
+        self,
+        base_jql: str = "",
+        include_subtasks: bool = True,
+        include_epic_children: bool = True,
+        max_depth: int = 2
+    ) -> List[JiraTicket]:
+        """
+        Fetch tickets with their full hierarchy (subtasks, epic children)
+
+        Args:
+            base_jql: Base JQL query for parent tickets
+            include_subtasks: Whether to fetch subtasks
+            include_epic_children: Whether to fetch epic children
+            max_depth: Maximum depth of hierarchy to fetch (1 = no children, 2 = children only, 3+ = nested)
+
+        Returns:
+            List of all tickets including parents and children
+        """
+        if max_depth < 1:
+            return []
+
+        # Fetch base tickets
+        base_tickets = await self.search_tickets(base_jql)
+        if not base_tickets or max_depth == 1:
+            return base_tickets
+
+        all_tickets = list(base_tickets)
+        seen_keys = {ticket.key for ticket in base_tickets}
+
+        # Fetch children for each base ticket
+        for ticket in base_tickets:
+            # Fetch subtasks
+            if include_subtasks and ticket.subtasks:
+                for subtask_key in ticket.subtasks:
+                    if subtask_key not in seen_keys:
+                        subtask = await self.get_ticket(subtask_key)
+                        if subtask:
+                            all_tickets.append(subtask)
+                            seen_keys.add(subtask_key)
+
+                            # Recursively fetch nested subtasks if depth allows
+                            if max_depth > 2 and subtask.subtasks:
+                                nested = await self.get_subtasks(subtask_key, recursive=(max_depth > 3))
+                                for nested_task in nested:
+                                    if nested_task.key not in seen_keys:
+                                        all_tickets.append(nested_task)
+                                        seen_keys.add(nested_task.key)
+
+            # Fetch epic children
+            if include_epic_children and ticket.issue_type.lower() == "epic":
+                epic_children = await self.get_epic_children(ticket.key)
+                for child in epic_children:
+                    if child.key not in seen_keys:
+                        all_tickets.append(child)
+                        seen_keys.add(child.key)
+
+                        # Fetch subtasks of epic children if depth allows
+                        if include_subtasks and max_depth > 2 and child.subtasks:
+                            for subtask_key in child.subtasks:
+                                if subtask_key not in seen_keys:
+                                    subtask = await self.get_ticket(subtask_key)
+                                    if subtask:
+                                        all_tickets.append(subtask)
+                                        seen_keys.add(subtask_key)
+
+        self.logger.debug(f"Fetched {len(all_tickets)} tickets including hierarchy (base: {len(base_tickets)})")
+        return all_tickets
