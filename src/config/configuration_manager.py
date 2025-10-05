@@ -42,18 +42,13 @@ class ConfigurationManager:
         self._save_config_to_file(config, config_path)
         return config
 
-    def _create_config_from_dict(
-        self, data: Dict[str, Any]
-    ) -> UnifiedConfiguration:
+    def _create_config_from_dict(self, data: Dict[str, Any]) -> UnifiedConfiguration:
         """Create configuration from dict, handling nested dataclasses."""
         # Handle nested daemon configuration
         daemon_data = data.get("daemon", {})
         if daemon_data:
             jira_data = daemon_data.get("jira", {})
-            daemon_data["jira"] = (
-                JiraConfiguration(**jira_data)
-                if jira_data else JiraConfiguration()
-            )
+            daemon_data["jira"] = JiraConfiguration(**jira_data) if jira_data else JiraConfiguration()
             data["daemon"] = DaemonConfiguration(**daemon_data)
         else:
             data["daemon"] = DaemonConfiguration()
@@ -67,9 +62,7 @@ class ConfigurationManager:
 
         return UnifiedConfiguration(**data)
 
-    def _save_config_to_file(
-        self, config: UnifiedConfiguration, config_path: Path
-    ) -> None:
+    def _save_config_to_file(self, config: UnifiedConfiguration, config_path: Path) -> None:
         """Save configuration to path, creating directories as needed."""
         config_path.parent.mkdir(parents=True, exist_ok=True)
         with open(config_path, "w") as f:
@@ -94,7 +87,7 @@ class ConfigurationManager:
         return os.environ.get("EDITOR") or self.config.editor
 
     def get_cli_editor(self) -> str:
-        return self.config.cli_editor
+        return self.config.editor
 
     def is_debug_mode(self) -> bool:
         return self.config.logging.level == "DEBUG"

@@ -26,23 +26,15 @@ class UnifiedConfiguration:
     default_parent_view: bool = False
     column_width: int = DEFAULT_COLUMN_WIDTH
     editor: str = "nvim"
-    cli_editor: str = "neovide"
-    shortcuts: Dict[str, str] = field(
-        default_factory=lambda: VIM_KEYBINDINGS.copy()
-    )
+    shortcuts: Dict[str, str] = field(default_factory=lambda: VIM_KEYBINDINGS.copy())
     daemon: DaemonConfiguration = field(default_factory=DaemonConfiguration)
-    logging: LoggingConfiguration = field(
-        default_factory=LoggingConfiguration
-    )
+    logging: LoggingConfiguration = field(default_factory=LoggingConfiguration)
 
     def __post_init__(self):
         if not self.config_dir:
             self.config_dir = str(DEFAULT_CONFIG_DIR)
         if not self.logging.daemon_log_dir:
-            self.logging.daemon_log_dir = str(
-                Path(self.config_dir) / "logs" / "daemon"
-            )
+            self.logging.daemon_log_dir = str(Path(self.config_dir) / "logs" / "daemon")
         if not self.logging.tui_log_dir:
-            self.logging.tui_log_dir = str(
-                Path(self.config_dir) / "logs" / "tui"
-            )
+            self.logging.tui_log_dir = str(Path(self.config_dir) / "logs" / "tui")
+

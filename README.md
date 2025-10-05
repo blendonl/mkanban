@@ -47,18 +47,18 @@ python main.py --new-task-title "Fix bug" --board "my-project"
 
 ## Key Bindings
 
-| Key | Action |
-|-----|--------|
+| Key       | Action                      |
+| --------- | --------------------------- |
 | `h/j/k/l` | Navigate left/down/up/right |
-| `H/L` | Move items between columns |
-| `o` | Create new item |
-| `i` | Edit item |
-| `d` | Delete item |
-| `p` | Toggle parent grouping |
-| `w` | Save |
-| `r` | Refresh |
-| `g?` | Show help |
-| `q` | Quit |
+| `H/L`     | Move items between columns  |
+| `o`       | Create new item             |
+| `i`       | Edit item                   |
+| `d`       | Delete item                 |
+| `p`       | Toggle parent grouping      |
+| `w`       | Save                        |
+| `r`       | Refresh                     |
+| `g?`      | Show help                   |
+| `q`       | Quit                        |
 
 ## Configuration
 
@@ -72,7 +72,6 @@ MKanban uses a unified configuration system with environment variable overrides:
 - `MKANBAN_DEBUG`: Enable debug logging (true/false)
 - `MKANBAN_PATH`: Direct path for session-based boards
 - `EDITOR`: Preferred text editor
-- `MKANBAN_CLI_EDITOR`: CLI editor preference
 
 ### Configuration File
 
@@ -112,6 +111,7 @@ data/boards/{board-name}/
 ### Board Structure
 
 Each board contains:
+
 - **kanban.md**: Board metadata with column definitions
 - **Column folders**: Named directories for each column
 - **Item files**: Markdown files with frontmatter metadata
@@ -190,3 +190,4 @@ Comprehensive documentation is available in the `docs/` folder:
 ## Support
 
 For issues and feature requests, please use the GitHub issue tracker.
+

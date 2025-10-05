@@ -354,7 +354,6 @@ mkanban list | rofi -dmenu | mkanban checkout --board my-project
 **Editor Integration:**
 
 - `editor`: Default text editor (default: "nvim")
-- `cli_editor`: CLI editor for new items (default: "neovide")
 
 **Keyboard Shortcuts:**
 

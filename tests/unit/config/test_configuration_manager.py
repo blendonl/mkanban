@@ -35,7 +35,6 @@ class TestConfigurationManager:
                 assert config.theme == ThemeType.DARK.value
                 assert config.auto_save is True
                 assert config.editor == "nvim"
-                assert config.cli_editor == "neovide"
                 assert isinstance(config.daemon, DaemonConfiguration)
                 assert isinstance(config.logging, LoggingConfiguration)
 
@@ -89,7 +88,7 @@ class TestConfigurationManager:
                 config_manager = ConfigurationManager()
 
                 # Test default CLI editor
-                assert config_manager.get_cli_editor() == "neovide"
+                assert config_manager.get_cli_editor() == "nvim"
 
                 # Test custom CLI editor
                 config_manager.update_configuration(cli_editor="code")
@@ -119,7 +118,6 @@ class TestConfigurationManager:
                     assert config.auto_save_interval == 30  # default
                     assert config.logging.level == "INFO"  # default
                     assert config.editor == "nvim"  # default
-                    assert config.cli_editor == "neovide"  # default
 
     def test_corrupted_config_file_fallback(self):
         """Test that corrupted config file falls back to defaults."""
@@ -148,16 +146,9 @@ class TestConfigurationManager:
                 "daemon": {
                     "enabled": False,
                     "polling_interval": 10,
-                    "jira": {
-                        "enabled": True,
-                        "api_url": "https://test.atlassian.net",
-                        "project_keys": ["TEST"]
-                    }
+                    "jira": {"enabled": True, "api_url": "https://test.atlassian.net", "project_keys": ["TEST"]},
                 },
-                "logging": {
-                    "level": "DEBUG",
-                    "max_log_files": 50
-                }
+                "logging": {"level": "DEBUG", "max_log_files": 50},
             }
 
             config_file.write_text(json.dumps(config_data, indent=2))
@@ -197,19 +188,13 @@ class TestConfigurationManager:
                 config_manager = ConfigurationManager()
 
                 # Update multiple fields
-                config_manager.update_configuration(
-                    theme="light",
-                    auto_save=False,
-                    editor="vim",
-                    cli_editor="code"
-                )
+                config_manager.update_configuration(theme="light", auto_save=False, editor="vim", cli_editor="code")
 
                 # Verify updates
                 config = config_manager.config
                 assert config.theme == "light"
                 assert config.auto_save is False
                 assert config.editor == "vim"
-                assert config.cli_editor == "code"
 
                 # Verify persistence
                 assert config_file.exists()
@@ -243,10 +228,7 @@ class TestConfigurationManager:
 
             with patch("src.config.configuration_manager.DEFAULT_CONFIG_FILE", config_file):
                 config_manager = ConfigurationManager()
-                config_manager.update_configuration(
-                    boards_path=boards_path,
-                    config_dir=config_dir
-                )
+                config_manager.update_configuration(boards_path=boards_path, config_dir=config_dir)
 
                 assert config_manager.get_boards_path() == Path(boards_path).resolve()
                 assert config_manager.get_config_dir() == Path(config_dir).resolve()
@@ -271,3 +253,4 @@ class TestConfigurationManager:
                 config_manager.reload_configuration()
                 assert config_manager.config.theme == "custom"
                 assert config_manager.config.theme != initial_theme
+
