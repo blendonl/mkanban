@@ -4,8 +4,7 @@ Manages JIRA ticket hierarchies including epics, stories, and subtasks.
 Handles parent-child relationships and syncs them to MKanban item structure.
 """
 
-import logging
-from typing import List, Optional, Dict
+from typing import Optional, Dict
 from src.domain.entities.board import Board
 from src.domain.entities.item import Item
 from src.daemon.jira.jira_client import JiraClient, JiraTicket

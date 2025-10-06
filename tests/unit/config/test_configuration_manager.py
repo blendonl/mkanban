@@ -79,21 +79,6 @@ class TestConfigurationManager:
                 with patch.dict(os.environ, {}, clear=True):
                     assert config_manager.get_editor() == "nano"
 
-    def test_cli_editor_from_config(self):
-        """Test that CLI editor comes from config only."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            config_file = Path(temp_dir) / "config.json"
-
-            with patch("src.config.configuration_manager.DEFAULT_CONFIG_FILE", config_file):
-                config_manager = ConfigurationManager()
-
-                # Test default CLI editor
-                assert config_manager.get_cli_editor() == "nvim"
-
-                # Test custom CLI editor
-                config_manager.update_configuration(cli_editor="code")
-                assert config_manager.get_cli_editor() == "code"
-
     def test_no_environment_variable_overrides(self):
         """Test that MKANBAN_* environment variables are no longer used."""
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -188,7 +173,7 @@ class TestConfigurationManager:
                 config_manager = ConfigurationManager()
 
                 # Update multiple fields
-                config_manager.update_configuration(theme="light", auto_save=False, editor="vim", cli_editor="code")
+                config_manager.update_configuration(theme="light", auto_save=False, editor="vim")
 
                 # Verify updates
                 config = config_manager.config
@@ -202,7 +187,6 @@ class TestConfigurationManager:
                 assert saved_data["theme"] == "light"
                 assert saved_data["auto_save"] is False
                 assert saved_data["editor"] == "vim"
-                assert saved_data["cli_editor"] == "code"
 
     def test_debug_mode_detection(self):
         """Test debug mode detection from logging level."""

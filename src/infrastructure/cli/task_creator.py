@@ -258,13 +258,13 @@ updated_at: {timestamp}
         from src.config.configuration_manager import get_config
 
         config_manager = get_config()
-        cli_editor = config_manager.get_cli_editor()
+        editor = config_manager.get_editor()
 
         try:
-            subprocess.run([cli_editor, file_path, "+10"], check=True)
+            subprocess.run([editor, file_path, "+10"], check=True)
         except subprocess.CalledProcessError:
-            click.echo(f"Error: Failed to open {cli_editor} editor")
+            click.echo(f"Error: Failed to open {editor} editor")
             raise
         except FileNotFoundError:
-            click.echo(f"Error: {cli_editor} not found. Please install {cli_editor}")
+            click.echo(f"Error: {editor} not found. Please install {editor}")
             raise

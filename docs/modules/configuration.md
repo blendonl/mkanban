@@ -37,7 +37,6 @@ debug_mode = config_manager.is_debug_mode()
 - **`get_data_dir()`**: Returns resolved data directory path
 - **`get_config_dir()`**: Returns resolved configuration directory path
 - **`get_editor()`**: Returns preferred editor (EDITOR env var or configured)
-- **`get_cli_editor()`**: Returns CLI editor preference
 - **`is_debug_mode()`**: Returns True if debug logging enabled
 - **`get_mkanban_path()`**: Returns MKANBAN_PATH environment variable
 

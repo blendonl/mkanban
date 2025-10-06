@@ -66,7 +66,7 @@ def get_column_names(ctx, param, incomplete):
 @click.option(
     "--new-to-do",
     is_flag=True,
-    help="Create a new item with neovide editor (default: current tmux session board)",
+    help="Create a new item with editor (default: current tmux session board)",
 )
 @click.option(
     "--show-current-task",
@@ -233,7 +233,7 @@ def new_task_command(
     "--format",
     default="default",
     help="Output format: 'default' for plain titles, 'git_branch' for git branch names",
-    type=click.Choice(['default', 'git_branch']),
+    type=click.Choice(["default", "git_branch"]),
 )
 def list_command(columns: Optional[str], board: Optional[str], format: str) -> None:
     """List tasks from the board in a format suitable for piping to external tools."""

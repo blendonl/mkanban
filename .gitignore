@@ -203,3 +203,10 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# makepkg build artifacts
+build/
+pkg/
+src/mkanban-*/
+*.pkg.tar.zst
+*.tar.gz

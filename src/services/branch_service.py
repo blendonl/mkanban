@@ -6,7 +6,6 @@ Handles git branch operations for task-based workflows.
 import re
 import subprocess
 from pathlib import Path
-from typing import Optional
 
 from src.core.exceptions import MKanbanError
 from src.infrastructure.git.repository import GitOperations
@@ -71,7 +70,7 @@ class BranchService:
         if not branch_name:
             raise MKanbanError(f"Could not create valid branch name from task title: '{task_title}'")
 
-        self._logger.info(f"Processing branch operation", branch=branch_name)
+        self._logger.info("Processing branch operation", branch=branch_name)
 
         # Check if branch exists
         branch_exists = git_ops.branch_exists(branch_name)
@@ -79,22 +78,22 @@ class BranchService:
         try:
             if branch_exists:
                 # Checkout existing branch
-                self._logger.info(f"Checking out existing branch", branch=branch_name)
+                self._logger.info("Checking out existing branch", branch=branch_name)
                 result = self._run_git_command(["checkout", branch_name], repo_path)
 
                 if result.returncode != 0:
                     raise MKanbanError(f"Failed to checkout branch '{branch_name}': {result.stderr}")
 
-                self._logger.info(f"Successfully checked out branch", branch=branch_name)
+                self._logger.info("Successfully checked out branch", branch=branch_name)
             else:
                 # Create new branch
-                self._logger.info(f"Creating new branch", branch=branch_name)
+                self._logger.info("Creating new branch", branch=branch_name)
                 result = self._run_git_command(["checkout", "-b", branch_name], repo_path)
 
                 if result.returncode != 0:
                     raise MKanbanError(f"Failed to create branch '{branch_name}': {result.stderr}")
 
-                self._logger.info(f"Successfully created branch", branch=branch_name)
+                self._logger.info("Successfully created branch", branch=branch_name)
 
             return True
 

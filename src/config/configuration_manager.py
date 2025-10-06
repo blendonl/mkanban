@@ -86,9 +86,6 @@ class ConfigurationManager:
     def get_editor(self) -> str:
         return os.environ.get("EDITOR") or self.config.editor
 
-    def get_cli_editor(self) -> str:
-        return self.config.editor
-
     def is_debug_mode(self) -> bool:
         return self.config.logging.level == "DEBUG"
 
