@@ -39,7 +39,7 @@ mkanban-daemon = "src.scripts.mkanban_daemon:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["src*", "main"]
+include = ["src*"]
 namespaces = true
 
 [tool.setuptools.package-data]

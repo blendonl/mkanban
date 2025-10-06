@@ -11,14 +11,13 @@ setup(
     author_email="blendonluta@gmail.com",
     url="https://github.com/blendonl/mkanban",
     packages=find_packages(include=["src*"]),
-    py_modules=["main"],
     include_package_data=True,
     package_data={
         "src.ui": ["*.css"],
     },
     entry_points={
         "console_scripts": [
-            "mkanban=main:main",
+            "mkanban=src.main:main",
             "mkanban-daemon=src.scripts.mkanban_daemon:main",
         ],
     },

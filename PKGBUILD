@@ -17,8 +17,5 @@ build() {
 
 package() {
     cd "$pkgname-$pkgver"
-    python setup.py install --root="$pkgdir/" --optimize=1 --skip-build
-
-    # Install bash completion
-    install -Dm644 completions/mkanban "$pkgdir/usr/share/bash-completion/completions/mkanban"
+    python -m installer --destdir="$pkgdir" dist/*.whl
 }

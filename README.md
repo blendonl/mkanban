@@ -17,32 +17,118 @@ A powerful Terminal User Interface (TUI) Kanban board application built with Pyt
 
 ### Installation
 
+MKanban can be installed in three different ways depending on your needs:
+
+#### Option 1: Install with pip (Recommended)
+
+Best for development and regular use. Installs `mkanban` and `mkanban-daemon` commands globally.
+
 ```bash
 # Clone the repository
 git clone <repository-url>
 cd mkanban
 
+# Install in development mode (changes to code are immediately reflected)
+pip install -e .
+
+# Or for regular installation
+pip install .
+```
+
+After installation, the commands are available globally:
+```bash
+mkanban --help
+mkanban-daemon --help
+```
+
+**Note:** Ensure `~/.local/bin` is in your PATH. Add to `~/.bashrc` or `~/.zshrc` if needed:
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+#### Option 2: Build Arch Linux Package
+
+Best for Arch Linux users who want proper system integration with pacman.
+
+```bash
+# Clone the repository
+git clone <repository-url>
+cd mkanban
+
+# Build and install the package
+makepkg -si
+```
+
+This installs mkanban to `/usr/bin/mkanban` and is managed by pacman. To uninstall:
+```bash
+sudo pacman -R mkanban
+```
+
+#### Option 3: Build Standalone Executable
+
+Best for creating a portable single-file executable (no Python runtime required at runtime).
+
+```bash
+# Clone the repository
+git clone <repository-url>
+cd mkanban
+
+# Set up the environment (required for building)
+make setup
+
+# Build the executable
+make executable
+
+# Copy to a directory in your PATH
+mkdir -p ~/.local/bin
+cp dist/mkanban ~/.local/bin/
+
+# Ensure ~/.local/bin is in PATH
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+The executable will be ~50MB and includes all dependencies.
+
+#### Running from Source (Development)
+
+If you prefer to run without installing:
+
+```bash
 # Set up the environment
 make setup
 
 # Run the application
-python main.py
+python src/main.py
 ```
 
 ### Basic Usage
 
+After installation (using any of the methods above):
+
 ```bash
 # Start with default settings
-python main.py
-
-# Use a specific data directory
-python main.py --data-dir /path/to/boards
+mkanban
 
 # Open a specific board
-python main.py --board "my-project"
+mkanban --board "my-project"
 
-# Create a task via CLI
-python main.py --new-task-title "Fix bug" --board "my-project"
+# Create a new task
+mkanban new-task "Fix bug" --board "my-project"
+
+# List tasks from a board
+mkanban list --board "my-project"
+
+# Checkout a git branch for a task
+mkanban checkout "Fix bug" --board "my-project"
+
+# Start the daemon for automatic git/JIRA sync
+mkanban-daemon start
+```
+
+If running from source without installation:
+
+```bash
+python src/main.py --board "my-project"
 ```
 
 ## Key Bindings
@@ -151,8 +237,26 @@ make setup              # Create venv and install dependencies
 make lint              # Run linting (flake8, mypy, ruff)
 make format            # Format code with black
 make test              # Run pytest tests
-make executable        # Build standalone executable
-make dist             # Create distribution packages
+make executable        # Build standalone executable with PyInstaller (~50MB)
+make dist             # Create distribution packages (wheel/sdist)
+make clean             # Clean build artifacts
+make clean-all         # Clean everything including venv
+```
+
+### Building & Distribution
+
+```bash
+# Install locally for development
+pip install -e .
+
+# Build standalone executable (requires PyInstaller)
+make executable        # Output: dist/mkanban
+
+# Build distribution packages
+make dist             # Output: dist/*.whl and dist/*.tar.gz
+
+# Build Arch Linux package
+makepkg -si           # Creates and installs .pkg.tar.zst
 ```
 
 ### Architecture
