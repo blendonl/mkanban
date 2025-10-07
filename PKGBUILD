@@ -7,7 +7,7 @@ url="https://github.com/blendonl/mkanban"
 license=('MIT')
 depends=('python' 'python-textual' 'python-pydantic' 'python-frontmatter' 'python-click' 'python-linkify-it-py' 'python-aiohttp' 'python-dotenv')
 makedepends=('python-build' 'python-installer' 'python-wheel')
-source=("$pkgname-$pkgver.tar.gz::$url/archive/v$pkgver.tar.gz")
+source=("$pkgname-$pkgver::file://${PWD}")
 sha256sums=('SKIP')
 
 build() {
