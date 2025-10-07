@@ -53,9 +53,9 @@ class BranchCommand:
             # Manage task states: move others from in-progress to to-do
             self._manage_task_states(board, task)
 
-            # Checkout or create the branch
-            branch_name = self._branch_service.format_task_title_as_branch(task.title)
-            self._branch_service.checkout_or_create_branch(task.title, repo_path)
+            # Checkout or create the branch with item ID prefix
+            branch_name = self._branch_service.format_task_title_as_branch(task.title, task.id)
+            self._branch_service.checkout_or_create_branch(task.title, repo_path, task.id)
 
             # Save board changes
             self._board_service.save_board(board)

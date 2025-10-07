@@ -1,4 +1,5 @@
 from typing import Optional, List
+import re
 from src.core.exceptions import ItemNotFoundError, ColumnNotFoundError, ValidationError
 from src.core.types import ItemId, ColumnId, ParentId
 from src.domain.entities.board import Board
@@ -6,6 +7,7 @@ from src.domain.entities.item import Item
 from src.domain.repositories.storage_repository import StorageRepository
 from src.services.validation_service import ValidationService
 from src.utils.logger_factory import ContextAwareLogger
+from src.utils.string_utils import generate_manual_item_id, get_board_prefix
 
 
 class ItemService:
@@ -44,12 +46,42 @@ class ItemService:
                 self._logger.warning("Parent not found", board=board.name, item=title)
                 raise ValidationError(f"Parent with id '{parent_id}' not found")
 
-        item = column.add_item(title, parent_id)
+        # Generate ID for manual item
+        next_index = self._get_next_item_index(board)
+        item_id = generate_manual_item_id(board.name, next_index)
+
+        item = column.add_item(title, parent_id, item_id)
         if description:
             item.description = description
 
-        self._logger.info("Successfully created item", board=board.name, column=column.name, item=title)
+        self._logger.info("Successfully created item", board=board.name, column=column.name, item=title, item_id=item_id)
         return item
+
+    def _get_next_item_index(self, board: Board) -> int:
+        """Calculate the next sequential index for manual items on this board.
+
+        Scans all items across all columns to find the highest index for this board's prefix,
+        then returns the next index.
+
+        Args:
+            board: The board to calculate the next index for
+
+        Returns:
+            The next available index (starting from 1)
+        """
+        board_prefix = get_board_prefix(board.name)
+        pattern = re.compile(rf"^{re.escape(board_prefix)}-(\d+)$")
+        max_index = 0
+
+        # Scan all items across all columns
+        for column in board.columns:
+            for item in column.items:
+                match = pattern.match(item.id)
+                if match:
+                    index = int(match.group(1))
+                    max_index = max(max_index, index)
+
+        return max_index + 1
 
     def update_item(self, board: Board, item_id: ItemId, **kwargs) -> bool:
         for column in board.columns:

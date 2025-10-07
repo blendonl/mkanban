@@ -6,15 +6,37 @@ from src.utils.file_utils import read_frontmatter_file, find_files_by_pattern
 
 
 def find_item_file_by_id(column_dir: Path, item_id: ItemId) -> Optional[Path]:
+    """Find an item file by its ID, supporting both old and new filename formats.
+
+    New format: {id}-{title}.md (e.g., "rec-27-fix-bug.md", "mka-1-feature.md")
+    Old format: {title}.md (with ID in frontmatter)
+
+    Note: Filenames use lowercase IDs, but frontmatter preserves original case.
+
+    Args:
+        column_dir: Directory containing item files
+        item_id: The item ID to search for (case-insensitive for filename matching)
+
+    Returns:
+        Path to the item file, or None if not found
+    """
     if not column_dir.exists():
         return None
 
     try:
         md_files = find_files_by_pattern(column_dir, "*.md")
+        item_id_lower = item_id.lower()
+
         for item_file in md_files:
             if item_file.name == "column.md":
                 continue
 
+            # Check if filename starts with item ID (case-insensitive, new format)
+            filename = item_file.stem.lower()
+            if filename.startswith(f"{item_id_lower}-"):
+                return item_file
+
+            # Fallback: Check frontmatter (old format or verification)
             try:
                 _, metadata = read_frontmatter_file(item_file)
                 file_id = metadata.get("id", item_file.stem)

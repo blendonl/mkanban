@@ -32,8 +32,18 @@ class Column(BaseModel):
                 setattr(self, key, value)
         self.updated_at = now()
 
-    def add_item(self, title: str, parent_id: Optional[ParentId] = None) -> Item:
-        item = Item(title=title, parent_id=parent_id, column_id=self.id)
+    def add_item(self, title: str, parent_id: Optional[ParentId] = None, item_id: Optional[str] = None) -> Item:
+        """Add a new item to the column.
+
+        Args:
+            title: Item title
+            parent_id: Optional parent ID for grouping
+            item_id: Optional pre-generated item ID (used by service layer)
+
+        Returns:
+            The created Item
+        """
+        item = Item(id=item_id or "", title=title, parent_id=parent_id, column_id=self.id)
         self.items.append(item)
         self.updated_at = now()
         return item

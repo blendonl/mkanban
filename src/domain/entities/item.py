@@ -43,13 +43,35 @@ class Item(BaseModel):
             if hasattr(self, '_jira_summary') and self._jira_summary:
                 self.title = f"{self.jira_metadata.ticket_key}: {self._jira_summary}"
 
-        if self.file_path and not self.id:
-            filename = Path(self.file_path).stem
-            self.id = filename
-            if not self.title or self.title == filename:
-                self.title = filename
-        elif not self.id:
-            self.id = generate_id_from_name(self.title) or "unnamed_item"
+        # Set ID based on source:
+        # - JIRA tasks: Use JIRA ticket key
+        # - Git tasks: Use branch-based ID
+        # - Manual tasks: Will be set by service layer with board context
+        # - File-based: Extract from filename
+        if not self.id:
+            if self.jira_metadata:
+                # JIRA items use ticket key as ID
+                self.id = self.jira_metadata.ticket_key
+            elif self.file_path:
+                # Extract ID from filename (supports both old and new formats)
+                filename = Path(self.file_path).stem
+                # New format: {id}-{title} or old format: {title}
+                if '-' in filename:
+                    # Try to extract ID prefix (e.g., "REC-27-fix-bug" -> "REC-27")
+                    parts = filename.split('-', 2)
+                    if len(parts) >= 2 and parts[1].isdigit():
+                        self.id = f"{parts[0]}-{parts[1]}"
+                    else:
+                        # Fallback to full filename as ID
+                        self.id = filename
+                else:
+                    self.id = filename
+                if not self.title or self.title == filename:
+                    self.title = filename
+            elif self.git_metadata:
+                # Git items use branch-based ID
+                self.id = generate_id_from_name(self.title) or "unnamed_item"
+            # Manual items will have ID set by ItemService with board context
 
     def update(self, **kwargs) -> None:
         for key, value in kwargs.items():

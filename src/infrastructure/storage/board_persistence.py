@@ -46,7 +46,9 @@ class BoardPersistence:
         title = item_data["title"]
         content = item_data.get("description", "")
 
-        new_filename = get_title_filename(title)
+        # New filename format: {id}-{title}.md (lowercase for filesystem)
+        title_part = get_title_filename(title)
+        new_filename = f"{item_id.lower()}-{title_part}"
         old_item_file = find_item_file_by_id(column_dir, item_id)
         new_item_file = column_dir / f"{new_filename}.md"
 

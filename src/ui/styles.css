@@ -15,7 +15,7 @@ Markdown:focus {
 }
 
 .main-container {
-  height: 1fr;
+  height: 10fr;
   align: center middle;
   background: #000000;
 }
@@ -37,28 +37,18 @@ BoardView {
   margin: 0 1;
   padding: 1;
   height: 99%;
-  min-width: 20;
+  min-width: 40;
   max-width: 40;
   width: 1fr;
   background: #000000;
 }
 
-.column-header {
-  text-style: bold;
-  background: white;
-  color: #000000;
-  padding: 0 1;
-  margin-bottom: 1;
-}
-
 .item {
   margin: 0;
-  padding: 1 0 0 1;
+  padding: 1;
   margin-bottom: 1;
   color: #cdd6f4;
   background: #111111;
-  min-height: 3;
-  max-height: 10;
   height: auto;
 }
 
@@ -70,6 +60,64 @@ BoardView {
   background: #222222;
 }
 
+/* Item row containers */
+.item-row {
+  height: auto;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+}
+
+.item-spacer {
+  height: auto;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+}
+
+/* Title row styling */
+.item-title-row {
+  text-style: bold;
+  color: #a6adc8;
+  width: 100%;
+  height: auto;
+  min-height: 1;
+}
+
+/* Labels row styling */
+.item-labels-row {
+  color: #a6adc8;
+  text-style: italic;
+  width: 100%;
+  height: auto;
+  min-height: 1;
+}
+
+/* Footer row styling */
+.item-footer-row {
+  width: 100%;
+  height: auto;
+  min-height: 1;
+  layout: horizontal;
+}
+
+.item-footer-left {
+  width: 1fr;
+  text-align: left;
+  color: #89b4fa;
+  text-style: bold;
+  height: auto;
+  min-height: 1;
+}
+
+.item-footer-right {
+  width: auto;
+  text-align: right;
+  color: #cdd6f4;
+  height: auto;
+  min-height: 1;
+}
+
 .item-content:focus {
   border: round;
   background: white;
@@ -79,7 +127,7 @@ BoardView {
   padding: 1;
   background: #111111;
   color: #cdd6f4;
-  height: 100;
+  height: auto;
 }
 
 .item-content:focus-within {
@@ -148,8 +196,8 @@ BoardView {
   scrollbar-size: 0 0;
   overflow: scroll;
   color: #000000;
-  height: auto;
-  max-height: 90vh;
+  height: 50;
+  max-height: 180vh;
 }
 
 .items-scroll {
@@ -159,7 +207,7 @@ BoardView {
   overflow: scroll;
   color: #000000;
   height: auto;
-  max-height: 85vh;
+  max-height: 300vh;
 }
 
 .help-dialog {

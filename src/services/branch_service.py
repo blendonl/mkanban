@@ -18,14 +18,16 @@ class BranchService:
     def __init__(self, logger: ContextAwareLogger):
         self._logger = logger
 
-    def format_task_title_as_branch(self, title: str) -> str:
+    def format_task_title_as_branch(self, title: str, item_id: str = None) -> str:
         """Format a task title for use as a git branch name.
 
         Args:
             title: The task title to format
+            item_id: Optional item ID to prefix the branch name
 
         Returns:
             A git-safe branch name (lowercase, hyphens, no special chars)
+            Format: {item_id}-{title} if item_id provided, otherwise just {title}
         """
         # Convert to lowercase
         formatted = title.lower()
@@ -39,18 +41,25 @@ class BranchService:
         # Remove leading/trailing hyphens
         formatted = formatted.strip('-')
 
+        # Add item ID prefix if provided
+        if item_id:
+            # Make item_id lowercase for consistency
+            id_prefix = item_id.lower()
+            formatted = f"{id_prefix}-{formatted}"
+
         # Limit length to reasonable git branch name length (50 chars)
         if len(formatted) > 50:
             formatted = formatted[:50].rstrip('-')
 
         return formatted
 
-    def checkout_or_create_branch(self, task_title: str, repo_path: Path) -> bool:
+    def checkout_or_create_branch(self, task_title: str, repo_path: Path, item_id: str = None) -> bool:
         """Create or checkout a git branch based on task title.
 
         Args:
             task_title: The task title to use for branch naming
             repo_path: Path to the git repository
+            item_id: Optional item ID to prefix the branch name
 
         Returns:
             True if operation succeeded, False otherwise
@@ -65,7 +74,7 @@ class BranchService:
             raise
 
         # Format the task title as a branch name
-        branch_name = self.format_task_title_as_branch(task_title)
+        branch_name = self.format_task_title_as_branch(task_title, item_id)
 
         if not branch_name:
             raise MKanbanError(f"Could not create valid branch name from task title: '{task_title}'")

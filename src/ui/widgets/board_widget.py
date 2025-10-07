@@ -238,20 +238,19 @@ class BoardWidget(Widget):
             self.app.notify("No column available for new item", severity="error")
             return
 
-        from ...domain.entities.item import Item
         import tempfile
 
-        # Create a new item template
-        item = Item(title="New Task", column_id=target_column.column.id)
-        template_content = f"""--- 
-id: {item.id}
+        # Create a new item template (ID will be auto-generated on save)
+        template_content = """---
+# ID will be auto-generated when saved
+# For JIRA tasks: will use JIRA ticket key (e.g., REC-27)
+# For manual tasks: will use board prefix + index (e.g., MKA-1)
 parent_id: null
-title: {item.id} 
-created_at: {item.created_at}
-updated_at: {item.updated_at}
 ---
 
-# 
+# New Task
+
+Write your task description here...
 """
 
         try:
@@ -285,9 +284,13 @@ updated_at: {item.updated_at}
                 return
 
             try:
-                # Create the new item
-                new_item = target_column.column.add_item(title)
-                new_item.description = edited_content.strip()
+                # Create the new item using ItemService (which generates proper IDs)
+                new_item = self.app.item_service.create_item(
+                    board=self.board,
+                    column_id=target_column.column.id,
+                    title=title,
+                    description=edited_content.strip()
+                )
 
                 # Save the board
                 self.app.board_service.save_board(self.board)
@@ -786,13 +789,6 @@ updated_at: {item.updated_at}
             self._current_column_width = column_width
             self._update_column_styles(column_width)
 
-        # Calculate responsive item heights based on terminal height
-        available_height = terminal_height - 8  # Account for headers, borders, footer
-        max_items_per_column = max(1, available_height // 4)  # 4 lines per item minimum
-        item_height = max(3, min(12, available_height // max(max_items_per_column, 3)))
-
-        self._update_item_styles(item_height)
-
     def _switch_to_compact_layout(self) -> None:
         # For very narrow terminals, make columns stack or show fewer at once
         for i, column_widget in enumerate(self.query(ColumnWidget)):
@@ -807,7 +803,3 @@ updated_at: {item.updated_at}
         for column_widget in self.query(ColumnWidget):
             column_widget.styles.min_width = width
             column_widget.styles.max_width = width + 10
-
-    def _update_item_styles(self, height: int) -> None:
-        for item_widget in self.query(ItemWidget):
-            item_widget.styles.max_height = height
