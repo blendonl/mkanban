@@ -73,7 +73,9 @@ class MarkdownStorageRepository(StorageRepository):
                     "description": item.description,
                     "parent_id": item.parent_id,
                     "created_at": item.created_at,
-                    "updated_at": item.updated_at,
+                    "moved_in_progress_at": item.moved_in_progress_at,
+                    "moved_in_done_at": item.moved_in_done_at,
+                    "worked_on_for": item.worked_on_for,
                 },
             )
 
@@ -135,7 +137,6 @@ class MarkdownStorageRepository(StorageRepository):
                         "position": column.position,
                         "limit": column.limit,
                         "created_at": column.created_at,
-                        "updated_at": column.updated_at,
                     },
                 )
 
@@ -150,7 +151,9 @@ class MarkdownStorageRepository(StorageRepository):
                             "description": item.description,
                             "parent_id": item.parent_id,
                             "created_at": item.created_at,
-                            "updated_at": item.updated_at,
+                            "moved_in_progress_at": item.moved_in_progress_at,
+                            "moved_in_done_at": item.moved_in_done_at,
+                            "worked_on_for": item.worked_on_for,
                         },
                     )
 

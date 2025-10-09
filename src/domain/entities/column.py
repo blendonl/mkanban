@@ -13,7 +13,6 @@ class Column(BaseModel):
     position: int = 0
     limit: Optional[int] = None
     created_at: Timestamp = Field(default_factory=now)
-    updated_at: Timestamp = Field(default_factory=now)
     items: list[Item] = Field(default_factory=list)
     file_path: Optional[FilePath] = None
 
@@ -30,7 +29,6 @@ class Column(BaseModel):
         for key, value in kwargs.items():
             if hasattr(self, key):
                 setattr(self, key, value)
-        self.updated_at = now()
 
     def add_item(self, title: str, parent_id: Optional[ParentId] = None, item_id: Optional[str] = None) -> Item:
         """Add a new item to the column.
@@ -45,22 +43,17 @@ class Column(BaseModel):
         """
         item = Item(id=item_id or "", title=title, parent_id=parent_id, column_id=self.id)
         self.items.append(item)
-        self.updated_at = now()
         return item
 
     def move_item_to_end(self, item: Item) -> bool:
         item.move_to_column(self.id)
         self.items.append(item)
-        self.updated_at = now()
         return True
 
     def remove_item(self, item_id: str) -> bool:
         original_count = len(self.items)
         self.items = [item for item in self.items if item.id != item_id]
-        if len(self.items) < original_count:
-            self.updated_at = now()
-            return True
-        return False
+        return len(self.items) < original_count
 
     def get_all_items(self) -> list[Item]:
         return self.items
@@ -78,5 +71,4 @@ class Column(BaseModel):
             "position": self.position,
             "limit": self.limit,
             "created_at": self.created_at,
-            "updated_at": self.updated_at,
         }

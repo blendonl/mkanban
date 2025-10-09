@@ -71,7 +71,6 @@ class BoardPersistence:
 
         # Ensure required fields have defaults
         item_metadata.setdefault("created_at", now())
-        item_metadata.setdefault("updated_at", now())
 
         try:
             save_item_with_metadata(new_item_file, title, content, item_metadata)
@@ -108,7 +107,6 @@ class BoardPersistence:
         old_item_file = find_item_file_by_id(old_column_dir, item_id)
 
         if old_item_file and old_item_file.exists():
-            item_data["updated_at"] = now()
             self.save_item_to_column(board_name, new_column_name, item_data)
             safe_delete_file(old_item_file)
             return True
@@ -126,7 +124,6 @@ class BoardPersistence:
         metadata = {
             "position": column_data.get("position"),
             "created_at": column_data.get("created_at", now()),
-            "updated_at": column_data.get("updated_at", now()),
         }
 
         if column_data.get("limit") is not None:

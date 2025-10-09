@@ -86,11 +86,7 @@ class BoardWidget(Widget):
                     parent_name = None
                     if updated_item.parent_id:
                         parent = next(
-                            (
-                                p
-                                for p in self.board.columns[0].parents
-                                if p.id == updated_item.parent_id
-                            ),
+                            (p for p in self.board.columns[0].parents if p.id == updated_item.parent_id),
                             None,
                         )
                         if parent:
@@ -242,21 +238,15 @@ class BoardWidget(Widget):
 
         # Create a new item template (ID will be auto-generated on save)
         template_content = """---
-# ID will be auto-generated when saved
-# For JIRA tasks: will use JIRA ticket key (e.g., REC-27)
-# For manual tasks: will use board prefix + index (e.g., MKA-1)
 parent_id: null
 ---
 
 # New Task
 
-Write your task description here...
 """
 
         try:
-            with tempfile.NamedTemporaryFile(
-                mode="w", suffix=".md", delete=False
-            ) as temp_file:
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as temp_file:
                 temp_file.write(template_content)
                 temp_file_path = temp_file.name
 
@@ -268,28 +258,19 @@ Write your task description here...
 
             # Extract title from the content
             title_line = next(
-                (
-                    line
-                    for line in edited_content.split("\n")
-                    if line.strip().startswith("# ")
-                ),
+                (line for line in edited_content.split("\n") if line.strip().startswith("# ")),
                 None,
             )
             title = title_line.replace("# ", "").strip() if title_line else "New Item"
 
             if not title or title == "New Item":
-                self.app.notify(
-                    "No title specified. Item creation cancelled.", severity="warning"
-                )
+                self.app.notify("No title specified. Item creation cancelled.", severity="warning")
                 return
 
             try:
                 # Create the new item using ItemService (which generates proper IDs)
                 new_item = self.app.item_service.create_item(
-                    board=self.board,
-                    column_id=target_column.column.id,
-                    title=title,
-                    description=edited_content.strip()
+                    board=self.board, column_id=target_column.column.id, title=title, description=edited_content.strip()
                 )
 
                 # Save the board
@@ -359,9 +340,7 @@ Write your task description here...
                 target_column = self.board.columns[index + 1]
 
                 column_widget = self._find_column_for_item(selected)
-                column_controller = create_column_controller(
-                    self.board, column_widget.column
-                )
+                column_controller = create_column_controller(self.board, column_widget.column)
 
                 try:
                     if column_controller.move_item(selected.id, target_column.id):
@@ -382,9 +361,7 @@ Write your task description here...
                 target_column = self.board.columns[index - 1]
 
                 column_widget = self._find_column_for_item(selected)
-                column_controller = create_column_controller(
-                    self.board, column_widget.column
-                )
+                column_controller = create_column_controller(self.board, column_widget.column)
 
                 try:
                     if column_controller.move_item(selected.id, target_column.id):
@@ -397,9 +374,7 @@ Write your task description here...
         focused = self.app.focused
         if not isinstance(focused, ItemWidget):
             all_items = self.query(".item")
-            focusable = [
-                w for w in all_items if hasattr(w, "can_focus") and w.can_focus
-            ]
+            focusable = [w for w in all_items if hasattr(w, "can_focus") and w.can_focus]
             if focusable:
                 focusable[0].focus()
                 self._ensure_item_visible(focusable[0])
@@ -423,9 +398,7 @@ Write your task description here...
         focused = self.app.focused
         if not isinstance(focused, ItemWidget):
             all_items = self.query(".item")
-            focusable = [
-                w for w in all_items if hasattr(w, "can_focus") and w.can_focus
-            ]
+            focusable = [w for w in all_items if hasattr(w, "can_focus") and w.can_focus]
             if focusable:
                 focusable[0].focus()
                 self._ensure_item_visible(focusable[0])
@@ -465,9 +438,7 @@ Write your task description here...
             return
 
         # Get items in the target column and try to focus the item at the same position
-        target_item = self._get_item_at_position_in_column(
-            target_column_id, current_position
-        )
+        target_item = self._get_item_at_position_in_column(target_column_id, current_position)
         if target_item:
             target_item.focus()
             self._ensure_item_visible(target_item)
@@ -492,9 +463,7 @@ Write your task description here...
             return
 
         # Get items in the target column and try to focus the item at the same position
-        target_item = self._get_item_at_position_in_column(
-            target_column_id, current_position
-        )
+        target_item = self._get_item_at_position_in_column(target_column_id, current_position)
         if target_item:
             target_item.focus()
             self._ensure_item_visible(target_item)
@@ -548,9 +517,7 @@ Write your task description here...
                 return sorted_columns[i + 1].id
         return None
 
-    def _get_item_at_position_in_column(
-        self, column_id: str, position: int
-    ) -> Optional[ItemWidget]:
+    def _get_item_at_position_in_column(self, column_id: str, position: int) -> Optional[ItemWidget]:
         """Get the item widget at a specific position in a column"""
         column_widgets = self.query(ColumnWidget)
         for column_widget in column_widgets:
@@ -564,9 +531,7 @@ Write your task description here...
                     return item_widgets[-1]
         return None
 
-    def _get_previous_non_empty_column_id(
-        self, current_column_id: str
-    ) -> Optional[str]:
+    def _get_previous_non_empty_column_id(self, current_column_id: str) -> Optional[str]:
         """Get the ID of the previous column that has items, skipping empty columns"""
         if not self.board:
             return None
@@ -670,18 +635,14 @@ Write your task description here...
         column = column_widget.column
 
         # Get the item file path using file operations
-        from src.infrastructure.storage.file_operations import (
-            find_item_file_by_id
-        )
+        from src.infrastructure.storage.file_operations import find_item_file_by_id
         from src.core.dependency_container import get_container
 
         from src.utils.path_resolver import PathResolver
 
         container = get_container()
         path_resolver = container.get(PathResolver)
-        column_dir = path_resolver.get_column_directory(
-            self.board.name, column.name
-        )
+        column_dir = path_resolver.get_column_directory(self.board.name, column.name)
         item_file_path = find_item_file_by_id(column_dir, item.id)
         return item_file_path
 
@@ -691,23 +652,15 @@ Write your task description here...
             return
 
         # Load the updated item from the file
-        from src.infrastructure.storage.markdown_parser import (
-            parse_item_metadata
-        )
+        from src.infrastructure.storage.markdown_parser import parse_item_metadata
 
         try:
-            content_title, content, metadata = parse_item_metadata(
-                item_file_path
-            )
+            content_title, content, metadata = parse_item_metadata(item_file_path)
             # Update the existing item's properties
             item.title = content_title
             item.description = content
-            item.updated_at = metadata.get(
-                'updated_at', item.updated_at
-            )
-            item.parent_id = metadata.get(
-                'parent_id', item.parent_id
-            )
+            item.updated_at = metadata.get("updated_at", item.updated_at)
+            item.parent_id = metadata.get("parent_id", item.parent_id)
         except Exception:
             # If parsing fails, keep existing item data
             pass
@@ -765,7 +718,6 @@ Write your task description here...
             return
 
         terminal_width = getattr(self.app, "terminal_width", 80)
-        terminal_height = getattr(self.app, "terminal_height", 24)
 
         num_columns = len(self.board.columns)
         if num_columns == 0:
@@ -778,7 +730,9 @@ Write your task description here...
 
         # Calculate responsive column width
         available_width = terminal_width - 6  # Account for padding and margins
-        column_width = max(BOARD_WIDGET_MIN_COLUMN_WIDTH, min(BOARD_WIDGET_MAX_COLUMN_WIDTH, available_width // num_columns))
+        column_width = max(
+            BOARD_WIDGET_MIN_COLUMN_WIDTH, min(BOARD_WIDGET_MAX_COLUMN_WIDTH, available_width // num_columns)
+        )
 
         # Ensure minimum usable width
         if column_width < BOARD_WIDGET_MIN_COLUMN_WIDTH and num_columns > 1:

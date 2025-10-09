@@ -79,7 +79,6 @@ class MarkdownBoardRepository(BoardRepository):
                 name=board_name,
                 description=metadata.get("description", ""),
                 created_at=metadata.get("created_at", now()),
-                updated_at=metadata.get("updated_at", now()),
                 file_path=kanban_file,
             )
 
@@ -105,7 +104,6 @@ class MarkdownBoardRepository(BoardRepository):
             "name": board.name,
             "description": board.description,
             "created_at": board.created_at,
-            "updated_at": board.updated_at,
             "parents": [
                 {
                     "id": parent.id,
@@ -189,7 +187,6 @@ class MarkdownBoardRepository(BoardRepository):
                         position=position,
                         limit=metadata.get("limit"),
                         created_at=metadata.get("created_at", now()),
-                        updated_at=metadata.get("updated_at", now()),
                         file_path=column_metadata_file,
                     )
                     if position is not None:
@@ -238,6 +235,31 @@ class MarkdownBoardRepository(BoardRepository):
 
             try:
                 title, content, metadata = parse_item_metadata(item_file)
+
+                # System-managed timing fields - these fields are managed by the system
+                # based on column movements and should be recalculated/verified
+                timing_metadata = {
+                    'moved_in_progress_at': metadata.get("moved_in_progress_at"),
+                    'moved_in_done_at': metadata.get("moved_in_done_at"),
+                    'worked_on_for': metadata.get("worked_on_for"),
+                }
+
+                # Normalize column ID for comparison
+                normalized_column_id = column.id.replace('_', '-')
+
+                # Validate and fix timing fields based on current column
+                # This ensures user edits don't create invalid states
+                if normalized_column_id != 'in-progress' and normalized_column_id != 'done':
+                    # Item is in to-do or other column - reset timing fields
+                    timing_metadata['moved_in_progress_at'] = None
+                    timing_metadata['moved_in_done_at'] = None
+                    timing_metadata['worked_on_for'] = None
+                elif normalized_column_id == 'in-progress':
+                    # Item is in progress - clear done-related fields
+                    timing_metadata['moved_in_done_at'] = None
+                    timing_metadata['worked_on_for'] = None
+                # If in 'done' column, keep all timing fields as-is from metadata
+
                 item = Item(
                     id=metadata.get("id", generate_id_from_name(item_file.stem)),
                     title=metadata.get("title", title),
@@ -245,7 +267,9 @@ class MarkdownBoardRepository(BoardRepository):
                     column_id=column.id,
                     parent_id=metadata.get("parent_id"),
                     created_at=metadata.get("created_at", now()),
-                    updated_at=metadata.get("updated_at", now()),
+                    moved_in_progress_at=timing_metadata['moved_in_progress_at'],
+                    moved_in_done_at=timing_metadata['moved_in_done_at'],
+                    worked_on_for=timing_metadata['worked_on_for'],
                     file_path=item_file,
                 )
                 column.items.append(item)
@@ -293,7 +317,6 @@ class MarkdownBoardRepository(BoardRepository):
                     "position": column.position,
                     "limit": column.limit,
                     "created_at": column.created_at,
-                    "updated_at": column.updated_at,
                 },
             )
 
@@ -308,7 +331,9 @@ class MarkdownBoardRepository(BoardRepository):
                         "description": item.description,
                         "parent_id": item.parent_id,
                         "created_at": item.created_at,
-                        "updated_at": item.updated_at,
+                        "moved_in_progress_at": item.moved_in_progress_at,
+                        "moved_in_done_at": item.moved_in_done_at,
+                        "worked_on_for": item.worked_on_for,
                     },
                 )
 

@@ -17,7 +17,6 @@ class Board(BaseModel):
     columns: list[Column] = Field(default_factory=list)
     parents: list[Parent] = Field(default_factory=list)
     created_at: Timestamp = Field(default_factory=now)
-    updated_at: Timestamp = Field(default_factory=now)
 
     def model_post_init(self, __context) -> None:
         if self.file_path and not self.id:
@@ -32,7 +31,6 @@ class Board(BaseModel):
         for key, value in kwargs.items():
             if hasattr(self, key):
                 setattr(self, key, value)
-        self.updated_at = now()
 
     def add_column(self, name: str, position: Optional[int] = None) -> Column:
         if position is None:
@@ -41,16 +39,12 @@ class Board(BaseModel):
         column = Column(name=name, position=position)
         self.columns.append(column)
         self.columns.sort(key=lambda c: (c.position, c.name))
-        self.updated_at = now()
         return column
 
     def remove_column(self, column_id: ColumnId) -> bool:
         original_count = len(self.columns)
         self.columns = [col for col in self.columns if col.id != column_id]
-        if len(self.columns) < original_count:
-            self.updated_at = now()
-            return True
-        return False
+        return len(self.columns) < original_count
 
     def get_column_by_id(self, column_id: ColumnId) -> Optional[Column]:
         for column in self.columns:
@@ -72,16 +66,12 @@ class Board(BaseModel):
     def add_parent(self, name: str, color: str = "blue") -> Parent:
         parent = Parent(name=name, color=color)
         self.parents.append(parent)
-        self.updated_at = now()
         return parent
 
     def remove_parent(self, parent_id: ParentId) -> bool:
         original_count = len(self.parents)
         self.parents = [parent for parent in self.parents if parent.id != parent_id]
-        if len(self.parents) < original_count:
-            self.updated_at = now()
-            return True
-        return False
+        return len(self.parents) < original_count
 
     def get_parent_by_id(self, parent_id: ParentId) -> Optional[Parent]:
         for parent in self.parents:

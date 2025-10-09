@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Optional, Dict, Any, List
+from datetime import datetime
 from pydantic import BaseModel, Field
 from src.core.types import ItemId, ColumnId, ParentId, Timestamp, FilePath
 from src.utils.string_utils import generate_id_from_name, get_safe_filename
@@ -15,7 +16,9 @@ class Item(BaseModel):
     description: str = ""
     parent_id: Optional[ParentId] = None
     created_at: Timestamp = Field(default_factory=now)
-    updated_at: Timestamp = Field(default_factory=now)
+    moved_in_progress_at: Optional[Timestamp] = None
+    moved_in_done_at: Optional[Timestamp] = None
+    worked_on_for: Optional[str] = None  # Format: "HH:MM"
     file_path: Optional[FilePath] = None
 
     # Git-specific fields (optional)
@@ -74,22 +77,66 @@ class Item(BaseModel):
             # Manual items will have ID set by ItemService with board context
 
     def update(self, **kwargs) -> None:
+        # Protect system-managed timing fields from manual updates
+        protected_fields = {'moved_in_progress_at', 'moved_in_done_at', 'worked_on_for'}
         for key, value in kwargs.items():
-            if hasattr(self, key):
+            if hasattr(self, key) and key not in protected_fields:
                 setattr(self, key, value)
-        self.updated_at = now()
 
     def move_to_column(self, column_id: ColumnId) -> None:
+        old_column_id = self.column_id
         self.column_id = column_id
-        self.updated_at = now()
+
+        # Normalize column IDs for comparison (handle both hyphen and underscore)
+        normalized_column_id = column_id.replace('_', '-')
+        normalized_old_column_id = old_column_id.replace('_', '-') if old_column_id else None
+
+        # Track when item moves to in-progress
+        if normalized_column_id == "in-progress" and normalized_old_column_id != "in-progress":
+            self.moved_in_progress_at = now()
+
+        # Track when item moves to done and calculate work duration
+        if normalized_column_id == "done" and normalized_old_column_id != "done":
+            self.moved_in_done_at = now()
+
+            # Calculate worked_on_for if item was previously in progress
+            if self.moved_in_progress_at:
+                self.worked_on_for = self._calculate_work_duration(
+                    self.moved_in_progress_at,
+                    self.moved_in_done_at
+                )
 
     def set_parent(self, parent_id: Optional[ParentId]) -> None:
         self.parent_id = parent_id
-        self.updated_at = now()
 
     @property
     def has_parent(self) -> bool:
         return self.parent_id is not None
+
+    def _calculate_work_duration(self, start_time: Timestamp, end_time: Timestamp) -> str:
+        """Calculate work duration in HH:MM format"""
+        try:
+            # Parse timestamps - handle both string and datetime types
+            if isinstance(start_time, str):
+                start_dt = datetime.fromisoformat(start_time)
+            else:
+                start_dt = start_time
+
+            if isinstance(end_time, str):
+                end_dt = datetime.fromisoformat(end_time)
+            else:
+                end_dt = end_time
+
+            # Calculate duration
+            duration = end_dt - start_dt
+            total_minutes = int(duration.total_seconds() / 60)
+            hours = total_minutes // 60
+            minutes = total_minutes % 60
+
+            return f"{hours}:{minutes:02d}"
+        except Exception:
+            # If calculation fails, return None (will be handled gracefully)
+            return None
 
     def _generate_title_from_branch(self) -> str:
         """Generate a human-readable title from branch name"""
@@ -120,20 +167,17 @@ class Item(BaseModel):
         for key, value in kwargs.items():
             if hasattr(self.git_metadata, key):
                 setattr(self.git_metadata, key, value)
-        self.updated_at = now()
 
     def set_current_branch(self, is_current: bool) -> None:
         """Mark this task as corresponding to the current branch"""
         if self.git_metadata:
             self.git_metadata.is_current_branch = is_current
-            self.updated_at = now()
 
     def mark_branch_deleted(self) -> None:
         """Mark the associated branch as deleted"""
         if self.git_metadata:
             self.git_metadata.branch_deleted_at = now()
             self.git_metadata.is_current_branch = False
-            self.updated_at = now()
 
     def get_repository_name(self) -> Optional[str]:
         """Get the repository name from the path"""
@@ -190,19 +234,16 @@ class Item(BaseModel):
             if hasattr(self.jira_metadata, key):
                 setattr(self.jira_metadata, key, value)
         self.jira_metadata.last_sync = now()
-        self.updated_at = now()
 
     def add_linked_ticket(self, ticket_key: str) -> None:
         """Add a linked Jira ticket"""
         if ticket_key not in self.linked_tickets:
             self.linked_tickets.append(ticket_key)
-            self.updated_at = now()
 
     def remove_linked_ticket(self, ticket_key: str) -> None:
         """Remove a linked Jira ticket"""
         if ticket_key in self.linked_tickets:
             self.linked_tickets.remove(ticket_key)
-            self.updated_at = now()
 
     def get_jira_ticket_key(self) -> Optional[str]:
         """Get the primary Jira ticket key"""
@@ -325,7 +366,9 @@ class Item(BaseModel):
             "description": self.description,
             "parent_id": self.parent_id,
             "created_at": self.created_at,
-            "updated_at": self.updated_at,
+            "moved_in_progress_at": self.moved_in_progress_at,
+            "moved_in_done_at": self.moved_in_done_at,
+            "worked_on_for": self.worked_on_for,
         }
 
         # Add git-specific fields if this is a git-managed item

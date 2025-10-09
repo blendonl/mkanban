@@ -16,6 +16,48 @@ def read_frontmatter_file(file_path: Path) -> tuple[str, Metadata]:
         raise ParseError(f"Failed to parse frontmatter in {file_path}: {e}")
 
 
+def _organize_metadata(metadata: Metadata) -> dict:
+    """Organize metadata with a logical order, putting timestamps at the bottom.
+
+    Order:
+    1. id (required identifier)
+    2. title (main field)
+    3. parent_id (relationship)
+    4. Other fields (alphabetically)
+    5. Timestamps (moved_in_progress_at, moved_in_done_at, worked_on_for)
+    6. created_at (always last)
+    """
+    ordered = {}
+
+    # Define the preferred order
+    priority_fields = ["id", "title", "parent_id"]
+    timestamp_fields = ["moved_in_progress_at", "moved_in_done_at", "worked_on_for", "created_at"]
+
+    # Add priority fields first (if they exist)
+    for field in priority_fields:
+        if field in metadata:
+            ordered[field] = metadata[field]
+
+    # Add other fields alphabetically (excluding timestamps and priority fields)
+    other_fields = sorted([
+        key for key in metadata.keys()
+        if key not in priority_fields and key not in timestamp_fields
+    ])
+    for field in other_fields:
+        ordered[field] = metadata[field]
+
+    # Add timestamp fields at the end (except created_at)
+    for field in timestamp_fields[:-1]:  # All except created_at
+        if field in metadata:
+            ordered[field] = metadata[field]
+
+    # Add created_at last
+    if "created_at" in metadata:
+        ordered["created_at"] = metadata["created_at"]
+
+    return ordered
+
+
 def write_frontmatter_file(file_path: Path, content: str, metadata: Metadata) -> None:
     import logging
     logger = logging.getLogger("mkanban-daemon")
@@ -25,7 +67,10 @@ def write_frontmatter_file(file_path: Path, content: str, metadata: Metadata) ->
         file_path.parent.mkdir(parents=True, exist_ok=True)
         logger.debug(f"About to create frontmatter post for {file_path}")
 
-        post = frontmatter.Post(content, **metadata)
+        # Organize metadata with created_at at the bottom
+        ordered_metadata = _organize_metadata(metadata)
+
+        post = frontmatter.Post(content, **ordered_metadata)
         logger.debug("Created frontmatter post, about to write file")
 
         with open(file_path, "w", encoding="utf-8") as f:
