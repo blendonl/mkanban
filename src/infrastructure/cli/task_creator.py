@@ -238,13 +238,16 @@ updated_at: {timestamp}
             click.echo(f"Error opening editor: {e}")
 
     def _open_editor_for_current_task(self, file_path: str) -> None:
+        import shlex
         from src.config.configuration_manager import get_config
 
         config_manager = get_config()
         editor = config_manager.get_editor()
 
         try:
-            subprocess.run([editor, file_path], check=True)
+            # Parse editor command to support arguments
+            editor_cmd = shlex.split(editor)
+            subprocess.run(editor_cmd + [file_path], check=True)
         except subprocess.CalledProcessError:
             click.echo(f"Error: Failed to open {editor} editor")
             raise
@@ -255,13 +258,16 @@ updated_at: {timestamp}
             raise
 
     def _open_editor_for_cli(self, file_path: str) -> None:
+        import shlex
         from src.config.configuration_manager import get_config
 
         config_manager = get_config()
         editor = config_manager.get_editor()
 
         try:
-            subprocess.run([editor, file_path, "+10"], check=True)
+            # Parse editor command to support arguments
+            editor_cmd = shlex.split(editor)
+            subprocess.run(editor_cmd + [file_path, "+10"], check=True)
         except subprocess.CalledProcessError:
             click.echo(f"Error: Failed to open {editor} editor")
             raise
