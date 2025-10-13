@@ -173,21 +173,26 @@ class JiraHierarchyService:
         ticket_to_item = {}
         for column in board.columns:
             for item in column.items:
-                if item.is_jira_managed and item.jira_metadata:
-                    ticket_to_item[item.jira_metadata.ticket_key] = item
+                if item.is_jira_managed:
+                    ticket_key = item.metadata.get("ticket_key")
+                    if ticket_key:
+                        ticket_to_item[ticket_key] = item
 
         # Process each item and link to parent
         for ticket_key, item in ticket_to_item.items():
-            if not item.jira_metadata:
+            if not item.is_jira_managed:
                 continue
 
             parent_key = None
 
             # Determine parent: could be parent ticket or epic
-            if item.jira_metadata.parent_ticket_key:
-                parent_key = item.jira_metadata.parent_ticket_key
-            elif item.jira_metadata.epic_key:
-                parent_key = item.jira_metadata.epic_key
+            parent_ticket_key = item.metadata.get("parent_ticket_key")
+            epic_key = item.metadata.get("epic_key")
+
+            if parent_ticket_key:
+                parent_key = parent_ticket_key
+            elif epic_key:
+                parent_key = epic_key
 
             # Link to parent if it exists in our board
             if parent_key and parent_key in ticket_to_item:
@@ -224,19 +229,22 @@ class JiraHierarchyService:
         ticket_to_item = {}
         for column in board.columns:
             for item in column.items:
-                if item.is_jira_managed and item.jira_metadata:
-                    ticket_to_item[item.jira_metadata.ticket_key] = item
+                if item.is_jira_managed:
+                    ticket_key = item.metadata.get("ticket_key")
+                    if ticket_key:
+                        ticket_to_item[ticket_key] = item
 
         # Process each item and sync its links
         for ticket_key, item in ticket_to_item.items():
-            if not item.jira_metadata or not item.jira_metadata.issue_links:
+            issue_links = item.metadata.get("issue_links", [])
+            if not item.is_jira_managed or not issue_links:
                 continue
 
             # Get all linked ticket keys from JIRA metadata
-            linked_keys = [link.get("key") for link in item.jira_metadata.issue_links if link.get("key")]
+            linked_keys = [link.get("key") for link in issue_links if link.get("key")]
 
             # Update the item's linked_tickets
-            current_links = set(item.linked_tickets)
+            current_links = set(item.metadata.get("linked_tickets", []))
             new_links = set(linked_keys)
 
             # Add new links
@@ -279,14 +287,14 @@ class JiraHierarchyService:
 
         if existing_item:
             # Update existing item metadata
-            if existing_item.jira_metadata:
-                existing_item.jira_metadata.jira_status = ticket.status
-                existing_item.jira_metadata.priority = ticket.priority
-                existing_item.jira_metadata.assignee = ticket.assignee
-                existing_item.jira_metadata.labels = ticket.labels
-                existing_item.jira_metadata.components = ticket.components
-                existing_item.jira_metadata.sprint_name = ticket.sprint
-                existing_item.jira_metadata.story_points = ticket.story_points
+            if existing_item.is_jira_managed:
+                existing_item.metadata["jira_status"] = ticket.status
+                existing_item.metadata["priority"] = ticket.priority
+                existing_item.metadata["assignee"] = ticket.assignee
+                existing_item.metadata["labels"] = ticket.labels
+                existing_item.metadata["components"] = ticket.components
+                existing_item.metadata["sprint_name"] = ticket.sprint
+                existing_item.metadata["story_points"] = ticket.story_points
 
             # Set parent if provided
             if parent_item and existing_item.parent_id != parent_item.id:
@@ -316,8 +324,7 @@ class JiraHierarchyService:
         for column in board.columns:
             for item in column.items:
                 if (item.is_jira_managed and
-                    item.jira_metadata and
-                    item.jira_metadata.ticket_key == ticket_key):
+                    item.metadata.get("ticket_key") == ticket_key):
                     return item
         return None
 

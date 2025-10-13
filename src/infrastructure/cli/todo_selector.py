@@ -185,12 +185,12 @@ class TodoSelector:
                 return f"{prefix}/{title_sanitized}"
         else:
             # No prefix specified - use default naming
-            if todo.is_jira_managed and todo.jira_metadata:
+            if todo.is_jira_managed:
                 # JIRA todo: use full JIRA format
-                ticket_key = todo.jira_metadata.ticket_key
+                ticket_key = todo.metadata.get("ticket_key", "")
                 # Extract summary from title (remove ticket key if present)
                 summary = todo.title
-                if summary.startswith(f"{ticket_key}:"):
+                if ticket_key and summary.startswith(f"{ticket_key}:"):
                     summary = summary[len(f"{ticket_key}:") :].strip()
                 summary_sanitized = sanitize_for_branch(summary)
                 return f"{ticket_key.lower()}-{summary_sanitized}"
@@ -294,7 +294,7 @@ class TodoSelector:
             self._board_service.save_board(board)
 
             # Update JIRA status if it's a JIRA todo
-            if todo.is_jira_managed and todo.jira_metadata:
+            if todo.is_jira_managed:
                 self._update_jira_status(todo)
 
         except Exception as e:
@@ -306,10 +306,9 @@ class TodoSelector:
             # This would require async context, so we'll skip JIRA update for now
             # In a full implementation, you'd want to integrate with the JIRA daemon
             # or use the JiraClient directly in an async context
+            ticket_key = todo.metadata.get("ticket_key", "")
             click.echo(
-                f"Note: JIRA status update for {
-                    todo.jira_metadata.ticket_key
-                } would be handled by daemon"
+                f"Note: JIRA status update for {ticket_key} would be handled by daemon"
             )
         except Exception as e:
             click.echo(f"Warning: Could not update JIRA status: {e}")

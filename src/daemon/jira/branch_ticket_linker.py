@@ -138,8 +138,7 @@ class BranchTicketLinker:
         for column in board.columns:
             for item in column.items:
                 if (item.is_jira_managed and
-                    item.jira_metadata and
-                    item.jira_metadata.ticket_key == ticket_key):
+                    item.metadata.get("ticket_key") == ticket_key):
                     return item
         return None
 
@@ -148,7 +147,7 @@ class BranchTicketLinker:
                                  storage: MarkdownStorageImpl) -> None:
         """Create bidirectional links between git and Jira items"""
         # Add ticket key to git item's linked tickets
-        ticket_key = jira_item.jira_metadata.ticket_key
+        ticket_key = jira_item.metadata.get("ticket_key", "")
         git_item.add_linked_ticket(ticket_key)
 
         # Update git item description with ticket link if not already present
@@ -252,7 +251,7 @@ class BranchTicketLinker:
             # Save board
             storage.save_board(jira_board)
 
-            self.logger.info(f"Synced Jira item {jira_item.jira_metadata.ticket_key} to column {target_column.name} based on git status")
+            self.logger.info(f"Synced Jira item {jira_item.metadata.get('ticket_key', '')} to column {target_column.name} based on git status")
 
     def get_linked_tickets_for_branch(self, board: Board, repository_path: str, branch_name: str) -> List[str]:
         """Get linked ticket keys for a git branch"""

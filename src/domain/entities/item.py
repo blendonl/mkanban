@@ -6,7 +6,6 @@ from src.core.types import ItemId, ColumnId, ParentId, Timestamp, FilePath
 from src.utils.string_utils import generate_id_from_name, get_safe_filename
 from src.utils.date_utils import now
 from .git_metadata import GitMetadata
-from .jira_metadata import JiraMetadata
 
 
 class Item(BaseModel):
@@ -24,12 +23,11 @@ class Item(BaseModel):
     # Git-specific fields (optional)
     git_metadata: Optional[GitMetadata] = None
     is_git_managed: bool = Field(default=False)
-    auto_sync_enabled: bool = Field(default=True)
 
-    # Jira-specific fields (optional)
-    jira_metadata: Optional[JiraMetadata] = None
+    # Generic metadata for any integration (JIRA, GitHub, etc.)
+    metadata: Dict[str, Any] = Field(default_factory=dict)
     is_jira_managed: bool = Field(default=False)
-    linked_tickets: List[str] = Field(default_factory=list)
+    auto_sync_enabled: bool = Field(default=True)
 
     def model_post_init(self, __context) -> None:
         # If this is a git task and no title is provided, generate from branch name
@@ -41,10 +39,11 @@ class Item(BaseModel):
             self.description = self.git_metadata.last_commit_message
 
         # If this is a Jira task and no title is provided, use summary
-        if self.jira_metadata and not self.title:
-            self.title = self.jira_metadata.ticket_key
+        if self.is_jira_managed and not self.title:
+            ticket_key = self.metadata.get("ticket_key", "")
+            self.title = ticket_key
             if hasattr(self, '_jira_summary') and self._jira_summary:
-                self.title = f"{self.jira_metadata.ticket_key}: {self._jira_summary}"
+                self.title = f"{ticket_key}: {self._jira_summary}"
 
         # Set ID based on source:
         # - JIRA tasks: Use JIRA ticket key
@@ -52,9 +51,9 @@ class Item(BaseModel):
         # - Manual tasks: Will be set by service layer with board context
         # - File-based: Extract from filename
         if not self.id:
-            if self.jira_metadata:
+            if self.is_jira_managed and self.metadata.get("ticket_key"):
                 # JIRA items use ticket key as ID
-                self.id = self.jira_metadata.ticket_key
+                self.id = self.metadata.get("ticket_key", "")
             elif self.file_path:
                 # Extract ID from filename (supports both old and new formats)
                 filename = Path(self.file_path).stem
@@ -227,71 +226,64 @@ class Item(BaseModel):
 
     def update_jira_metadata(self, **kwargs) -> None:
         """Update Jira metadata fields"""
-        if not self.jira_metadata:
+        if not self.is_jira_managed:
             return
 
         for key, value in kwargs.items():
-            if hasattr(self.jira_metadata, key):
-                setattr(self.jira_metadata, key, value)
-        self.jira_metadata.last_sync = now()
+            self.metadata[key] = value
+        self.metadata["last_sync"] = now()
 
     def add_linked_ticket(self, ticket_key: str) -> None:
         """Add a linked Jira ticket"""
-        if ticket_key not in self.linked_tickets:
-            self.linked_tickets.append(ticket_key)
+        linked_tickets = self.metadata.get("linked_tickets", [])
+        if ticket_key not in linked_tickets:
+            linked_tickets.append(ticket_key)
+            self.metadata["linked_tickets"] = linked_tickets
 
     def remove_linked_ticket(self, ticket_key: str) -> None:
         """Remove a linked Jira ticket"""
-        if ticket_key in self.linked_tickets:
-            self.linked_tickets.remove(ticket_key)
+        linked_tickets = self.metadata.get("linked_tickets", [])
+        if ticket_key in linked_tickets:
+            linked_tickets.remove(ticket_key)
+            self.metadata["linked_tickets"] = linked_tickets
 
     def get_jira_ticket_key(self) -> Optional[str]:
         """Get the primary Jira ticket key"""
-        if self.jira_metadata:
-            return self.jira_metadata.ticket_key
-        return None
+        return self.metadata.get("ticket_key")
 
     def get_parent_ticket_key(self) -> Optional[str]:
         """Get the parent JIRA ticket key"""
-        if self.jira_metadata:
-            return self.jira_metadata.parent_ticket_key
-        return None
+        return self.metadata.get("parent_ticket_key")
 
     def get_epic_key(self) -> Optional[str]:
         """Get the epic key this ticket belongs to"""
-        if self.jira_metadata:
-            return self.jira_metadata.epic_key
-        return None
+        return self.metadata.get("epic_key")
 
     def get_subtask_keys(self) -> List[str]:
         """Get list of subtask ticket keys"""
-        if self.jira_metadata:
-            return self.jira_metadata.subtask_keys
-        return []
+        return self.metadata.get("subtask_keys", [])
 
     def get_linked_ticket_keys(self) -> List[str]:
         """Get all linked ticket keys from issue links"""
-        if self.jira_metadata and self.jira_metadata.issue_links:
-            return [link.get("key", "") for link in self.jira_metadata.issue_links if link.get("key")]
-        return []
+        issue_links = self.metadata.get("issue_links", [])
+        return [link.get("key", "") for link in issue_links if link.get("key")]
 
     def has_jira_parent(self) -> bool:
         """Check if this item has a JIRA parent"""
-        return self.jira_metadata is not None and self.jira_metadata.parent_ticket_key is not None
+        return self.is_jira_managed and self.metadata.get("parent_ticket_key") is not None
 
     def has_jira_subtasks(self) -> bool:
         """Check if this item has JIRA subtasks"""
-        return self.jira_metadata is not None and len(self.jira_metadata.subtask_keys) > 0
+        return self.is_jira_managed and len(self.metadata.get("subtask_keys", [])) > 0
 
     def is_jira_subtask(self) -> bool:
         """Check if this is a JIRA subtask"""
-        return self.jira_metadata is not None and self.jira_metadata.is_subtask
+        return self.is_jira_managed and self.metadata.get("is_subtask", False)
 
     def should_sync_to_jira(self) -> bool:
         """Check if this item should sync back to Jira"""
         return (
             self.is_jira_managed
-            and self.jira_metadata is not None
             and self.auto_sync_enabled
         )
 
@@ -321,39 +313,39 @@ class Item(BaseModel):
     @classmethod
     def from_jira_ticket(cls, ticket_key: str, ticket_data: Dict[str, Any], column_id: ColumnId) -> "Item":
         """Create an Item from Jira ticket information"""
-        jira_metadata = JiraMetadata(
-            ticket_key=ticket_key,
-            ticket_id=ticket_data.get("id", ""),
-            ticket_url=ticket_data.get("url", ""),
-            project_key=ticket_data.get("project_key", ""),
-            issue_type=ticket_data.get("issue_type", ""),
-            priority=ticket_data.get("priority"),
-            assignee=ticket_data.get("assignee"),
-            reporter=ticket_data.get("reporter"),
-            labels=ticket_data.get("labels", []),
-            components=ticket_data.get("components", []),
-            jira_status=ticket_data.get("status", ""),
-            last_sync=now(),
+        metadata = {
+            "ticket_key": ticket_key,
+            "ticket_id": ticket_data.get("id", ""),
+            "ticket_url": ticket_data.get("url", ""),
+            "project_key": ticket_data.get("project_key", ""),
+            "issue_type": ticket_data.get("issue_type", ""),
+            "priority": ticket_data.get("priority"),
+            "assignee": ticket_data.get("assignee"),
+            "reporter": ticket_data.get("reporter"),
+            "labels": ticket_data.get("labels", []),
+            "components": ticket_data.get("components", []),
+            "jira_status": ticket_data.get("status", ""),
+            "last_sync": now(),
             # Hierarchy fields
-            parent_ticket_key=ticket_data.get("parent"),
-            epic_key=ticket_data.get("epic_link"),
-            subtask_keys=ticket_data.get("subtasks", []),
-            is_subtask=ticket_data.get("is_subtask", False),
+            "parent_ticket_key": ticket_data.get("parent"),
+            "epic_key": ticket_data.get("epic_link"),
+            "subtask_keys": ticket_data.get("subtasks", []),
+            "is_subtask": ticket_data.get("is_subtask", False),
             # Issue links
-            issue_links=ticket_data.get("issue_links", []),
+            "issue_links": ticket_data.get("issue_links", []),
             # Sprint and planning
-            sprint_name=ticket_data.get("sprint"),
-            story_points=ticket_data.get("story_points"),
+            "sprint_name": ticket_data.get("sprint"),
+            "story_points": ticket_data.get("story_points"),
             # Versions
-            fix_versions=ticket_data.get("fix_versions", []),
-            affects_versions=ticket_data.get("affects_versions", []),
-        )
+            "fix_versions": ticket_data.get("fix_versions", []),
+            "affects_versions": ticket_data.get("affects_versions", []),
+        }
 
         return cls(
             title=f"{ticket_key}: {ticket_data.get('summary') or ticket_key}",
             column_id=column_id,
             description=ticket_data.get("description") or "",
-            jira_metadata=jira_metadata,
+            metadata=metadata,
             is_jira_managed=True,
             auto_sync_enabled=True,
         )
@@ -373,22 +365,20 @@ class Item(BaseModel):
 
         # Add git-specific fields if this is a git-managed item
         if self.is_git_managed:
-            result.update({
-                "is_git_managed": self.is_git_managed,
-                "auto_sync_enabled": self.auto_sync_enabled,
-            })
-
+            result["is_git_managed"] = self.is_git_managed
             if self.git_metadata:
                 result["git_metadata"] = self.git_metadata.to_dict()
 
-        # Add Jira-specific fields if this is a Jira-managed item
-        if self.is_jira_managed:
-            result.update({
-                "is_jira_managed": self.is_jira_managed,
-                "linked_tickets": self.linked_tickets,
-            })
+        # Add integration metadata if present
+        if self.metadata:
+            result["metadata"] = self.metadata
 
-            if self.jira_metadata:
-                result["jira_metadata"] = self.jira_metadata.to_dict()
+        # Add Jira-specific flag if this is a Jira-managed item
+        if self.is_jira_managed:
+            result["is_jira_managed"] = self.is_jira_managed
+
+        # Add auto_sync_enabled if not default
+        if not self.auto_sync_enabled:
+            result["auto_sync_enabled"] = self.auto_sync_enabled
 
         return result
