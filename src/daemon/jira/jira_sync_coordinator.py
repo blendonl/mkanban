@@ -121,20 +121,20 @@ class JiraSyncCoordinator:
             # Convert current items to tickets for comparison
             current_tickets = []
             for item in current_items:
-                if item.jira_metadata:
+                if item.is_jira_managed:
                     # Create a minimal ticket representation from stored metadata
                     ticket_data = {
-                        "key": item.jira_metadata.ticket_key,
-                        "id": item.jira_metadata.ticket_id,
+                        "key": item.metadata.get("ticket_key", ""),
+                        "id": item.metadata.get("ticket_id", ""),
                         "fields": {
                             "summary": item.title.split(": ", 1)[-1] if ": " in item.title else item.title,
                             "description": item.description,
-                            "status": {"name": item.jira_metadata.jira_status},
-                            "issuetype": {"name": item.jira_metadata.issue_type},
-                            "priority": {"name": item.jira_metadata.priority} if item.jira_metadata.priority else None,
-                            "project": {"key": item.jira_metadata.project_key},
+                            "status": {"name": item.metadata.get("jira_status", "")},
+                            "issuetype": {"name": item.metadata.get("issue_type", "")},
+                            "priority": {"name": item.metadata.get("priority")} if item.metadata.get("priority") else None,
+                            "project": {"key": item.metadata.get("project_key", "")},
                         },
-                        "self": f"{jira_client.config.api_url}/rest/api/3/issue/{item.jira_metadata.ticket_id}"
+                        "self": f"{jira_client.config.api_url}/rest/api/3/issue/{item.metadata.get('ticket_id', '')}"
                     }
                     current_tickets.append(JiraTicket(ticket_data))
 
@@ -230,25 +230,25 @@ class JiraSyncCoordinator:
             return
 
         # Update Jira metadata
-        if item.jira_metadata:
-            item.jira_metadata.jira_status = ticket.status
-            item.jira_metadata.priority = ticket.priority
-            item.jira_metadata.assignee = ticket.assignee
-            item.jira_metadata.labels = ticket.labels
-            item.jira_metadata.components = ticket.components
+        if item.is_jira_managed:
+            item.metadata["jira_status"] = ticket.status
+            item.metadata["priority"] = ticket.priority
+            item.metadata["assignee"] = ticket.assignee
+            item.metadata["labels"] = ticket.labels
+            item.metadata["components"] = ticket.components
             # Update hierarchy fields
-            item.jira_metadata.parent_ticket_key = ticket.parent
-            item.jira_metadata.epic_key = ticket.epic_link
-            item.jira_metadata.subtask_keys = ticket.subtasks
-            item.jira_metadata.is_subtask = ticket.is_subtask
-            item.jira_metadata.issue_links = ticket.issue_links
+            item.metadata["parent_ticket_key"] = ticket.parent
+            item.metadata["epic_key"] = ticket.epic_link
+            item.metadata["subtask_keys"] = ticket.subtasks
+            item.metadata["is_subtask"] = ticket.is_subtask
+            item.metadata["issue_links"] = ticket.issue_links
             # Update sprint and planning fields
-            item.jira_metadata.sprint_name = ticket.sprint
-            item.jira_metadata.story_points = ticket.story_points
+            item.metadata["sprint_name"] = ticket.sprint
+            item.metadata["story_points"] = ticket.story_points
             # Update versions
-            item.jira_metadata.fix_versions = ticket.fix_versions
-            item.jira_metadata.affects_versions = ticket.affects_versions
-            item.jira_metadata.last_sync = now()
+            item.metadata["fix_versions"] = ticket.fix_versions
+            item.metadata["affects_versions"] = ticket.affects_versions
+            item.metadata["last_sync"] = now()
 
         # Update item fields
         item.title = f"{ticket.key}: {ticket.summary}"
@@ -272,7 +272,7 @@ class JiraSyncCoordinator:
 
         # Get last update times
         local_updated = item.updated_at
-        if item.jira_metadata and item.jira_metadata.last_sync:
+        if item.is_jira_managed and item.metadata.get("last_sync"):
             pass
         else:
             datetime.fromtimestamp(0, tz=timezone.utc)  # Very old date
@@ -370,8 +370,7 @@ class JiraSyncCoordinator:
         for column in board.columns:
             for item in column.items:
                 if (item.is_jira_managed and
-                    item.jira_metadata and
-                    item.jira_metadata.ticket_key == ticket_key):
+                    item.metadata.get("ticket_key") == ticket_key):
                     return item
         return None
 
@@ -430,8 +429,8 @@ class JiraSyncCoordinator:
             if success:
                 self.logger.info(f"Successfully synced item {ticket_key} to Jira status '{jira_status}'")
                 # Update last sync timestamp
-                if item.jira_metadata:
-                    item.jira_metadata.last_sync = now()
+                if item.is_jira_managed:
+                    item.metadata["last_sync"] = now()
             else:
                 self.logger.warning(f"Failed to sync item {ticket_key} to Jira")
 

@@ -1,6 +1,6 @@
 import re
 from typing import Optional
-from textual.widgets import Static
+from textual.widgets import Static, Label
 from textual.containers import Vertical, Horizontal
 from src.domain.entities.item import Item
 from src.controllers.item_controller import ItemController
@@ -25,14 +25,16 @@ class ItemWidget(Vertical):
     def compose(self):
         """Compose the structured card layout"""
         # Row 1: Icon + Title
-        yield Static(self._get_title_row(), classes="item-title-row")
+        title_label = Label(self._get_title_row(), classes="item-title-row")
+        title_label.shrink = True
+        yield title_label
 
-        # Row 2: Spacer
-        yield Static(" ", classes="item-spacer")
-
-        # Row 3: Labels/Components
-        labels_text = self._get_labels_row()
-        yield Static(labels_text if labels_text else " ", classes="item-labels-row")
+        # # Row 2: Spacer
+        # yield Static(" ", classes="item-spacer")
+        #
+        # # Row 3: Labels/Components
+        # labels_text = self._get_labels_row()
+        # yield Static(labels_text if labels_text else "test ", classes="item-labels-row")
 
         # Row 4: Spacer
         yield Static(" ", classes="item-spacer")
@@ -60,17 +62,17 @@ class ItemWidget(Vertical):
 
     def _get_issue_type_icon(self) -> str:
         """Get the issue type icon"""
-        if not self.item.is_jira_managed or not self.item.jira_metadata:
+        if not self.item.is_jira_managed:
             return ""
 
-        issue_type = self.item.jira_metadata.issue_type.lower()
+        issue_type = (self.item.metadata.get("issue_type", "")).lower()
         if "epic" in issue_type:
             return "📚"
         elif "story" in issue_type:
             return "📖"
         elif "bug" in issue_type:
             return "🐛"
-        elif "subtask" in issue_type or self.item.jira_metadata.is_subtask:
+        elif "subtask" in issue_type or self.item.metadata.get("is_subtask", False):
             return "☑️"
         elif "task" in issue_type:
             return "📋"
@@ -79,18 +81,20 @@ class ItemWidget(Vertical):
 
     def _get_labels_row(self) -> str:
         """Build the labels/components row"""
-        if not self.item.is_jira_managed or not self.item.jira_metadata:
+        if not self.item.is_jira_managed:
             return ""
 
         items = []
 
         # Add components first
-        if self.item.jira_metadata.components:
-            items.extend(self.item.jira_metadata.components)
-
+        components = self.item.metadata.get("components", [])
+        if components:
+            items.extend(components)
         # Add labels if no components
-        elif self.item.jira_metadata.labels:
-            items.extend(self.item.jira_metadata.labels)
+        else:
+            labels = self.item.metadata.get("labels", [])
+            if labels:
+                items.extend(labels)
 
         if items:
             # Join first few items, truncate if too many
@@ -104,19 +108,19 @@ class ItemWidget(Vertical):
 
     def _get_footer_left(self) -> str:
         """Build the footer left side (Ticket ID)"""
-        if self.item.is_jira_managed and self.item.jira_metadata:
-            return self.item.jira_metadata.ticket_key
+        if self.item.is_jira_managed:
+            return self.item.metadata.get("ticket_key", self.item.id)
         return self.item.id
 
     def _get_footer_right(self) -> str:
         """Build the footer right side (Priority + Subtask count)"""
-        if not self.item.is_jira_managed or not self.item.jira_metadata:
+        if not self.item.is_jira_managed:
             return ""
 
         parts = []
 
         # Priority indicator
-        priority = (self.item.jira_metadata.priority or "").lower()
+        priority = (self.item.metadata.get("priority") or "").lower()
         if priority in ["highest", "blocker"]:
             parts.append("🔴")
         elif priority == "high":
@@ -129,8 +133,9 @@ class ItemWidget(Vertical):
             parts.append("🔵")
 
         # Subtask count
-        if self.item.jira_metadata.subtask_keys:
-            count = len(self.item.jira_metadata.subtask_keys)
+        subtask_keys = self.item.metadata.get("subtask_keys", [])
+        if subtask_keys:
+            count = len(subtask_keys)
             parts.append(f"☑️{count}")
 
         return " ".join(parts)
