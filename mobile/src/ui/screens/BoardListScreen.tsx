@@ -1,0 +1,345 @@
+import React, { useEffect, useState, useCallback, useLayoutEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  RefreshControl,
+  Alert,
+  TextInput,
+} from 'react-native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../navigation/AppNavigator';
+import { Board } from '../../domain/entities/Board';
+import { getBoardService } from '../../core/DependencyContainer';
+import EmptyState from '../components/EmptyState';
+
+type BoardListScreenNavigationProp = StackNavigationProp<RootStackParamList, 'BoardList'>;
+
+interface Props {
+  navigation: BoardListScreenNavigationProp;
+}
+
+export default function BoardListScreen({ navigation }: Props) {
+  const [boards, setBoards] = useState<Board[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [newBoardName, setNewBoardName] = useState('');
+  const [newBoardDescription, setNewBoardDescription] = useState('');
+
+  const boardService = getBoardService();
+
+  // Add settings button to header
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={() => navigation.navigate('Settings')}
+          style={{ marginRight: 16 }}
+        >
+          <Text style={{ fontSize: 20, color: '#fff' }}>⚙️</Text>
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation]);
+
+  const loadBoards = useCallback(async () => {
+    try {
+      const allBoards = await boardService.getAllBoards();
+      setBoards(allBoards);
+    } catch (error) {
+      console.error('Failed to load boards:', error);
+      Alert.alert('Error', 'Failed to load boards');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [boardService]);
+
+  useEffect(() => {
+    loadBoards();
+  }, [loadBoards]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    loadBoards();
+  }, [loadBoards]);
+
+  const handleCreateBoard = async () => {
+    if (!newBoardName.trim()) {
+      Alert.alert('Error', 'Board name is required');
+      return;
+    }
+
+    try {
+      const newBoard = await boardService.createBoard(
+        newBoardName.trim(),
+        newBoardDescription.trim() || undefined
+      );
+
+      if (newBoard) {
+        // Add default columns: to-do, in-progress, done
+        await boardService.addColumnToBoard(newBoard, 'to-do');
+        await boardService.addColumnToBoard(newBoard, 'in-progress');
+        await boardService.addColumnToBoard(newBoard, 'done');
+
+        // Save the board with the new columns
+        await boardService.saveBoard(newBoard);
+
+        setShowCreateDialog(false);
+        setNewBoardName('');
+        setNewBoardDescription('');
+        await loadBoards();
+        // Navigate to the new board
+        navigation.navigate('Board', { boardId: newBoard.id });
+      }
+    } catch (error) {
+      console.error('Failed to create board:', error);
+      Alert.alert('Error', 'Failed to create board');
+    }
+  };
+
+  const handleBoardPress = (board: Board) => {
+    navigation.navigate('Board', { boardId: board.id });
+  };
+
+  const getTotalItemCount = (board: Board): number => {
+    return board.columns.reduce((total, column) => total + column.items.length, 0);
+  };
+
+  const renderBoardCard = ({ item: board }: { item: Board }) => (
+    <TouchableOpacity
+      style={styles.boardCard}
+      onPress={() => handleBoardPress(board)}
+      activeOpacity={0.7}
+    >
+      <Text style={styles.boardName}>{board.name}</Text>
+      {board.description && (
+        <Text style={styles.boardDescription} numberOfLines={2}>
+          {board.description}
+        </Text>
+      )}
+      <View style={styles.boardFooter}>
+        <Text style={styles.boardStats}>
+          {board.columns.length} columns • {getTotalItemCount(board)} items
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+
+  if (loading) {
+    return (
+      <View style={styles.centerContainer}>
+        <Text style={styles.loadingText}>Loading boards...</Text>
+      </View>
+    );
+  }
+
+  if (showCreateDialog) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.dialogContainer}>
+          <Text style={styles.dialogTitle}>Create New Board</Text>
+
+          <TextInput
+            style={styles.input}
+            placeholder="Board Name *"
+            value={newBoardName}
+            onChangeText={setNewBoardName}
+            autoFocus
+          />
+
+          <TextInput
+            style={[styles.input, styles.textArea]}
+            placeholder="Description (optional)"
+            value={newBoardDescription}
+            onChangeText={setNewBoardDescription}
+            multiline
+            numberOfLines={4}
+          />
+
+          <View style={styles.dialogButtons}>
+            <TouchableOpacity
+              style={[styles.dialogButton, styles.cancelButton]}
+              onPress={() => {
+                setShowCreateDialog(false);
+                setNewBoardName('');
+                setNewBoardDescription('');
+              }}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.dialogButton, styles.createButton]}
+              onPress={handleCreateBoard}
+            >
+              <Text style={styles.createButtonText}>Create</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      {boards.length === 0 ? (
+        <EmptyState
+          title="No Boards Yet"
+          message="Create your first board to start organizing your tasks"
+          actionLabel="Create Board"
+          onAction={() => setShowCreateDialog(true)}
+        />
+      ) : (
+        <FlatList
+          data={boards}
+          renderItem={renderBoardCard}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        />
+      )}
+
+      {/* Floating Action Button */}
+      {boards.length > 0 && (
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => setShowCreateDialog(true)}
+        >
+          <Text style={styles.fabText}>+</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f9fafb',
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f9fafb',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#6b7280',
+  },
+  listContent: {
+    padding: 16,
+  },
+  boardCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  boardName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    marginBottom: 4,
+  },
+  boardDescription: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginBottom: 12,
+    lineHeight: 20,
+  },
+  boardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  boardStats: {
+    fontSize: 12,
+    color: '#9ca3af',
+  },
+  fab: {
+    position: 'absolute',
+    right: 24,
+    bottom: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#2563eb',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 8,
+  },
+  fabText: {
+    color: '#fff',
+    fontSize: 32,
+    fontWeight: '300',
+  },
+  dialogContainer: {
+    flex: 1,
+    padding: 24,
+    backgroundColor: '#fff',
+  },
+  dialogTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    marginBottom: 24,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    marginBottom: 16,
+    backgroundColor: '#fff',
+  },
+  textArea: {
+    height: 100,
+    textAlignVertical: 'top',
+  },
+  dialogButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 24,
+  },
+  dialogButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginLeft: 12,
+  },
+  cancelButton: {
+    backgroundColor: '#e5e7eb',
+  },
+  cancelButtonText: {
+    color: '#374151',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  createButton: {
+    backgroundColor: '#2563eb',
+  },
+  createButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+});

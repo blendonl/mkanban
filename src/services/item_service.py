@@ -8,6 +8,7 @@ from src.domain.repositories.storage_repository import StorageRepository
 from src.services.validation_service import ValidationService
 from src.utils.logger_factory import ContextAwareLogger
 from src.utils.string_utils import generate_manual_item_id, get_board_prefix
+from src.config.configuration_manager import ConfigurationManager
 
 
 class ItemService:
@@ -15,11 +16,13 @@ class ItemService:
         self,
         storage_repository: StorageRepository,
         validation_service: ValidationService,
-        logger: ContextAwareLogger
+        logger: ContextAwareLogger,
+        config_manager: ConfigurationManager
     ):
         self._storage = storage_repository
         self._validator = validation_service
         self._logger = logger
+        self._config = config_manager
 
     def create_item(
         self,
@@ -53,6 +56,9 @@ class ItemService:
         item = column.add_item(title, parent_id, item_id)
         if description:
             item.description = description
+
+        # Set default issue type for manually created items
+        item.metadata["issue_type"] = self._config.config.default_issue_type
 
         self._logger.info("Successfully created item", board=board.name, column=column.name, item=title, item_id=item_id)
         return item

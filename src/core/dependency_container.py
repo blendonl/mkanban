@@ -120,6 +120,7 @@ class DependencyContainer:
             self.get(MarkdownStorageRepository),
             self.get(ValidationService),
             self.get(LoggerFactory).get_daemon_logger("item_service"),
+            self.get(ConfigurationManager),
         )
         self._factories[BranchService] = lambda: BranchService(
             self.get(LoggerFactory).get_daemon_logger("branch_service"),

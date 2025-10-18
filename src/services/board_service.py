@@ -51,8 +51,14 @@ class BoardService:
             raise ValidationError("Board with name '{name}' already exists")
 
         board = Board(name=name, description=description)
+
+        # Add default columns
+        board.add_column("to-do", 0)
+        board.add_column("in-progress", 1)
+        board.add_column("done", 2)
+
         self._repository.save_board(board)
-        self._logger.info("Successfully created board", board=name)
+        self._logger.info("Successfully created board with default columns", board=name)
         return board
 
     def save_board(self, board: Board) -> None:

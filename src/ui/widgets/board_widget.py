@@ -1,7 +1,7 @@
 from typing import Optional
 from pathlib import Path
 import subprocess
-from textual.containers import Horizontal, Vertical
+from textual.containers import HorizontalScroll, Vertical
 from textual.widget import Widget
 from textual.reactive import reactive
 from src.core.exceptions import ValidationError
@@ -122,7 +122,7 @@ class BoardWidget(Widget):
         if not self.board:
             return
 
-        columns_container = Horizontal()
+        columns_container = HorizontalScroll()
         self.mount(columns_container)
 
         for column in sorted(self.board.columns, key=lambda c: (c.position, c.name)):

@@ -26,6 +26,7 @@ class UnifiedConfiguration:
     default_parent_view: bool = False
     column_width: int = DEFAULT_COLUMN_WIDTH
     editor: str = "nvim"
+    default_issue_type: str = "Task"
     shortcuts: Dict[str, str] = field(default_factory=lambda: VIM_KEYBINDINGS.copy())
     daemon: DaemonConfiguration = field(default_factory=DaemonConfiguration)
     logging: LoggingConfiguration = field(default_factory=LoggingConfiguration)

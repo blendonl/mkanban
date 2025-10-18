@@ -27,9 +27,16 @@ Markdown:focus {
 
 BoardView {
   height: auto;
-  width: auto;
+  width: 100%;
   margin: 1;
   background: #000000;
+}
+
+HorizontalScroll {
+  width: 100%;
+  height: 100%;
+  background: #000000;
+  scrollbar-size: 0 0;
 }
 
 .column {
@@ -44,11 +51,13 @@ BoardView {
 }
 
 .item {
+  box-sizing: content-box;
   margin: 0;
-  padding: 1;
+  padding: 0 1 0 1;
   margin-bottom: 1;
   color: #cdd6f4;
   background: #111111;
+  width: 100%;
   height: auto;
 }
 
@@ -69,19 +78,19 @@ BoardView {
 }
 
 .item-spacer {
-  height: auto;
+  height: 1;
   width: 100%;
-  padding: 0;
+  padding: 1;
   margin: 0;
 }
 
 /* Title row styling */
 .item-title-row {
-  text-style: bold;
   color: #a6adc8;
   width: 100%;
   height: auto;
   min-height: 1;
+  text-wrap: wrap;
 }
 
 /* Labels row styling */
@@ -98,6 +107,7 @@ BoardView {
   width: 100%;
   height: auto;
   min-height: 1;
+  margin-bottom: 1;
   layout: horizontal;
 }
 
@@ -105,7 +115,6 @@ BoardView {
   width: 1fr;
   text-align: left;
   color: #89b4fa;
-  text-style: bold;
   height: auto;
   min-height: 1;
 }

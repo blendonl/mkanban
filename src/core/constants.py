@@ -2,34 +2,23 @@ from pathlib import (
     Path,
 )
 
-DEFAULT_CONFIG_DIR = (
-    Path.home()
-    / ".config"
-    / "mkanban"
-)
-DEFAULT_BOARDS_PATH = (
-    Path.home()
-    / ".mkanban"
-    / "boards"
-)
-DEFAULT_CONFIG_FILE = (
-    DEFAULT_CONFIG_DIR
-    / "config.json"
-)
+DEFAULT_CONFIG_DIR = Path.home() / ".config" / "mkanban"
+DEFAULT_BOARDS_PATH = Path.home() / ".mkanban" / "boards"
+DEFAULT_CONFIG_FILE = DEFAULT_CONFIG_DIR / "config.json"
 
 BOARD_FILENAME = "kanban.md"
 COLUMN_METADATA_FILENAME = "column.md"
 ITEMS_DIR_NAME = "items"
 
-DEFAULT_COLUMN_WIDTH = 30
+DEFAULT_COLUMN_WIDTH = 100
 DEFAULT_AUTO_SAVE_INTERVAL = 30
 DEFAULT_BACKUP_COUNT = 5
 
 # UI Layout Constants
-BOARD_WIDGET_DEFAULT_COLUMN_WIDTH = 27
-BOARD_WIDGET_MIN_COLUMN_WIDTH = 20
-BOARD_WIDGET_MAX_COLUMN_WIDTH = 50
-BOARD_WIDGET_COMPACT_MIN_WIDTH = 18
+BOARD_WIDGET_DEFAULT_COLUMN_WIDTH = 70
+BOARD_WIDGET_MIN_COLUMN_WIDTH = 40
+BOARD_WIDGET_MAX_COLUMN_WIDTH = 120
+BOARD_WIDGET_COMPACT_MIN_WIDTH = 180
 
 # System Timeout Constants (in seconds)
 TMUX_COMMAND_TIMEOUT = 5

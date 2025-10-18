@@ -7,15 +7,15 @@ url="https://github.com/blendonl/mkanban"
 license=('MIT')
 depends=('python' 'python-textual' 'python-pydantic' 'python-frontmatter' 'python-click' 'python-linkify-it-py' 'python-aiohttp' 'python-dotenv')
 makedepends=('python-build' 'python-installer' 'python-wheel')
-source=("$pkgname-$pkgver::file://${PWD}")
-sha256sums=('SKIP')
+source=()
+sha256sums=()
 
 build() {
-    cd "$pkgname-$pkgver"
+    cd "$startdir"
     python -m build --wheel --no-isolation
 }
 
 package() {
-    cd "$pkgname-$pkgver"
+    cd "$startdir"
     python -m installer --destdir="$pkgdir" dist/*.whl
 }

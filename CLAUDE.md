@@ -350,6 +350,7 @@ mkanban list | rofi -dmenu | mkanban checkout --board my-project
 - `show_parent_colors`: Enable parent-based color coding (default: true)
 - `default_parent_view`: Start with parent grouping enabled (default: false)
 - `column_width`: Default column width (default: 30)
+- `default_issue_type`: Default issue type for manually created items (default: "Task"). Options include "Task", "Story", "Bug", "Epic". This affects the icon displayed for the item (📋 Task, 📖 Story, 🐛 Bug, 📚 Epic). Does not apply to JIRA-managed or Git-managed items.
 
 **Editor Integration:**
 
