@@ -5,6 +5,7 @@ import { Item } from '../../domain/entities/Item';
 import { Parent } from '../../domain/entities/Parent';
 import ItemCard from './ItemCard';
 import ParentGroup from './ParentGroup';
+import theme from '../theme/colors';
 
 // Type for grouped items with parent
 interface GroupedItemsData {
@@ -172,7 +173,7 @@ export default ColumnCard;
 const styles = StyleSheet.create({
   container: {
     width: 280,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: theme.background.secondary,
     borderRadius: 12,
     marginHorizontal: 8,
     padding: 12,
@@ -185,16 +186,16 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingBottom: 8,
     borderBottomWidth: 2,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: theme.border.primary,
   },
   title: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: theme.text.primary,
     flex: 1,
   },
   badge: {
-    backgroundColor: '#2563eb',
+    backgroundColor: theme.badge.background,
     borderRadius: 12,
     paddingHorizontal: 8,
     paddingVertical: 2,
@@ -202,7 +203,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   badgeText: {
-    color: '#fff',
+    color: theme.badge.text,
     fontSize: 12,
     fontWeight: '600',
   },
@@ -218,22 +219,22 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    color: '#9ca3af',
+    color: theme.text.muted,
     fontStyle: 'italic',
   },
   addButton: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.card.background,
     borderRadius: 8,
     padding: 12,
     alignItems: 'center',
     marginTop: 4,
     marginBottom: 4,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: theme.border.primary,
     borderStyle: 'dashed',
   },
   addButtonText: {
-    color: '#2563eb',
+    color: theme.accent.primary,
     fontSize: 14,
     fontWeight: '600',
   },

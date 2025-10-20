@@ -9,16 +9,56 @@ import { getSafeFilename } from "../../utils/stringUtils";
 
 export class FileSystemManager {
   private baseDirectory: string;
+  private customBoardsDirectory?: string;
 
-  constructor(baseDirectory?: string) {
+  constructor(baseDirectory?: string, customBoardsDirectory?: string) {
     // Use expo's document directory as base, or custom directory for testing
     this.baseDirectory = baseDirectory || Paths.document.uri;
+    this.customBoardsDirectory = customBoardsDirectory;
   }
 
   /**
    * Get the boards root directory path
+   * Returns custom path if set, otherwise returns default
    */
   getBoardsDirectory(): string {
+    if (this.customBoardsDirectory) {
+      return this.customBoardsDirectory;
+    }
+    return `${this.baseDirectory}boards/`;
+  }
+
+  /**
+   * Set a custom boards directory
+   * @param path The custom directory path (must be absolute and end with /)
+   */
+  setBoardsDirectory(path: string): void {
+    // Validate path
+    if (!path || typeof path !== 'string') {
+      throw new Error('Boards directory path cannot be empty');
+    }
+    // Ensure path ends with /
+    this.customBoardsDirectory = path.endsWith('/') ? path : `${path}/`;
+  }
+
+  /**
+   * Reset to default boards directory
+   */
+  resetToDefaultBoardsDirectory(): void {
+    this.customBoardsDirectory = undefined;
+  }
+
+  /**
+   * Check if using a custom boards directory
+   */
+  isUsingCustomBoardsDirectory(): boolean {
+    return !!this.customBoardsDirectory;
+  }
+
+  /**
+   * Get the default boards directory (without custom override)
+   */
+  getDefaultBoardsDirectory(): string {
     return `${this.baseDirectory}boards/`;
   }
 
@@ -220,6 +260,172 @@ export class FileSystemManager {
       return dir.exists;
     } catch (error) {
       return false;
+    }
+  }
+
+  /**
+   * Check if a directory is writable
+   * Attempts to create a test file to verify write permissions
+   */
+  async isDirectoryWritable(path: string): Promise<boolean> {
+    try {
+      // Ensure directory exists first
+      await this.ensureDirectoryExists(path);
+
+      // Try to write a test file INSIDE the directory (not as a sibling)
+      const dir = new Directory(path);
+      const testFileName = `.write-test-${Date.now()}`;
+      const testFile = new File(dir, testFileName);
+      testFile.write('test', { encoding: 'utf8' });
+
+      // Clean up test file
+      if (testFile.exists) {
+        testFile.delete();
+      }
+
+      return true;
+    } catch (error) {
+      console.error(`Directory ${path} is not writable:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * List all boards in a given directory
+   * A board is identified by the presence of a kanban.md file
+   */
+  async listBoards(boardsDirectory: string): Promise<string[]> {
+    try {
+      const dir = new Directory(boardsDirectory);
+      if (!dir.exists) {
+        return [];
+      }
+
+      const subdirs = await this.listDirectories(boardsDirectory);
+      const boards: string[] = [];
+
+      for (const subdirPath of subdirs) {
+        const kanbanFilePath = `${subdirPath}kanban.md`;
+        const kanbanFile = new File(kanbanFilePath);
+        if (kanbanFile.exists) {
+          // Extract board name from path
+          const boardName = subdirPath.split('/').filter(p => p).pop() || '';
+          boards.push(boardName);
+        }
+      }
+
+      return boards;
+    } catch (error) {
+      console.error(`Failed to list boards in ${boardsDirectory}:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Check if a directory has any boards
+   */
+  async hasBoards(boardsDirectory: string): Promise<boolean> {
+    const boards = await this.listBoards(boardsDirectory);
+    return boards.length > 0;
+  }
+
+  /**
+   * Copy a file from source to destination
+   */
+  async copyFile(sourcePath: string, destPath: string): Promise<boolean> {
+    try {
+      const sourceFile = new File(sourcePath);
+      if (!sourceFile.exists) {
+        console.error(`Source file does not exist: ${sourcePath}`);
+        return false;
+      }
+
+      // Ensure destination parent directory exists
+      const destParent = this.getParentDirectory(destPath);
+      await this.ensureDirectoryExists(destParent);
+
+      // Read and write file
+      const content = await sourceFile.text();
+      const destFile = new File(destPath);
+      destFile.write(content, { encoding: 'utf8' });
+
+      return true;
+    } catch (error) {
+      console.error(`Failed to copy file from ${sourcePath} to ${destPath}:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Recursively copy a directory and all its contents
+   * @param sourcePath Source directory path
+   * @param destPath Destination directory path
+   * @param onProgress Optional callback for progress updates (current, total)
+   */
+  async copyDirectory(
+    sourcePath: string,
+    destPath: string,
+    onProgress?: (current: number, total: number) => void
+  ): Promise<{ success: boolean; copiedFiles: number; errors: string[] }> {
+    const errors: string[] = [];
+    let copiedFiles = 0;
+
+    try {
+      const sourceDir = new Directory(sourcePath);
+      if (!sourceDir.exists) {
+        errors.push(`Source directory does not exist: ${sourcePath}`);
+        return { success: false, copiedFiles: 0, errors };
+      }
+
+      // Create destination directory
+      await this.ensureDirectoryExists(destPath);
+
+      // Get all items in source directory
+      const items = sourceDir.list();
+      const totalItems = items.length;
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const itemName = item.uri.split('/').pop() || '';
+        const destItemPath = `${destPath}${itemName}`;
+
+        try {
+          if (item instanceof File) {
+            // Copy file
+            const success = await this.copyFile(item.uri, destItemPath);
+            if (success) {
+              copiedFiles++;
+            } else {
+              errors.push(`Failed to copy file: ${item.uri}`);
+            }
+          } else if (item instanceof Directory) {
+            // Recursively copy subdirectory
+            const subResult = await this.copyDirectory(
+              `${item.uri}/`,
+              `${destItemPath}/`,
+              onProgress
+            );
+            copiedFiles += subResult.copiedFiles;
+            errors.push(...subResult.errors);
+          }
+        } catch (error) {
+          errors.push(`Error copying ${item.uri}: ${error}`);
+        }
+
+        // Report progress
+        if (onProgress) {
+          onProgress(i + 1, totalItems);
+        }
+      }
+
+      return {
+        success: errors.length === 0,
+        copiedFiles,
+        errors
+      };
+    } catch (error) {
+      errors.push(`Failed to copy directory: ${error}`);
+      return { success: false, copiedFiles, errors };
     }
   }
 

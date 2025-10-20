@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Parent } from '../../domain/entities';
 import ParentBadge from './ParentBadge';
+import theme from '../theme/colors';
 
 interface ParentManagementModalProps {
   visible: boolean;
@@ -106,12 +107,12 @@ export default function ParentManagementModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: theme.modal.overlay,
     justifyContent: 'center',
     alignItems: 'center',
   },
   modal: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.modal.background,
     borderRadius: 12,
     width: '90%',
     maxHeight: '80%',
@@ -123,19 +124,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: theme.border.primary,
   },
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: theme.text.primary,
   },
   closeButton: {
     padding: 4,
   },
   closeButtonText: {
     fontSize: 24,
-    color: '#6b7280',
+    color: theme.text.secondary,
   },
   content: {
     padding: 16,
@@ -148,12 +149,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#6b7280',
+    color: theme.text.secondary,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#9ca3af',
+    color: theme.text.tertiary,
   },
   parentItem: {
     flexDirection: 'row',
@@ -161,7 +162,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 12,
     borderRadius: 8,
-    backgroundColor: '#f9fafb',
+    backgroundColor: theme.background.elevated,
     marginBottom: 8,
   },
   parentInfo: {
@@ -175,34 +176,34 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
-    backgroundColor: '#3b82f6',
+    backgroundColor: theme.button.primary.background,
   },
   editButtonText: {
-    color: '#fff',
+    color: theme.button.primary.text,
     fontSize: 14,
     fontWeight: '600',
   },
   deleteButton: {
-    backgroundColor: '#ef4444',
+    backgroundColor: theme.button.danger.background,
   },
   deleteButtonText: {
-    color: '#fff',
+    color: theme.button.danger.text,
     fontSize: 14,
     fontWeight: '600',
   },
   footer: {
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
+    borderTopColor: theme.border.primary,
   },
   createButton: {
-    backgroundColor: '#10b981',
+    backgroundColor: theme.button.success.background,
     padding: 14,
     borderRadius: 8,
     alignItems: 'center',
   },
   createButtonText: {
-    color: '#fff',
+    color: theme.button.success.text,
     fontSize: 16,
     fontWeight: '600',
   },

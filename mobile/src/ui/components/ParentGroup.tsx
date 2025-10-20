@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Item, Parent } from '../../domain/entities';
 import ItemCard from './ItemCard';
 import ParentBadge from './ParentBadge';
+import theme from '../theme/colors';
 
 interface ParentGroupProps {
   parent: Parent | null;
@@ -57,19 +58,19 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     paddingBottom: 6,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: theme.border.primary,
   },
   ungroupedLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6b7280',
+    color: theme.text.secondary,
     fontStyle: 'italic',
   },
   count: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#9ca3af',
-    backgroundColor: '#f3f4f6',
+    color: theme.text.tertiary,
+    backgroundColor: theme.background.elevated,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,

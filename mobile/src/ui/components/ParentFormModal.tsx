@@ -12,6 +12,7 @@ import {
 import { Parent } from '../../domain/entities';
 import { ParentColor } from '../../core/enums';
 import ColorPicker from './ColorPicker';
+import theme from '../theme/colors';
 
 interface ParentFormModalProps {
   visible: boolean;
@@ -97,7 +98,7 @@ export default function ParentFormModal({
                 value={name}
                 onChangeText={setName}
                 placeholder="e.g., Feature X, Project Alpha"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor={theme.input.placeholder}
                 autoFocus={!isEditing}
                 maxLength={100}
               />
@@ -133,12 +134,12 @@ export default function ParentFormModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: theme.modal.overlay,
     justifyContent: 'center',
     alignItems: 'center',
   },
   modal: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.modal.background,
     borderRadius: 12,
     width: '90%',
     maxHeight: '80%',
@@ -150,19 +151,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: theme.border.primary,
   },
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: theme.text.primary,
   },
   closeButton: {
     padding: 4,
   },
   closeButtonText: {
     fontSize: 24,
-    color: '#6b7280',
+    color: theme.text.secondary,
   },
   content: {
     padding: 16,
@@ -174,22 +175,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 8,
-    color: '#1f2937',
+    color: theme.text.primary,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: theme.input.border,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    color: '#1f2937',
+    color: theme.input.text,
+    backgroundColor: theme.input.background,
   },
   footer: {
     flexDirection: 'row',
     padding: 16,
     gap: 12,
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
+    borderTopColor: theme.border.primary,
   },
   button: {
     flex: 1,
@@ -198,18 +200,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cancelButton: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: theme.button.secondary.background,
   },
   cancelButtonText: {
-    color: '#374151',
+    color: theme.button.secondary.text,
     fontSize: 16,
     fontWeight: '600',
   },
   saveButton: {
-    backgroundColor: '#3b82f6',
+    backgroundColor: theme.button.primary.background,
   },
   saveButtonText: {
-    color: '#fff',
+    color: theme.button.primary.text,
     fontSize: 16,
     fontWeight: '600',
   },

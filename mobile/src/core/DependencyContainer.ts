@@ -11,6 +11,7 @@ import { ValidationService } from '../services/ValidationService';
 import { BoardService } from '../services/BoardService';
 import { ItemService } from '../services/ItemService';
 import { FileWatcher } from '../infrastructure/daemon/FileWatcher';
+import { StorageConfig } from './StorageConfig';
 
 type Factory<T> = () => T;
 
@@ -32,8 +33,30 @@ export class DependencyContainer {
    * Set up default factories for all services
    */
   private _setupDefaultFactories(): void {
-    // File system manager (foundation)
-    this.factories.set(FileSystemManager, () => new FileSystemManager());
+    // File system manager (foundation) - created first without StorageConfig
+    this.factories.set(FileSystemManager, () => {
+      return new FileSystemManager();
+    });
+
+    // Storage config with FileSystemManager dependency
+    this.factories.set(StorageConfig, () => {
+      const fsManager = this.get(FileSystemManager);
+      const storageConfig = new StorageConfig(undefined, fsManager);
+
+      // Asynchronously load and apply custom boards directory to FileSystemManager
+      // This is a workaround since factory can't be async
+      storageConfig.getBoardsDirectory().then((boardsDir) => {
+        const defaultDir = fsManager.getDefaultBoardsDirectory();
+        if (boardsDir !== defaultDir) {
+          fsManager.setBoardsDirectory(boardsDir);
+          console.log('Custom boards directory loaded:', boardsDir);
+        }
+      }).catch((error) => {
+        console.error('Failed to load custom boards directory:', error);
+      });
+
+      return storageConfig;
+    });
 
     // Repository factories with FileSystemManager dependency
     this.factories.set(
@@ -197,4 +220,18 @@ export function getStorageRepository(): MarkdownStorageRepository {
  */
 export function getFileWatcher(): FileWatcher {
   return getContainer().get(FileWatcher);
+}
+
+/**
+ * Get the storage config
+ */
+export function getStorageConfig(): StorageConfig {
+  return getContainer().get(StorageConfig);
+}
+
+/**
+ * Get the file system manager
+ */
+export function getFileSystemManager(): FileSystemManager {
+  return getContainer().get(FileSystemManager);
 }

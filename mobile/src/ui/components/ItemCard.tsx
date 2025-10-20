@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Item } from '../../domain/entities/Item';
 import { Parent } from '../../domain/entities/Parent';
 import ParentBadge from './ParentBadge';
+import theme from '../theme/colors';
 
 interface ItemCardProps {
   item: Item;
@@ -69,13 +70,13 @@ export default ItemCard;
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.card.background,
     borderRadius: 8,
     padding: 12,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    shadowColor: '#000',
+    borderColor: theme.card.border,
+    shadowColor: theme.card.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
@@ -95,7 +96,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontWeight: '600',
-    color: '#1f2937',
+    color: theme.text.primary,
     lineHeight: 20,
   },
   parentContainer: {
@@ -103,13 +104,13 @@ const styles = StyleSheet.create({
   },
   description: {
     fontSize: 12,
-    color: '#6b7280',
+    color: theme.text.secondary,
     lineHeight: 18,
     marginBottom: 6,
   },
   itemId: {
     fontSize: 10,
-    color: '#9ca3af',
+    color: theme.text.tertiary,
     fontWeight: '500',
   },
 });

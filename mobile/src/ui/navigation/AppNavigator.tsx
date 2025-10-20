@@ -7,6 +7,7 @@ import BoardListScreen from '../screens/BoardListScreen';
 import BoardScreen from '../screens/BoardScreen';
 import ItemDetailScreen from '../screens/ItemDetailScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import theme from '../theme/colors';
 
 // Define navigation types
 // Note: Pass only IDs, not full objects, to avoid serialization warnings
@@ -26,9 +27,9 @@ export default function AppNavigator() {
         initialRouteName="BoardList"
         screenOptions={{
           headerStyle: {
-            backgroundColor: '#2563eb',
+            backgroundColor: theme.header.background,
           },
-          headerTintColor: '#fff',
+          headerTintColor: theme.header.text,
           headerTitleStyle: {
             fontWeight: 'bold',
           },

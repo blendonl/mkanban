@@ -18,6 +18,7 @@ import { Parent } from '../../domain/entities/Parent';
 import { IssueType } from '../../core/enums';
 import { getItemService, getBoardService } from '../../core/DependencyContainer';
 import ParentBadge from '../components/ParentBadge';
+import theme from '../theme/colors';
 
 type ItemDetailScreenNavigationProp = StackNavigationProp<RootStackParamList, 'ItemDetail'>;
 type ItemDetailScreenRouteProp = RouteProp<RootStackParamList, 'ItemDetail'>;
@@ -461,7 +462,7 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: theme.background.secondary,
   },
   centerContainer: {
     justifyContent: 'center',
@@ -469,7 +470,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    color: '#6b7280',
+    color: theme.text.secondary,
   },
   content: {
     padding: 16,
@@ -480,24 +481,26 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: theme.text.primary,
     marginBottom: 8,
   },
   titleInput: {
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: theme.input.border,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    backgroundColor: '#fff',
+    backgroundColor: theme.input.background,
+    color: theme.input.text,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: theme.input.border,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    backgroundColor: '#fff',
+    backgroundColor: theme.input.background,
+    color: theme.input.text,
   },
   textArea: {
     height: 120,
@@ -505,32 +508,32 @@ const styles = StyleSheet.create({
   },
   parentSelector: {
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: theme.input.border,
     borderRadius: 8,
     padding: 12,
-    backgroundColor: '#fff',
+    backgroundColor: theme.input.background,
   },
   parentPlaceholder: {
     fontSize: 16,
-    color: '#9ca3af',
+    color: theme.input.placeholder,
   },
   infoSection: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 24,
     padding: 12,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: theme.background.elevated,
     borderRadius: 8,
   },
   infoLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6b7280',
+    color: theme.text.secondary,
     marginRight: 8,
   },
   infoValue: {
     fontSize: 14,
-    color: '#1f2937',
+    color: theme.text.primary,
   },
   buttonContainer: {
     marginTop: 8,
@@ -542,18 +545,18 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   saveButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: theme.button.primary.background,
   },
   saveButtonText: {
-    color: '#fff',
+    color: theme.button.primary.text,
     fontSize: 16,
     fontWeight: '600',
   },
   deleteButton: {
-    backgroundColor: '#ef4444',
+    backgroundColor: theme.button.danger.background,
   },
   deleteButtonText: {
-    color: '#fff',
+    color: theme.button.danger.text,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -563,16 +566,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: theme.border.primary,
   },
   pickerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: theme.text.primary,
   },
   pickerClose: {
     fontSize: 16,
-    color: '#2563eb',
+    color: theme.accent.primary,
     fontWeight: '600',
   },
   parentOption: {
@@ -581,15 +584,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: theme.border.primary,
   },
   parentOptionText: {
     fontSize: 16,
-    color: '#6b7280',
+    color: theme.text.secondary,
   },
   checkmark: {
     fontSize: 20,
-    color: '#2563eb',
+    color: theme.accent.primary,
     fontWeight: 'bold',
   },
   labelRow: {
@@ -601,20 +604,20 @@ const styles = StyleSheet.create({
   previewToggle: {
     paddingHorizontal: 12,
     paddingVertical: 4,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: theme.background.elevated,
     borderRadius: 6,
   },
   previewToggleText: {
     fontSize: 12,
-    color: '#374151',
+    color: theme.text.primary,
     fontWeight: '600',
   },
   preview: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: theme.background.elevated,
   },
   previewText: {
     fontSize: 14,
-    color: '#1f2937',
+    color: theme.text.primary,
     lineHeight: 20,
   },
   issueTypeDisplay: {
@@ -631,14 +634,14 @@ const styles = StyleSheet.create({
   },
   issueTypeText: {
     fontSize: 16,
-    color: '#1f2937',
+    color: theme.text.primary,
   },
   metadataContainer: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: theme.background.elevated,
     borderRadius: 8,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: theme.border.primary,
   },
   metadataRow: {
     flexDirection: 'row',
@@ -647,11 +650,11 @@ const styles = StyleSheet.create({
   },
   metadataLabel: {
     fontSize: 13,
-    color: '#6b7280',
+    color: theme.text.secondary,
     fontWeight: '500',
   },
   metadataValue: {
     fontSize: 13,
-    color: '#1f2937',
+    color: theme.text.primary,
   },
 });

@@ -22,6 +22,7 @@ import ParentFormModal from '../components/ParentFormModal';
 import { Parent } from '../../domain/entities/Parent';
 import { ParentColor } from '../../core/enums';
 import { generateIdFromName, now } from '../../utils';
+import theme from '../theme/colors';
 
 type BoardScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Board'>;
 type BoardScreenRouteProp = RouteProp<RootStackParamList, 'Board'>;
@@ -335,7 +336,7 @@ export default function BoardScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9fafb',
+    backgroundColor: theme.background.primary,
   },
   centerContainer: {
     flex: 1,
@@ -344,17 +345,17 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    color: '#6b7280',
+    color: theme.text.secondary,
   },
   descriptionContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.background.elevated,
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: theme.border.primary,
   },
   description: {
     fontSize: 14,
-    color: '#6b7280',
+    color: theme.text.secondary,
     lineHeight: 20,
   },
   columnsContainer: {
@@ -369,7 +370,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   headerButtonText: {
-    color: '#fff',
+    color: theme.header.text,
     fontSize: 14,
     fontWeight: '600',
   },

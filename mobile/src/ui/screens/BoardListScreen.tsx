@@ -14,6 +14,7 @@ import { RootStackParamList } from '../navigation/AppNavigator';
 import { Board } from '../../domain/entities/Board';
 import { getBoardService } from '../../core/DependencyContainer';
 import EmptyState from '../components/EmptyState';
+import theme from '../theme/colors';
 
 type BoardListScreenNavigationProp = StackNavigationProp<RootStackParamList, 'BoardList'>;
 
@@ -39,7 +40,7 @@ export default function BoardListScreen({ navigation }: Props) {
           onPress={() => navigation.navigate('Settings')}
           style={{ marginRight: 16 }}
         >
-          <Text style={{ fontSize: 20, color: '#fff' }}>⚙️</Text>
+          <Text style={{ fontSize: 20, color: theme.header.text }}>⚙️</Text>
         </TouchableOpacity>
       ),
     });
@@ -221,29 +222,29 @@ export default function BoardListScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9fafb',
+    backgroundColor: theme.background.primary,
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f9fafb',
+    backgroundColor: theme.background.primary,
   },
   loadingText: {
     fontSize: 16,
-    color: '#6b7280',
+    color: theme.text.secondary,
   },
   listContent: {
     padding: 16,
   },
   boardCard: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.card.background,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    shadowColor: '#000',
+    borderColor: theme.card.border,
+    shadowColor: theme.card.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -252,12 +253,12 @@ const styles = StyleSheet.create({
   boardName: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: theme.text.primary,
     marginBottom: 4,
   },
   boardDescription: {
     fontSize: 14,
-    color: '#6b7280',
+    color: theme.text.secondary,
     marginBottom: 12,
     lineHeight: 20,
   },
@@ -268,7 +269,7 @@ const styles = StyleSheet.create({
   },
   boardStats: {
     fontSize: 12,
-    color: '#9ca3af',
+    color: theme.text.tertiary,
   },
   fab: {
     position: 'absolute',
@@ -277,39 +278,40 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#2563eb',
+    backgroundColor: theme.accent.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: theme.card.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 8,
   },
   fabText: {
-    color: '#fff',
+    color: theme.button.primary.text,
     fontSize: 32,
     fontWeight: '300',
   },
   dialogContainer: {
     flex: 1,
     padding: 24,
-    backgroundColor: '#fff',
+    backgroundColor: theme.modal.background,
   },
   dialogTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: theme.text.primary,
     marginBottom: 24,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: theme.input.border,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
     marginBottom: 16,
-    backgroundColor: '#fff',
+    backgroundColor: theme.input.background,
+    color: theme.input.text,
   },
   textArea: {
     height: 100,
@@ -327,18 +329,18 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   cancelButton: {
-    backgroundColor: '#e5e7eb',
+    backgroundColor: theme.button.secondary.background,
   },
   cancelButtonText: {
-    color: '#374151',
+    color: theme.button.secondary.text,
     fontSize: 16,
     fontWeight: '600',
   },
   createButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: theme.button.primary.background,
   },
   createButtonText: {
-    color: '#fff',
+    color: theme.button.primary.text,
     fontSize: 16,
     fontWeight: '600',
   },

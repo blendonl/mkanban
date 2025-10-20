@@ -7,7 +7,7 @@ export default function App() {
   return (
     <ErrorBoundary>
       <AppNavigator />
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
     </ErrorBoundary>
   );
 }

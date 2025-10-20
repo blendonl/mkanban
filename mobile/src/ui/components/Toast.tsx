@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   Dimensions,
 } from 'react-native';
+import theme from '../theme/colors';
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
@@ -89,14 +90,14 @@ export default function Toast({
   const getBackgroundColor = (): string => {
     switch (type) {
       case 'success':
-        return '#10b981';
+        return theme.accent.success;
       case 'error':
-        return '#ef4444';
+        return theme.accent.error;
       case 'warning':
-        return '#f59e0b';
+        return theme.accent.warning;
       case 'info':
       default:
-        return '#3b82f6';
+        return theme.accent.info;
     }
   };
 
@@ -151,7 +152,7 @@ const styles = StyleSheet.create({
     right: 16,
     maxWidth: width - 32,
     borderRadius: 12,
-    shadowColor: '#000',
+    shadowColor: theme.card.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -173,13 +174,13 @@ const styles = StyleSheet.create({
   },
   icon: {
     fontSize: 16,
-    color: '#fff',
+    color: theme.background.primary,
     fontWeight: 'bold',
   },
   message: {
     flex: 1,
     fontSize: 15,
-    color: '#fff',
+    color: theme.background.primary,
     fontWeight: '500',
     lineHeight: 20,
   },

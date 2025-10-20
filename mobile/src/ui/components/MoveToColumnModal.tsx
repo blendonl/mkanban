@@ -8,6 +8,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { Column } from '../../domain/entities/Column';
+import theme from '../theme/colors';
 
 interface MoveToColumnModalProps {
   visible: boolean;
@@ -86,18 +87,18 @@ export default function MoveToColumnModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: theme.modal.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   modalContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.modal.background,
     borderRadius: 12,
     width: '100%',
     maxWidth: 400,
     maxHeight: '70%',
-    shadowColor: '#000',
+    shadowColor: theme.card.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
@@ -109,16 +110,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: theme.border.primary,
   },
   title: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: theme.text.primary,
   },
   closeButton: {
     fontSize: 24,
-    color: '#6b7280',
+    color: theme.text.secondary,
     fontWeight: '300',
   },
   scrollView: {
@@ -130,10 +131,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    borderBottomColor: theme.background.elevated,
   },
   currentColumnOption: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: theme.background.elevated,
   },
   columnInfo: {
     flex: 1,
@@ -141,21 +142,21 @@ const styles = StyleSheet.create({
   columnName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1f2937',
+    color: theme.text.primary,
     marginBottom: 4,
   },
   currentColumnText: {
-    color: '#6b7280',
+    color: theme.text.secondary,
   },
   columnCount: {
     fontSize: 13,
-    color: '#9ca3af',
+    color: theme.text.tertiary,
   },
   currentBadge: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#2563eb',
-    backgroundColor: '#dbeafe',
+    color: theme.accent.primary,
+    backgroundColor: theme.background.elevated,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,

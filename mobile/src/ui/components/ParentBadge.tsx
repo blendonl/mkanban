@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { ParentColor } from '../../core/enums';
+import theme from '../theme/colors';
 
 interface ParentBadgeProps {
   name: string;
@@ -9,13 +10,13 @@ interface ParentBadgeProps {
 }
 
 const COLOR_MAP: Record<ParentColor, string> = {
-  [ParentColor.RED]: '#ef4444',
-  [ParentColor.ORANGE]: '#f97316',
-  [ParentColor.YELLOW]: '#eab308',
-  [ParentColor.GREEN]: '#22c55e',
-  [ParentColor.BLUE]: '#3b82f6',
-  [ParentColor.CYAN]: '#06b6d4',
-  [ParentColor.PURPLE]: '#a855f7',
+  [ParentColor.RED]: theme.parent.red,
+  [ParentColor.ORANGE]: theme.parent.orange,
+  [ParentColor.YELLOW]: theme.parent.yellow,
+  [ParentColor.GREEN]: theme.parent.green,
+  [ParentColor.BLUE]: theme.parent.blue,
+  [ParentColor.CYAN]: theme.parent.cyan,
+  [ParentColor.PURPLE]: theme.parent.purple,
 };
 
 const ParentBadge = React.memo<ParentBadgeProps>(({ name, color, size = 'medium' }) => {
