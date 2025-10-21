@@ -17,8 +17,9 @@ import { BoardId } from "../../core/types";
 import { BOARD_FILENAME, COLUMN_METADATA_FILENAME } from "../../core/constants";
 import { generateIdFromName } from "../../utils/stringUtils";
 import { now } from "../../utils/dateUtils";
+import { FileSystemObserver } from "../../core/FileSystemObserver";
 
-export class MarkdownBoardRepository implements BoardRepository {
+export class MarkdownBoardRepository implements BoardRepository, FileSystemObserver {
   private fileSystem: FileSystemManager;
   private parser: MarkdownParser;
   private persistence: BoardPersistence;
@@ -29,6 +30,18 @@ export class MarkdownBoardRepository implements BoardRepository {
     this.parser = new MarkdownParser(fileSystem);
     this.persistence = new BoardPersistence(fileSystem, this.parser);
     this.boardsDir = fileSystem.getBoardsDirectory();
+
+    // Register as observer to receive boards directory changes
+    fileSystem.addObserver(this);
+  }
+
+  /**
+   * Called when the boards directory path changes
+   * Updates the cached boards directory path
+   */
+  onBoardsDirectoryChanged(newPath: string): void {
+    console.log(`MarkdownBoardRepository: Boards directory changed from ${this.boardsDir} to ${newPath}`);
+    this.boardsDir = newPath;
   }
 
   /**

@@ -15,6 +15,7 @@ import {
   ActivityIndicator,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { File, Directory } from 'expo-file-system';
 import * as FileSystemLegacy from 'expo-file-system/legacy';
 import theme from '../theme/colors';
@@ -174,7 +175,7 @@ export default function DirectoryPickerModal({
       presentationStyle="pageSheet"
       onRequestClose={onCancel}
     >
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={onCancel} disabled={isProcessing}>
@@ -254,7 +255,7 @@ export default function DirectoryPickerModal({
             </Text>
           </View>
         </ScrollView>
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 }

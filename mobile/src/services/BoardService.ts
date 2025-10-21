@@ -9,6 +9,7 @@ import { BoardRepository } from '../domain/repositories/BoardRepository';
 import { ValidationService } from './ValidationService';
 import { BoardId, ColumnId } from '../core/types';
 import { BoardNotFoundError, ValidationError } from '../core/exceptions';
+import { getEventBus } from '../core/EventBus';
 
 export class BoardService {
   private repository: BoardRepository;
@@ -43,6 +44,14 @@ export class BoardService {
     }
 
     console.info(`[BoardService] Successfully loaded board: ${board.name}`);
+
+    // Emit board loaded event
+    await getEventBus().publish('board_loaded', {
+      boardId: board.id,
+      boardName: board.name,
+      timestamp: new Date(),
+    });
+
     return board;
   }
 
@@ -80,6 +89,14 @@ export class BoardService {
     const board = new Board({ name, description });
     await this.repository.saveBoard(board);
     console.info(`[BoardService] Successfully created board: ${name}`);
+
+    // Emit board created event
+    await getEventBus().publish('board_created', {
+      boardId: board.id,
+      boardName: board.name,
+      timestamp: new Date(),
+    });
+
     return board;
   }
 
@@ -92,6 +109,13 @@ export class BoardService {
     this.validator.validateBoard(board);
     await this.repository.saveBoard(board);
     console.info(`[BoardService] Successfully saved board: ${board.name}`);
+
+    // Emit board updated event
+    await getEventBus().publish('board_updated', {
+      boardId: board.id,
+      boardName: board.name,
+      timestamp: new Date(),
+    });
   }
 
   /**
@@ -99,7 +123,18 @@ export class BoardService {
    * @returns true if board was deleted, false if not found
    */
   async deleteBoard(boardId: BoardId): Promise<boolean> {
-    return await this.repository.deleteBoard(boardId);
+    const deleted = await this.repository.deleteBoard(boardId);
+
+    if (deleted) {
+      // Emit board deleted event
+      await getEventBus().publish('board_deleted', {
+        boardId,
+        boardName: '', // Name not available after deletion
+        timestamp: new Date(),
+      });
+    }
+
+    return deleted;
   }
 
   /**
@@ -124,6 +159,15 @@ export class BoardService {
 
     const column = board.addColumn(columnName, position);
     console.info(`[BoardService] Successfully added column '${columnName}' to board '${board.name}'`);
+
+    // Emit column created event
+    await getEventBus().publish('column_created', {
+      columnId: column.id,
+      columnName: column.name,
+      boardId: board.id,
+      timestamp: new Date(),
+    });
+
     return column;
   }
 

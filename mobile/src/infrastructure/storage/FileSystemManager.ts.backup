@@ -174,9 +174,9 @@ export class FileSystemManager {
    */
   async deleteFile(path: string): Promise<boolean> {
     try {
-      const exists = await RNFS.exists(path);
-      if (exists) {
-        await RNFS.unlink(path);
+      const file = new File(path);
+      if (file.exists) {
+        file.delete();
         return true;
       }
       return false;
@@ -192,8 +192,8 @@ export class FileSystemManager {
    */
   async renameFile(oldPath: string, newPath: string): Promise<boolean> {
     try {
-      const exists = await RNFS.exists(oldPath);
-      if (!exists) {
+      const file = new File(oldPath);
+      if (!file.exists) {
         return false;
       }
 
@@ -201,7 +201,8 @@ export class FileSystemManager {
       const newParentDir = this.getParentDirectory(newPath);
       await this.ensureDirectoryExists(newParentDir);
 
-      await RNFS.moveFile(oldPath, newPath);
+      const destination = new File(newPath);
+      file.move(destination);
       return true;
     } catch (error) {
       console.error(`Failed to rename file ${oldPath} to ${newPath}:`, error);
@@ -215,9 +216,9 @@ export class FileSystemManager {
    */
   async deleteDirectory(path: string): Promise<boolean> {
     try {
-      const exists = await RNFS.exists(path);
-      if (exists) {
-        await RNFS.unlink(path);
+      const dir = new Directory(path);
+      if (dir.exists) {
+        dir.delete();
         return true;
       }
       return false;
@@ -233,27 +234,27 @@ export class FileSystemManager {
    */
   async listFiles(directory: string, pattern?: string): Promise<string[]> {
     try {
-      const exists = await RNFS.exists(directory);
-      if (!exists) {
+      const dir = new Directory(directory);
+      if (!dir.exists) {
         return [];
       }
 
-      const items = await RNFS.readDir(directory);
+      const items = dir.list();
       // Filter to only files (not directories)
-      const files = items.filter(item => item.isFile());
+      const files = items.filter(item => item instanceof File);
 
       if (!pattern) {
-        return files.map(file => file.path);
+        return files.map((file) => file.uri);
       }
 
       // Simple glob pattern matching (supports *.md, *.txt, etc.)
       const regexPattern = this.globToRegex(pattern);
-      const filteredFiles = files.filter(file => {
-        const fileName = file.name;
+      const filteredFiles = files.filter((file) => {
+        const fileName = file.uri.split('/').pop() || '';
         return regexPattern.test(fileName);
       });
 
-      return filteredFiles.map(file => file.path);
+      return filteredFiles.map((file) => file.uri);
     } catch (error) {
       throw new Error(`Failed to list files in ${directory}: ${error}`);
     }
@@ -264,16 +265,16 @@ export class FileSystemManager {
    */
   async listDirectories(directory: string): Promise<string[]> {
     try {
-      const exists = await RNFS.exists(directory);
-      if (!exists) {
+      const dir = new Directory(directory);
+      if (!dir.exists) {
         return [];
       }
 
-      const items = await RNFS.readDir(directory);
+      const items = dir.list();
       // Filter to only directories (not files)
-      const directories = items.filter(item => item.isDirectory());
+      const directories = items.filter(item => item instanceof Directory);
 
-      return directories.map(d => d.path + '/');
+      return directories.map(d => d.uri);
     } catch (error) {
       throw new Error(`Failed to list directories in ${directory}: ${error}`);
     }
@@ -284,11 +285,8 @@ export class FileSystemManager {
    */
   async fileExists(path: string): Promise<boolean> {
     try {
-      const exists = await RNFS.exists(path);
-      if (!exists) return false;
-
-      const stat = await RNFS.stat(path);
-      return stat.isFile();
+      const file = new File(path);
+      return file.exists;
     } catch (error) {
       return false;
     }
@@ -299,11 +297,8 @@ export class FileSystemManager {
    */
   async directoryExists(path: string): Promise<boolean> {
     try {
-      const exists = await RNFS.exists(path);
-      if (!exists) return false;
-
-      const stat = await RNFS.stat(path);
-      return stat.isDirectory();
+      const dir = new Directory(path);
+      return dir.exists;
     } catch (error) {
       return false;
     }
@@ -318,15 +313,15 @@ export class FileSystemManager {
       // Ensure directory exists first
       await this.ensureDirectoryExists(path);
 
-      // Try to write a test file
+      // Try to write a test file INSIDE the directory (not as a sibling)
+      const dir = new Directory(path);
       const testFileName = `.write-test-${Date.now()}`;
-      const testFilePath = `${path}${testFileName}`;
-      await RNFS.writeFile(testFilePath, 'test', 'utf8');
+      const testFile = new File(dir, testFileName);
+      testFile.write('test', { encoding: 'utf8' });
 
       // Clean up test file
-      const exists = await RNFS.exists(testFilePath);
-      if (exists) {
-        await RNFS.unlink(testFilePath);
+      if (testFile.exists) {
+        testFile.delete();
       }
 
       return true;
@@ -342,8 +337,8 @@ export class FileSystemManager {
    */
   async listBoards(boardsDirectory: string): Promise<string[]> {
     try {
-      const exists = await RNFS.exists(boardsDirectory);
-      if (!exists) {
+      const dir = new Directory(boardsDirectory);
+      if (!dir.exists) {
         return [];
       }
 
@@ -352,8 +347,8 @@ export class FileSystemManager {
 
       for (const subdirPath of subdirs) {
         const kanbanFilePath = `${subdirPath}kanban.md`;
-        const kanbanExists = await RNFS.exists(kanbanFilePath);
-        if (kanbanExists) {
+        const kanbanFile = new File(kanbanFilePath);
+        if (kanbanFile.exists) {
           // Extract board name from path
           const boardName = subdirPath.split('/').filter(p => p).pop() || '';
           boards.push(boardName);
@@ -380,8 +375,8 @@ export class FileSystemManager {
    */
   async copyFile(sourcePath: string, destPath: string): Promise<boolean> {
     try {
-      const exists = await RNFS.exists(sourcePath);
-      if (!exists) {
+      const sourceFile = new File(sourcePath);
+      if (!sourceFile.exists) {
         console.error(`Source file does not exist: ${sourcePath}`);
         return false;
       }
@@ -390,8 +385,10 @@ export class FileSystemManager {
       const destParent = this.getParentDirectory(destPath);
       await this.ensureDirectoryExists(destParent);
 
-      // Copy file
-      await RNFS.copyFile(sourcePath, destPath);
+      // Read and write file
+      const content = await sourceFile.text();
+      const destFile = new File(destPath);
+      destFile.write(content, { encoding: 'utf8' });
 
       return true;
     } catch (error) {
@@ -415,8 +412,8 @@ export class FileSystemManager {
     let copiedFiles = 0;
 
     try {
-      const exists = await RNFS.exists(sourcePath);
-      if (!exists) {
+      const sourceDir = new Directory(sourcePath);
+      if (!sourceDir.exists) {
         errors.push(`Source directory does not exist: ${sourcePath}`);
         return { success: false, copiedFiles: 0, errors };
       }
@@ -425,27 +422,27 @@ export class FileSystemManager {
       await this.ensureDirectoryExists(destPath);
 
       // Get all items in source directory
-      const items = await RNFS.readDir(sourcePath);
+      const items = sourceDir.list();
       const totalItems = items.length;
 
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
-        const itemName = item.name;
+        const itemName = item.uri.split('/').pop() || '';
         const destItemPath = `${destPath}${itemName}`;
 
         try {
-          if (item.isFile()) {
+          if (item instanceof File) {
             // Copy file
-            const success = await this.copyFile(item.path, destItemPath);
+            const success = await this.copyFile(item.uri, destItemPath);
             if (success) {
               copiedFiles++;
             } else {
-              errors.push(`Failed to copy file: ${item.path}`);
+              errors.push(`Failed to copy file: ${item.uri}`);
             }
-          } else if (item.isDirectory()) {
+          } else if (item instanceof Directory) {
             // Recursively copy subdirectory
             const subResult = await this.copyDirectory(
-              `${item.path}/`,
+              `${item.uri}/`,
               `${destItemPath}/`,
               onProgress
             );
@@ -453,7 +450,7 @@ export class FileSystemManager {
             errors.push(...subResult.errors);
           }
         } catch (error) {
-          errors.push(`Error copying ${item.path}: ${error}`);
+          errors.push(`Error copying ${item.uri}: ${error}`);
         }
 
         // Report progress
@@ -501,7 +498,8 @@ export class FileSystemManager {
    * Get file information (size, modification time, etc.)
    */
   async getFileInfo(path: string): Promise<any> {
-    return await RNFS.stat(path);
+    const file = new File(path);
+    return file.info();
   }
 
   /**

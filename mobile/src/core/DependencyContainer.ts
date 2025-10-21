@@ -12,6 +12,13 @@ import { BoardService } from '../services/BoardService';
 import { ItemService } from '../services/ItemService';
 import { FileWatcher } from '../infrastructure/daemon/FileWatcher';
 import { StorageConfig } from './StorageConfig';
+import { ActionsConfig, getActionsConfig } from './ActionsConfig';
+import { YamlActionRepository } from '../infrastructure/repositories/YamlActionRepository';
+import { ActionService } from '../services/ActionService';
+import { NotificationService } from '../services/NotificationService';
+import { ActionEngine } from '../services/ActionEngine';
+import { ActionDaemon } from '../infrastructure/daemon/ActionDaemon';
+import { MissedActionsManager } from '../services/MissedActionsManager';
 
 type Factory<T> = () => T;
 
@@ -93,6 +100,79 @@ export class DependencyContainer {
     this.factories.set(
       FileWatcher,
       () => new FileWatcher(this.get(FileSystemManager))
+    );
+
+    // Actions Config (singleton)
+    this.factories.set(ActionsConfig, () => getActionsConfig());
+
+    // Action Repository with FileSystemManager dependency
+    this.factories.set(
+      YamlActionRepository,
+      () => {
+        const repo = new YamlActionRepository(this.get(FileSystemManager));
+        // Initialize asynchronously
+        repo.initialize().catch((error) => {
+          console.error('Failed to initialize ActionRepository:', error);
+        });
+        return repo;
+      }
+    );
+
+    // Action Service
+    this.factories.set(
+      ActionService,
+      () =>
+        new ActionService(
+          this.get(YamlActionRepository),
+          this.get(MarkdownBoardRepository),
+          this.get(ActionsConfig)
+        )
+    );
+
+    // Notification Service
+    this.factories.set(
+      NotificationService,
+      () => {
+        const service = new NotificationService(this.get(ActionsConfig));
+        // Initialize asynchronously
+        service.initialize().catch((error) => {
+          console.error('Failed to initialize NotificationService:', error);
+        });
+        return service;
+      }
+    );
+
+    // Action Engine
+    this.factories.set(
+      ActionEngine,
+      () =>
+        new ActionEngine(
+          this.get(ActionService),
+          this.get(ItemService),
+          this.get(BoardService),
+          this.get(NotificationService)
+        )
+    );
+
+    // Missed Actions Manager
+    this.factories.set(
+      MissedActionsManager,
+      () =>
+        new MissedActionsManager(
+          this.get(ActionService),
+          this.get(ActionsConfig)
+        )
+    );
+
+    // Action Daemon
+    this.factories.set(
+      ActionDaemon,
+      () =>
+        new ActionDaemon(
+          this.get(ActionEngine),
+          this.get(ActionService),
+          this.get(ActionsConfig)
+        )
     );
   }
 
@@ -234,4 +314,53 @@ export function getStorageConfig(): StorageConfig {
  */
 export function getFileSystemManager(): FileSystemManager {
   return getContainer().get(FileSystemManager);
+}
+
+/**
+ * Get the actions config
+ */
+export function getActionsConfigFromContainer(): ActionsConfig {
+  return getContainer().get(ActionsConfig);
+}
+
+/**
+ * Get the action repository
+ */
+export function getActionRepository(): YamlActionRepository {
+  return getContainer().get(YamlActionRepository);
+}
+
+/**
+ * Get the action service
+ */
+export function getActionService(): ActionService {
+  return getContainer().get(ActionService);
+}
+
+/**
+ * Get the notification service
+ */
+export function getNotificationService(): NotificationService {
+  return getContainer().get(NotificationService);
+}
+
+/**
+ * Get the action engine
+ */
+export function getActionEngine(): ActionEngine {
+  return getContainer().get(ActionEngine);
+}
+
+/**
+ * Get the missed actions manager
+ */
+export function getMissedActionsManager(): MissedActionsManager {
+  return getContainer().get(MissedActionsManager);
+}
+
+/**
+ * Get the action daemon
+ */
+export function getActionDaemon(): ActionDaemon {
+  return getContainer().get(ActionDaemon);
 }

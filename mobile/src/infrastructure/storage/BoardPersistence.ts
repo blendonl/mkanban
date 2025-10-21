@@ -17,6 +17,7 @@ import { ItemId } from "../../core/types";
 import { BOARD_FILENAME, COLUMN_METADATA_FILENAME } from "../../core/constants";
 import { getTitleFilename } from "../../utils/stringUtils";
 import { now } from "../../utils/dateUtils";
+import { FileSystemObserver } from "../../core/FileSystemObserver";
 
 export interface ItemData {
   id: ItemId;
@@ -38,7 +39,7 @@ export interface ColumnData {
   created_at?: Date;
 }
 
-export class BoardPersistence {
+export class BoardPersistence implements FileSystemObserver {
   private fileSystem: FileSystemManager;
   private parser: MarkdownParser;
   private boardsDir: string;
@@ -47,6 +48,18 @@ export class BoardPersistence {
     this.fileSystem = fileSystem;
     this.parser = parser;
     this.boardsDir = fileSystem.getBoardsDirectory();
+
+    // Register as observer to receive boards directory changes
+    fileSystem.addObserver(this);
+  }
+
+  /**
+   * Called when the boards directory path changes
+   * Updates the cached boards directory path
+   */
+  onBoardsDirectoryChanged(newPath: string): void {
+    console.log(`BoardPersistence: Boards directory changed from ${this.boardsDir} to ${newPath}`);
+    this.boardsDir = newPath;
   }
 
   /**

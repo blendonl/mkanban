@@ -3,7 +3,8 @@
  * Manages persistent configuration for boards directory and other storage settings
  */
 
-import { File, Directory, Paths } from 'expo-file-system';
+import RNFS from 'react-native-fs';
+import { Platform } from 'react-native';
 import { FileSystemManager } from '../infrastructure/storage/FileSystemManager';
 
 interface StorageConfigData {
@@ -22,8 +23,8 @@ export class StorageConfig {
 
   constructor(baseDirectory?: string, fileSystemManager?: FileSystemManager) {
     // Store config in a .mkanban directory within the document directory
-    const docDir = baseDirectory || Paths.document.uri;
-    this.configDir = `${docDir}.mkanban/`;
+    const docDir = baseDirectory || RNFS.DocumentDirectoryPath;
+    this.configDir = `${docDir}/.mkanban/`;
     this.configFile = `${this.configDir}config.json`;
     this.fileSystemManager = fileSystemManager || new FileSystemManager();
   }
@@ -39,8 +40,7 @@ export class StorageConfig {
       return config.boardsDirectory;
     }
 
-    // Default: {documentDirectory}/boards/
-    return `${Paths.document.uri}${DEFAULT_BOARDS_SUBDIR}`;
+    return this.getDefaultBoardsDirectory();
   }
 
   /**
@@ -87,9 +87,24 @@ export class StorageConfig {
 
   /**
    * Get the default boards directory path
+   *
+   * Android: Uses shared storage (/storage/emulated/0/mkanban/boards/)
+   *          Requires MANAGE_EXTERNAL_STORAGE permission on Android 11+
+   *          Boards are accessible via file managers
+   *
+   * iOS: Uses app-private Documents directory
+   *      Boards stored in app sandbox
+   *
+   * Note: The app requests MANAGE_EXTERNAL_STORAGE permission on first launch
+   * for Android 11+. Users must grant "All files access" in settings.
    */
   getDefaultBoardsDirectory(): string {
-    return `${Paths.document.uri}${DEFAULT_BOARDS_SUBDIR}`;
+    if (Platform.OS === 'android') {
+      // Use shared storage on Android (accessible via file managers)
+      return `${RNFS.ExternalStorageDirectoryPath}/mkanban/boards/`;
+    }
+    // Use app Documents directory on iOS
+    return `${RNFS.DocumentDirectoryPath}/${DEFAULT_BOARDS_SUBDIR}`;
   }
 
   /**
@@ -97,23 +112,23 @@ export class StorageConfig {
    */
   private async validateDirectoryPath(path: string): Promise<void> {
     try {
-      const dir = new Directory(path);
-
       // Try to create the directory if it doesn't exist
-      if (!dir.exists) {
-        dir.create({ intermediates: true, idempotent: true });
+      const exists = await RNFS.exists(path);
+      if (!exists) {
+        await RNFS.mkdir(path);
       }
 
       // Verify directory exists after creation attempt
-      if (!dir.exists) {
+      const stillExists = await RNFS.exists(path);
+      if (!stillExists) {
         throw new Error('Directory does not exist and could not be created');
       }
 
       // Try to write a test file to verify write permissions
-      const testFile = new File(`${path}.test-write-${Date.now()}`);
+      const testFilePath = `${path}.test-write-${Date.now()}`;
       try {
-        testFile.write('test');
-        testFile.delete();
+        await RNFS.writeFile(testFilePath, 'test', 'utf8');
+        await RNFS.unlink(testFilePath);
       } catch (error) {
         throw new Error('Directory is not writable');
       }
@@ -133,14 +148,14 @@ export class StorageConfig {
 
     try {
       // Ensure config directory exists
-      const configDirObj = new Directory(this.configDir);
-      if (!configDirObj.exists) {
-        configDirObj.create({ intermediates: true, idempotent: true });
+      const configDirExists = await RNFS.exists(this.configDir);
+      if (!configDirExists) {
+        await RNFS.mkdir(this.configDir);
       }
 
       // Check if config file exists
-      const configFileObj = new File(this.configFile);
-      if (!configFileObj.exists) {
+      const configFileExists = await RNFS.exists(this.configFile);
+      if (!configFileExists) {
         // Create default config
         const defaultConfig: StorageConfigData = {
           version: CONFIG_VERSION,
@@ -150,7 +165,7 @@ export class StorageConfig {
       }
 
       // Read and parse config file
-      const content = await configFileObj.text();
+      const content = await RNFS.readFile(this.configFile, 'utf8');
       const config: StorageConfigData = JSON.parse(content);
 
       // Cache the config
@@ -170,15 +185,14 @@ export class StorageConfig {
   private async saveConfig(config: StorageConfigData): Promise<void> {
     try {
       // Ensure config directory exists
-      const configDirObj = new Directory(this.configDir);
-      if (!configDirObj.exists) {
-        configDirObj.create({ intermediates: true, idempotent: true });
+      const configDirExists = await RNFS.exists(this.configDir);
+      if (!configDirExists) {
+        await RNFS.mkdir(this.configDir);
       }
 
       // Write config file
-      const configFileObj = new File(this.configFile);
       const content = JSON.stringify(config, null, 2);
-      configFileObj.write(content);
+      await RNFS.writeFile(this.configFile, content, 'utf8');
 
       // Update cache
       this.cachedConfig = { ...config };

@@ -15,6 +15,7 @@ import {
 } from '../core/exceptions';
 import { generateManualItemId, getBoardPrefix } from '../utils/stringUtils';
 import { DEFAULT_ISSUE_TYPE } from '../core/constants';
+import { getEventBus } from '../core/EventBus';
 
 export class ItemService {
   private storage: StorageRepository;
@@ -72,6 +73,16 @@ export class ItemService {
     console.info(
       `[ItemService] Successfully created item: ${title} [${itemId}] in column: ${column.name}`
     );
+
+    // Emit task created event
+    await getEventBus().publish('task_created', {
+      taskId: item.id,
+      taskTitle: item.title,
+      boardId: board.id,
+      columnId: column.id,
+      timestamp: new Date(),
+    });
+
     return item;
   }
 
@@ -112,6 +123,16 @@ export class ItemService {
         }
 
         item.update(updates);
+
+        // Emit task updated event
+        await getEventBus().publish('task_updated', {
+          taskId: item.id,
+          taskTitle: item.title,
+          boardId: board.id,
+          columnId: column.id,
+          timestamp: new Date(),
+        });
+
         return true;
       }
     }
@@ -146,6 +167,15 @@ export class ItemService {
         if (success) {
           await this.storage.saveBoardToStorage(board);
           console.info(`[ItemService] Successfully deleted item: ${item.title}`);
+
+          // Emit task deleted event
+          await getEventBus().publish('task_deleted', {
+            taskId: item.id,
+            taskTitle: item.title,
+            boardId: board.id,
+            columnId: column.id,
+            timestamp: new Date(),
+          });
         }
         return success;
       }
@@ -218,6 +248,17 @@ export class ItemService {
     targetColumn.moveItemToEnd(itemToMove);
 
     await this.storage.saveBoardToStorage(board);
+
+    // Emit task moved event
+    await getEventBus().publish('task_moved', {
+      taskId: itemToMove.id,
+      taskTitle: itemToMove.title,
+      boardId: board.id,
+      columnId: targetColumnId,
+      previousColumnId: sourceColumn.id,
+      timestamp: new Date(),
+    });
+
     return true;
   }
 
