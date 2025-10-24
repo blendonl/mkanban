@@ -7,6 +7,7 @@ from src.domain.entities.column import Column
 from src.domain.repositories.board_repository import BoardRepository
 from src.services.validation_service import ValidationService
 from src.utils.logger_factory import ContextAwareLogger
+from src.core.event_bus import get_event_bus
 
 
 class BoardService:
@@ -19,6 +20,8 @@ class BoardService:
         self._repository = board_repository
         self._validator = validation_service
         self._logger = logger
+        self._event_bus = get_event_bus()
+        self._current_board_id: Optional[BoardId] = None
 
     def get_all_boards(self) -> List[Board]:
         return self._repository.load_all_boards()
@@ -111,3 +114,35 @@ class BoardService:
             board = self._repository.create_sample_board(name)
             self._repository.save_board(board)
             return board
+
+    def switch_to_board(self, board: Board) -> None:
+        """
+        Switch to a board and emit board switch events.
+
+        Args:
+            board: The board to switch to
+        """
+        old_board_id = self._current_board_id
+
+        # Emit exit event for previous board
+        if old_board_id and old_board_id != board.id:
+            self._logger.debug(f"Exiting board: {old_board_id}")
+            self._event_bus.publish("board_switch", {
+                "event": "exit",
+                "board_id": old_board_id
+            })
+
+        # Update current board
+        self._current_board_id = board.id
+
+        # Emit enter event for new board
+        self._logger.debug(f"Entering board: {board.id}")
+        self._event_bus.publish("board_switch", {
+            "event": "enter",
+            "board_id": board.id,
+            "board": board
+        })
+
+    def get_current_board_id(self) -> Optional[BoardId]:
+        """Get the currently active board ID"""
+        return self._current_board_id

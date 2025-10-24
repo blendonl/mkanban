@@ -5,7 +5,7 @@ import { Item } from '../../domain/entities/Item';
 import { Parent } from '../../domain/entities/Parent';
 import ItemCard from './ItemCard';
 import ParentGroup from './ParentGroup';
-import theme from '../theme/colors';
+import theme from '../theme';
 
 // Type for grouped items with parent
 interface GroupedItemsData {
@@ -172,70 +172,70 @@ export default ColumnCard;
 
 const styles = StyleSheet.create({
   container: {
-    width: 280,
+    width: theme.ui.DEFAULT_COLUMN_WIDTH,
     backgroundColor: theme.background.secondary,
-    borderRadius: 12,
-    marginHorizontal: 8,
-    padding: 12,
+    borderRadius: theme.radius.card,
+    marginHorizontal: theme.spacing.sm,
+    padding: theme.spacing.md,
     maxHeight: '100%',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
-    paddingBottom: 8,
+    marginBottom: theme.spacing.md,
+    paddingBottom: theme.spacing.sm,
     borderBottomWidth: 2,
     borderBottomColor: theme.border.primary,
   },
   title: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    ...theme.typography.textStyles.body,
+    fontWeight: theme.typography.fontWeights.bold,
     color: theme.text.primary,
     flex: 1,
   },
   badge: {
     backgroundColor: theme.badge.background,
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+    borderRadius: theme.radius.badge,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
     minWidth: 24,
     alignItems: 'center',
   },
   badgeText: {
     color: theme.badge.text,
-    fontSize: 12,
-    fontWeight: '600',
+    ...theme.typography.textStyles.bodySmall,
+    fontWeight: theme.typography.fontWeights.semibold,
   },
   itemsContainer: {
     flex: 1,
   },
   itemsContent: {
-    paddingBottom: 8,
+    paddingBottom: theme.spacing.sm,
   },
   emptyContainer: {
-    padding: 16,
+    padding: theme.spacing.lg,
     alignItems: 'center',
   },
   emptyText: {
-    fontSize: 14,
+    ...theme.typography.textStyles.body,
     color: theme.text.muted,
     fontStyle: 'italic',
   },
   addButton: {
     backgroundColor: theme.card.background,
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: theme.radius.md,
+    padding: theme.spacing.md,
     alignItems: 'center',
-    marginTop: 4,
-    marginBottom: 4,
+    marginTop: theme.spacing.xs,
+    marginBottom: theme.spacing.xs,
     borderWidth: 1,
     borderColor: theme.border.primary,
     borderStyle: 'dashed',
   },
   addButtonText: {
     color: theme.accent.primary,
-    fontSize: 14,
-    fontWeight: '600',
+    ...theme.typography.textStyles.body,
+    fontWeight: theme.typography.fontWeights.semibold,
   },
 });

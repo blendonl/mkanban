@@ -3,7 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Item, Parent } from '../../domain/entities';
 import ItemCard from './ItemCard';
 import ParentBadge from './ParentBadge';
-import theme from '../theme/colors';
+import theme from '../theme';
 
 interface ParentGroupProps {
   parent: Parent | null;
@@ -49,33 +49,33 @@ export default function ParentGroup({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 16,
+    marginBottom: theme.spacing.lg,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 8,
-    paddingBottom: 6,
+    marginBottom: theme.spacing.sm,
+    paddingBottom: theme.spacing.xs,
     borderBottomWidth: 1,
     borderBottomColor: theme.border.primary,
   },
   ungroupedLabel: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...theme.typography.textStyles.body,
+    fontWeight: theme.typography.fontWeights.semibold,
     color: theme.text.secondary,
     fontStyle: 'italic',
   },
   count: {
-    fontSize: 12,
-    fontWeight: '600',
+    ...theme.typography.textStyles.bodySmall,
+    fontWeight: theme.typography.fontWeights.semibold,
     color: theme.text.tertiary,
     backgroundColor: theme.background.elevated,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
+    borderRadius: theme.radius.sm,
   },
   items: {
-    gap: 8,
+    gap: theme.spacing.sm,
   },
 });

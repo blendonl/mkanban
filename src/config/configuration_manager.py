@@ -7,6 +7,7 @@ from src.core.constants import DEFAULT_CONFIG_FILE
 from .jira_config import JiraConfiguration
 from .daemon_config import DaemonConfiguration
 from .logging_config import LoggingConfiguration
+from .actions_config import ActionsConfiguration
 from .unified_config import UnifiedConfiguration
 
 
@@ -59,6 +60,13 @@ class ConfigurationManager:
             data["logging"] = LoggingConfiguration(**logging_data)
         else:
             data["logging"] = LoggingConfiguration()
+
+        # Handle nested actions configuration
+        actions_data = data.get("actions", {})
+        if actions_data:
+            data["actions"] = ActionsConfiguration(**actions_data)
+        else:
+            data["actions"] = ActionsConfiguration()
 
         return UnifiedConfiguration(**data)
 

@@ -1,0 +1,72 @@
+# Example: Daily Standup Reminder
+# This action sends a notification every weekday at 9:00 AM
+
+id: action-rem-daily-standup-20241020
+type: reminder
+name: "Daily standup reminder"
+description: "Reminds me about the daily standup meeting every weekday morning"
+enabled: true
+created_at: "2024-10-20T10:00:00"
+modified_at: "2024-10-20T10:00:00"
+
+# Global scope - not tied to any specific board or task
+scope:
+  type: global
+  target_id: null
+
+# Time-based trigger - daily at 9:00 AM on weekdays
+triggers:
+  - type: time
+    schedule:
+      type: daily
+      time: "09:00"
+      days_of_week: [1, 2, 3, 4, 5]  # Monday through Friday
+      timezone: "America/New_York"
+
+# Only trigger during work hours
+conditions:
+  - type: time_range
+    start_time: "08:00"
+    end_time: "18:00"
+
+# Send notification to desktop and mobile
+actions:
+  - type: notify
+    message: "Time for daily standup! Don't forget to prepare your updates."
+    title: "MKanban - Daily Standup"
+    platforms: ["desktop", "mobile"]
+    channels: ["system", "mobile_push"]
+    priority: normal
+
+# No recurrence needed - daily schedule handles it
+recurrence: null
+
+# Allow snoozing
+snooze:
+  enabled: true
+  count: 0
+  until: null
+  options: ["10m", "30m", "1h"]
+
+# Execution tracking
+execution:
+  last_triggered: null
+  last_success: null
+  last_failure: null
+  last_error: null
+  total_executions: 0
+  successful_executions: 0
+  consecutive_failures: 0
+
+# Metadata
+metadata:
+  priority: 1
+  max_retries: 3
+  retry_delay: 300
+  timeout: 30
+  tags: ["daily", "meeting", "reminder"]
+  custom: {}
+
+# No chained actions
+on_success: []
+on_failure: []

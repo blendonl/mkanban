@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 import logging
 
 from src.config.settings import Settings
+from src.config.actions_config import ActionsConfiguration
 from src.infrastructure.tmux.session_manager import (
     get_mkanban_data_path,
     ensure_mkanban_directory,
@@ -85,6 +86,12 @@ class DaemonConfiguration:
 
     # Jira integration
     jira: JiraConfig = field(default_factory=JiraConfig)
+
+    # Actions/reminders system
+    actions: ActionsConfiguration = field(default_factory=ActionsConfiguration)
+
+    # Config directory for storing actions
+    config_dir: Path = field(default_factory=lambda: Path.home() / ".config" / "mkanban")
 
     def __post_init__(self):
         """Ensure data path is resolved"""

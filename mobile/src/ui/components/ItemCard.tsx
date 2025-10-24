@@ -3,7 +3,9 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Item } from '../../domain/entities/Item';
 import { Parent } from '../../domain/entities/Parent';
 import ParentBadge from './ParentBadge';
-import theme from '../theme/colors';
+import theme from '../theme';
+import { getIssueTypeIcon } from '../../utils/issueTypeUtils';
+import { uiConstants } from '../theme';
 
 interface ItemCardProps {
   item: Item;
@@ -12,22 +14,14 @@ interface ItemCardProps {
   onLongPress?: () => void;
 }
 
-const ISSUE_TYPE_ICONS: Record<string, string> = {
-  Task: '📋',
-  Story: '📖',
-  Bug: '🐛',
-  Epic: '📚',
-  Subtask: '☑️',
-};
-
 const ItemCard = React.memo<ItemCardProps>(({ item, parent, onPress, onLongPress }) => {
-  // Use the helper method to get icon directly from Item entity
-  const icon = item.getIssueTypeIcon();
+  // Use centralized issue type utility
+  const icon = getIssueTypeIcon(item.getIssueType());
 
-  // Extract description preview (first 100 characters)
+  // Extract description preview
   const descriptionPreview = item.description
-    ? item.description.length > 100
-      ? `${item.description.substring(0, 100)}...`
+    ? item.description.length > uiConstants.DESCRIPTION_PREVIEW_LENGTH
+      ? `${item.description.substring(0, uiConstants.DESCRIPTION_PREVIEW_LENGTH)}...`
       : item.description
     : '';
 
@@ -36,7 +30,7 @@ const ItemCard = React.memo<ItemCardProps>(({ item, parent, onPress, onLongPress
       style={styles.card}
       onPress={onPress}
       onLongPress={onLongPress}
-      activeOpacity={0.7}
+      activeOpacity={theme.ui.PRESSED_OPACITY}
     >
       <View style={styles.header}>
         <Text style={styles.icon}>{icon}</Text>
@@ -71,46 +65,39 @@ export default ItemCard;
 const styles = StyleSheet.create({
   card: {
     backgroundColor: theme.card.background,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
+    borderRadius: theme.radius.card,
+    padding: theme.spacing.cardPadding,
+    marginBottom: theme.spacing.sm,
     borderWidth: 1,
     borderColor: theme.card.border,
-    shadowColor: theme.card.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    ...theme.shadows.card,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 8,
+    marginBottom: theme.spacing.sm,
   },
   icon: {
-    fontSize: 16,
-    marginRight: 6,
+    fontSize: theme.typography.fontSizes.lg,
+    marginRight: theme.spacing.sm,
     marginTop: 2,
   },
   title: {
     flex: 1,
-    fontSize: 14,
-    fontWeight: '600',
+    ...theme.typography.textStyles.body,
+    fontWeight: theme.typography.fontWeights.semibold,
     color: theme.text.primary,
-    lineHeight: 20,
   },
   parentContainer: {
-    marginBottom: 8,
+    marginBottom: theme.spacing.sm,
   },
   description: {
-    fontSize: 12,
+    ...theme.typography.textStyles.bodySmall,
     color: theme.text.secondary,
-    lineHeight: 18,
-    marginBottom: 6,
+    marginBottom: theme.spacing.sm,
   },
   itemId: {
-    fontSize: 10,
+    ...theme.typography.textStyles.caption,
     color: theme.text.tertiary,
-    fontWeight: '500',
   },
 });

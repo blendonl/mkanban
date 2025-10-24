@@ -4,7 +4,8 @@ import AppNavigator from './src/ui/navigation/AppNavigator';
 import ErrorBoundary from './src/ui/components/ErrorBoundary';
 import PermissionScreen from './src/ui/screens/PermissionScreen';
 import { checkStoragePermission } from './src/utils/storagePermissions';
-import { Platform, View, ActivityIndicator } from 'react-native';
+import { Platform, View, ActivityIndicator, StyleSheet } from 'react-native';
+import theme from './src/ui/theme';
 
 export default function App() {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
@@ -33,8 +34,8 @@ export default function App() {
   // Show loading screen while checking permissions
   if (hasPermission === null) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1a1a1a' }}>
-        <ActivityIndicator size="large" color="#007AFF" />
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={theme.accent.primary} />
       </View>
     );
   }
@@ -57,3 +58,12 @@ export default function App() {
     </ErrorBoundary>
   );
 }
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: theme.background.primary,
+  },
+});

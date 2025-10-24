@@ -6,7 +6,6 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Alert,
   Platform,
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -18,7 +17,10 @@ import { Parent } from '../../domain/entities/Parent';
 import { IssueType } from '../../core/enums';
 import { getItemService, getBoardService } from '../../core/DependencyContainer';
 import ParentBadge from '../components/ParentBadge';
-import theme from '../theme/colors';
+import theme from '../theme';
+import { getIssueTypeIcon, getAllIssueTypes } from '../../utils/issueTypeUtils';
+import alertService from '../../services/AlertService';
+import { uiConstants } from '../theme';
 
 type ItemDetailScreenNavigationProp = StackNavigationProp<RootStackParamList, 'ItemDetail'>;
 type ItemDetailScreenRouteProp = RouteProp<RootStackParamList, 'ItemDetail'>;
@@ -53,7 +55,7 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
       try {
         const loadedBoard = await boardService.getBoardById(boardId);
         if (!loadedBoard) {
-          Alert.alert('Error', 'Board not found');
+          alertService.showError('Board not found');
           navigation.goBack();
           return;
         }
@@ -69,7 +71,7 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
           }
 
           if (!foundItem) {
-            Alert.alert('Error', 'Item not found');
+            alertService.showError('Item not found');
             navigation.goBack();
             return;
           }
@@ -81,8 +83,7 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
           setSelectedIssueType(foundItem.getIssueType());
         }
       } catch (error) {
-        console.error('Failed to load data:', error);
-        Alert.alert('Error', 'Failed to load data');
+        alertService.showError('Failed to load data');
         navigation.goBack();
       } finally {
         setLoading(false);
@@ -103,17 +104,17 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
 
   const handleSave = async () => {
     if (!board) {
-      Alert.alert('Error', 'Board not loaded');
+      alertService.showError('Board not loaded');
       return;
     }
 
     if (!title.trim()) {
-      Alert.alert('Error', 'Item title is required');
+      alertService.showValidationError('Item title is required');
       return;
     }
 
     if (!targetColumn) {
-      Alert.alert('Error', 'Could not determine target column');
+      alertService.showError('Could not determine target column');
       return;
     }
 
@@ -138,7 +139,7 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
         // Save the board
         await boardService.saveBoard(board);
 
-        Alert.alert('Success', 'Item created successfully');
+        alertService.showSuccess('Item created successfully');
         navigation.goBack();
       } else {
         // Update existing item
@@ -158,12 +159,11 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
         // Save the board
         await boardService.saveBoard(board);
 
-        Alert.alert('Success', 'Item updated successfully');
+        alertService.showSuccess('Item updated successfully');
         navigation.goBack();
       }
     } catch (error) {
-      console.error('Failed to save item:', error);
-      Alert.alert('Error', 'Failed to save item');
+      alertService.showError('Failed to save item');
     } finally {
       setSaving(false);
     }
@@ -174,31 +174,21 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
       return;
     }
 
-    Alert.alert(
-      'Delete Item',
+    alertService.showDestructiveConfirm(
       'Are you sure you want to delete this item? This action cannot be undone.',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await itemService.deleteItem(board, item.id);
-              await boardService.saveBoard(board);
+      async () => {
+        try {
+          await itemService.deleteItem(board, item.id);
+          await boardService.saveBoard(board);
 
-              Alert.alert('Success', 'Item deleted successfully');
-              navigation.goBack();
-            } catch (error) {
-              console.error('Failed to delete item:', error);
-              Alert.alert('Error', 'Failed to delete item');
-            }
-          },
-        },
-      ]
+          alertService.showSuccess('Item deleted successfully');
+          navigation.goBack();
+        } catch (error) {
+          alertService.showError('Failed to delete item');
+        }
+      },
+      undefined,
+      'Delete Item'
     );
   };
 
@@ -215,22 +205,6 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
     );
   }
 
-  // Helper function to get issue type icon
-  const getIssueTypeIcon = (issueType: string): string => {
-    switch (issueType) {
-      case IssueType.EPIC:
-        return '📚';
-      case IssueType.STORY:
-        return '📖';
-      case IssueType.BUG:
-        return '🐛';
-      case IssueType.SUBTASK:
-        return '☑️';
-      case IssueType.TASK:
-      default:
-        return '📋';
-    }
-  };
 
   // Helper function to format timestamp
   const formatTimestamp = (timestamp: Date | string | null): string => {
@@ -240,13 +214,7 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
   };
 
   // All available issue types
-  const issueTypes = [
-    IssueType.TASK,
-    IssueType.STORY,
-    IssueType.BUG,
-    IssueType.EPIC,
-    IssueType.SUBTASK,
-  ];
+  const issueTypes = getAllIssueTypes();
 
   // Issue Type Picker Modal
   if (showIssueTypePicker) {

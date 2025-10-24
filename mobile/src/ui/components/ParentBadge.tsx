@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { ParentColor } from '../../core/enums';
-import theme from '../theme/colors';
+import theme from '../theme';
 
 interface ParentBadgeProps {
   name: string;
@@ -49,37 +49,37 @@ export default ParentBadge;
 
 const styles = StyleSheet.create({
   badge: {
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    borderRadius: theme.radius.badge,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
     alignSelf: 'flex-start',
   },
   small: {
-    paddingHorizontal: 6,
+    paddingHorizontal: theme.spacing.xs,
     paddingVertical: 2,
-    borderRadius: 8,
+    borderRadius: theme.radius.sm,
   },
   medium: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
+    borderRadius: theme.radius.badge,
   },
   large: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    borderRadius: theme.radius.lg,
   },
   text: {
-    color: '#fff',
-    fontWeight: '600',
+    color: theme.colors.white,
+    fontWeight: theme.typography.fontWeights.semibold,
   },
   textSmall: {
-    fontSize: 10,
+    fontSize: theme.typography.fontSizes.xs,
   },
   textMedium: {
-    fontSize: 12,
+    fontSize: theme.typography.fontSizes.sm,
   },
   textLarge: {
-    fontSize: 14,
+    fontSize: theme.typography.fontSizes.base,
   },
 });

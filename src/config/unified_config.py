@@ -12,6 +12,7 @@ from src.core.constants import (
 from src.core.types import ThemeType
 from .daemon_config import DaemonConfiguration
 from .logging_config import LoggingConfiguration
+from .actions_config import ActionsConfiguration
 
 
 @dataclass
@@ -30,6 +31,7 @@ class UnifiedConfiguration:
     shortcuts: Dict[str, str] = field(default_factory=lambda: VIM_KEYBINDINGS.copy())
     daemon: DaemonConfiguration = field(default_factory=DaemonConfiguration)
     logging: LoggingConfiguration = field(default_factory=LoggingConfiguration)
+    actions: ActionsConfiguration = field(default_factory=ActionsConfiguration)
 
     def __post_init__(self):
         if not self.config_dir:

@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -22,7 +21,9 @@ import ParentFormModal from '../components/ParentFormModal';
 import { Parent } from '../../domain/entities/Parent';
 import { ParentColor } from '../../core/enums';
 import { generateIdFromName, now } from '../../utils';
-import theme from '../theme/colors';
+import theme from '../theme';
+import alertService from '../../services/AlertService';
+import logger from '../../utils/logger';
 
 type BoardScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Board'>;
 type BoardScreenRouteProp = RouteProp<RootStackParamList, 'Board'>;
@@ -57,12 +58,12 @@ export default function BoardScreen({ navigation, route }: Props) {
           // Update navigation title
           navigation.setOptions({ title: loadedBoard.name });
         } else {
-          Alert.alert('Error', 'Board not found');
+          alertService.showError('Board not found');
           navigation.goBack();
         }
       } catch (error) {
-        console.error('Failed to load board:', error);
-        Alert.alert('Error', 'Failed to load board');
+        logger.error('Failed to load board', error, { boardId });
+        alertService.showError('Failed to load board');
         navigation.goBack();
       } finally {
         setLoading(false);
@@ -76,7 +77,7 @@ export default function BoardScreen({ navigation, route }: Props) {
   useEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <View style={{ flexDirection: 'row', gap: 8 }}>
+        <View style={styles.headerButtonContainer}>
           <TouchableOpacity
             style={styles.headerButton}
             onPress={() => setShowParentManagement(true)}
@@ -105,8 +106,8 @@ export default function BoardScreen({ navigation, route }: Props) {
         setBoard(updatedBoard);
       }
     } catch (error) {
-      console.error('Failed to refresh board:', error);
-      Alert.alert('Error', 'Failed to refresh board');
+      logger.error('Failed to refresh board', error, { boardId: board.id });
+      alertService.showError('Failed to refresh board');
     }
   }, [board, boardService]);
 
@@ -129,7 +130,7 @@ export default function BoardScreen({ navigation, route }: Props) {
       // Find target column
       const targetColumn = board.columns.find((col) => col.id === targetColumnId);
       if (!targetColumn) {
-        Alert.alert('Error', 'Target column not found');
+        alertService.showError('Target column not found');
         return;
       }
 
@@ -149,9 +150,9 @@ export default function BoardScreen({ navigation, route }: Props) {
       setShowMoveModal(false);
       setSelectedItem(null);
     } catch (error) {
-      console.error('Failed to move item:', error);
+      logger.error('Failed to move item', error, { itemId: selectedItem.id, targetColumnId });
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Error', 'Failed to move item');
+      alertService.showError('Failed to move item');
     }
   };
 
@@ -195,10 +196,10 @@ export default function BoardScreen({ navigation, route }: Props) {
       // Refresh board
       await refreshBoard();
 
-      Alert.alert('Success', 'Parent deleted successfully');
+      alertService.showSuccess('Parent deleted successfully');
     } catch (error) {
-      console.error('Failed to delete parent:', error);
-      Alert.alert('Error', 'Failed to delete parent');
+      logger.error('Failed to delete parent', error, { parentId });
+      alertService.showError('Failed to delete parent');
     }
   };
 
@@ -232,9 +233,9 @@ export default function BoardScreen({ navigation, route }: Props) {
       // Refresh board
       await refreshBoard();
 
-      Alert.alert('Success', `Parent ${parentId ? 'updated' : 'created'} successfully`);
+      alertService.showSuccess(`Parent ${parentId ? 'updated' : 'created'} successfully`);
     } catch (error) {
-      console.error('Failed to save parent:', error);
+      logger.error('Failed to save parent', error, { parentId, name });
       throw error; // Re-throw to be handled by the form modal
     }
   };
@@ -344,34 +345,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    fontSize: 16,
+    ...theme.typography.textStyles.body,
     color: theme.text.secondary,
   },
   descriptionContainer: {
     backgroundColor: theme.background.elevated,
-    padding: 12,
+    padding: theme.spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: theme.border.primary,
   },
   description: {
-    fontSize: 14,
+    ...theme.typography.textStyles.body,
     color: theme.text.secondary,
-    lineHeight: 20,
   },
   columnsContainer: {
-    paddingVertical: 16,
-    paddingHorizontal: 8,
+    paddingVertical: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.sm,
+  },
+  headerButtonContainer: {
+    flexDirection: 'row',
+    gap: theme.spacing.sm,
   },
   headerButton: {
-    marginRight: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    marginRight: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 8,
+    borderRadius: theme.radius.button,
   },
   headerButtonText: {
     color: theme.header.text,
-    fontSize: 14,
-    fontWeight: '600',
+    ...theme.typography.textStyles.body,
+    fontWeight: theme.typography.fontWeights.semibold,
   },
 });

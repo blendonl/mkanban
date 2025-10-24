@@ -145,6 +145,9 @@ class ServiceManager:
         """Initialize all daemon services"""
         from src.daemon.sync.sync_coordinator import SyncCoordinator
         from src.daemon.ipc.ipc_server import IPCServer, setup_ipc_handlers
+        from src.daemon.action_daemon import ActionDaemon
+        from src.core.dependency_container import get_board_service, get_item_service
+        from pathlib import Path
 
         # Initialize git monitor using DI
         git_monitor = get_git_monitor()
@@ -162,6 +165,39 @@ class ServiceManager:
         if self.config_service.is_jira_enabled():
             self.services["jira_daemon"] = get_jira_daemon()
             self.logger.info("Jira daemon initialized")
+
+        # Initialize Action daemon if enabled
+        actions_config = getattr(self.config_service.config, 'actions', None)
+        self.logger.info(f"Actions config: {actions_config}, enabled: {getattr(actions_config, 'enabled', False) if actions_config else 'N/A'}")
+        if actions_config and getattr(actions_config, 'enabled', False):
+            actions_dir = Path(self.config_service.config.config_dir) / "actions"
+            self.logger.info(f"Initializing action daemon with dir: {actions_dir}")
+            action_daemon = ActionDaemon(
+                actions_dir=actions_dir,
+                config=actions_config.__dict__ if hasattr(actions_config, '__dict__') else {},
+                board_service=get_board_service(),
+                item_service=get_item_service()
+            )
+            self.services["action_daemon"] = action_daemon
+
+            # Connect event bus to action daemon
+            from src.core.event_bus import get_event_bus
+            from src.domain.entities.trigger import TriggerType
+
+            event_bus = get_event_bus()
+
+            # Subscribe to board switch events
+            def handle_board_switch(event_data):
+                action_daemon.handle_event(TriggerType.BOARD_SWITCH, event_data)
+
+            # Subscribe to task state change events
+            def handle_task_state_change(event_data):
+                action_daemon.handle_event(TriggerType.TASK_STATE_CHANGE, event_data)
+
+            event_bus.subscribe("board_switch", handle_board_switch)
+            event_bus.subscribe("task_state_change", handle_task_state_change)
+
+            self.logger.info("Action daemon initialized and connected to event bus")
 
         # Initialize IPC server with session-specific socket path
         ipc_socket_path = self.config_service.get_socket_path()

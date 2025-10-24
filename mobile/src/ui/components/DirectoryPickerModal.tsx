@@ -11,14 +11,15 @@ import {
   Modal,
   TouchableOpacity,
   ScrollView,
-  Alert,
   ActivityIndicator,
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { File, Directory } from 'expo-file-system';
 import * as FileSystemLegacy from 'expo-file-system/legacy';
-import theme from '../theme/colors';
+import theme from '../theme';
+import alertService from '../../services/AlertService';
+import logger from '../../utils/logger';
 
 interface DirectoryPickerModalProps {
   visible: boolean;
@@ -64,18 +65,15 @@ export default function DirectoryPickerModal({
         if (isValid) {
           setSelectedPath(directoryPath);
         } else {
-          Alert.alert(
-            'Invalid Directory',
-            'The selected directory is not accessible or writable. Please choose a different location.'
+          alertService.showError(
+            'The selected directory is not accessible or writable. Please choose a different location.',
+            'Invalid Directory'
           );
         }
       }
     } catch (error) {
-      console.error('Error picking directory:', error);
-      Alert.alert(
-        'Error',
-        'Failed to open folder picker. Please try again.'
-      );
+      logger.error('Error picking directory', error);
+      alertService.showError('Failed to open folder picker. Please try again.');
     } finally {
       setIsPicking(false);
     }
@@ -120,14 +118,14 @@ export default function DirectoryPickerModal({
         return true;
       }
     } catch (error) {
-      console.error('Path validation failed:', error);
+      logger.error('Path validation failed', error, { path });
       return false;
     }
   };
 
   const handleConfirm = async () => {
     if (!selectedPath || selectedPath.trim().length === 0) {
-      Alert.alert('Invalid Path', 'Please select a valid directory');
+      alertService.showValidationError('Please select a valid directory');
       return;
     }
 
@@ -145,9 +143,9 @@ export default function DirectoryPickerModal({
     setIsProcessing(false);
 
     if (!isValid) {
-      Alert.alert(
-        'Invalid Directory',
-        'The selected directory is not accessible or writable. Please choose a different location.'
+      alertService.showError(
+        'The selected directory is not accessible or writable. Please choose a different location.',
+        'Invalid Directory'
       );
       return;
     }
@@ -161,8 +159,8 @@ export default function DirectoryPickerModal({
       setIsProcessing(true);
       await onConfirm(path);
     } catch (error) {
-      console.error('Failed to set directory:', error);
-      Alert.alert('Error', `Failed to set directory: ${error}`);
+      logger.error('Failed to set directory', error, { path });
+      alertService.showError(`Failed to set directory: ${error}`);
     } finally {
       setIsProcessing(false);
     }
@@ -269,24 +267,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: theme.card.border,
     backgroundColor: theme.card.background,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '600',
+    ...theme.typography.textStyles.h3,
     color: theme.text.primary,
   },
   cancelButton: {
-    fontSize: 16,
+    ...theme.typography.textStyles.body,
     color: theme.accent.primary,
   },
   confirmButton: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...theme.typography.textStyles.body,
+    fontWeight: theme.typography.fontWeights.semibold,
     color: theme.accent.primary,
   },
   confirmButtonDisabled: {
@@ -296,65 +293,65 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   section: {
-    marginTop: 20,
-    paddingHorizontal: 16,
+    marginTop: theme.spacing.xl,
+    paddingHorizontal: theme.spacing.lg,
   },
   sectionTitle: {
-    fontSize: 13,
-    fontWeight: '600',
+    ...theme.typography.textStyles.caption,
+    fontWeight: theme.typography.fontWeights.semibold,
     color: theme.text.secondary,
     textTransform: 'uppercase',
-    marginBottom: 8,
+    marginBottom: theme.spacing.sm,
   },
   pathBox: {
     backgroundColor: theme.card.background,
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: theme.radius.input,
+    padding: theme.spacing.md,
     borderWidth: 1,
     borderColor: theme.card.border,
   },
   pathText: {
-    fontSize: 13,
+    ...theme.typography.textStyles.caption,
     color: theme.text.primary,
     fontFamily: 'monospace',
   },
   browseButton: {
     backgroundColor: theme.button.primary.background,
-    borderRadius: 8,
-    padding: 16,
+    borderRadius: theme.radius.button,
+    padding: theme.spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 56,
+    minHeight: theme.ui.FAB_SIZE,
   },
   browseButtonText: {
-    fontSize: 18,
-    fontWeight: '600',
+    ...theme.typography.textStyles.h3,
+    fontWeight: theme.typography.fontWeights.semibold,
     color: theme.button.primary.text,
   },
   helperText: {
-    fontSize: 12,
+    ...theme.typography.textStyles.bodySmall,
     color: theme.text.tertiary,
-    marginTop: 8,
+    marginTop: theme.spacing.sm,
     textAlign: 'center',
   },
   warningBox: {
     backgroundColor: '#fff3cd',
-    padding: 16,
-    margin: 16,
-    borderRadius: 8,
+    padding: theme.spacing.lg,
+    margin: theme.spacing.lg,
+    borderRadius: theme.radius.md,
     borderWidth: 1,
     borderColor: '#ffc107',
   },
   warningTitle: {
-    fontSize: 15,
-    fontWeight: '600',
+    ...theme.typography.textStyles.body,
+    fontWeight: theme.typography.fontWeights.semibold,
     color: '#856404',
-    marginBottom: 8,
+    marginBottom: theme.spacing.sm,
   },
   warningText: {
-    fontSize: 13,
+    ...theme.typography.textStyles.caption,
     color: '#856404',
-    lineHeight: 20,
-    marginBottom: 4,
+    lineHeight: theme.typography.lineHeights.base,
+    marginBottom: theme.spacing.xs,
   },
 });

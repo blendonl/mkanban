@@ -1,18 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import {
   View,
-  Text,
-  TextInput,
-  Modal,
-  TouchableOpacity,
   StyleSheet,
-  ScrollView,
-  Alert,
 } from 'react-native';
 import { Parent } from '../../domain/entities';
 import { ParentColor } from '../../core/enums';
 import ColorPicker from './ColorPicker';
-import theme from '../theme/colors';
+import BaseModal from './BaseModal';
+import { Input } from './Input';
+import { PrimaryButton, SecondaryButton } from './Button';
+import theme from '../theme';
+import alertService from '../../services/AlertService';
 
 interface ParentFormModalProps {
   visible: boolean;
@@ -48,12 +46,12 @@ export default function ParentFormModal({
     const trimmedName = name.trim();
 
     if (!trimmedName) {
-      Alert.alert('Validation Error', 'Parent name is required');
+      alertService.showValidationError('Parent name is required');
       return;
     }
 
-    if (trimmedName.length > 100) {
-      Alert.alert('Validation Error', 'Parent name must be 100 characters or less');
+    if (trimmedName.length > theme.ui.PARENT_NAME_MAX_LENGTH) {
+      alertService.showValidationError(`Parent name must be ${theme.ui.PARENT_NAME_MAX_LENGTH} characters or less`);
       return;
     }
 
@@ -62,7 +60,7 @@ export default function ParentFormModal({
       await onSave(trimmedName, selectedColor, parent?.id);
       handleClose();
     } catch (error) {
-      Alert.alert('Error', `Failed to save parent: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      alertService.showError(`Failed to save parent: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsSaving(false);
     }
@@ -75,147 +73,50 @@ export default function ParentFormModal({
   };
 
   return (
-    <Modal
+    <BaseModal
       visible={visible}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={handleClose}
-    >
-      <View style={styles.overlay}>
-        <View style={styles.modal}>
-          <View style={styles.header}>
-            <Text style={styles.title}>{isEditing ? 'Edit Parent' : 'New Parent'}</Text>
-            <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-              <Text style={styles.closeButtonText}>✕</Text>
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView style={styles.content}>
-            <View style={styles.field}>
-              <Text style={styles.label}>Name *</Text>
-              <TextInput
-                style={styles.input}
-                value={name}
-                onChangeText={setName}
-                placeholder="e.g., Feature X, Project Alpha"
-                placeholderTextColor={theme.input.placeholder}
-                autoFocus={!isEditing}
-                maxLength={100}
-              />
-            </View>
-
-            <ColorPicker selectedColor={selectedColor} onColorSelect={setSelectedColor} />
-          </ScrollView>
-
-          <View style={styles.footer}>
-            <TouchableOpacity
-              style={[styles.button, styles.cancelButton]}
-              onPress={handleClose}
-              disabled={isSaving}
-            >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.button, styles.saveButton, isSaving && styles.disabledButton]}
-              onPress={handleSave}
-              disabled={isSaving}
-            >
-              <Text style={styles.saveButtonText}>
-                {isSaving ? 'Saving...' : isEditing ? 'Update' : 'Create'}
-              </Text>
-            </TouchableOpacity>
-          </View>
+      onClose={handleClose}
+      title={isEditing ? 'Edit Parent' : 'New Parent'}
+      scrollable
+      footer={
+        <View style={styles.footer}>
+          <SecondaryButton
+            title="Cancel"
+            onPress={handleClose}
+            disabled={isSaving}
+          />
+          <PrimaryButton
+            title={isSaving ? 'Saving...' : isEditing ? 'Update' : 'Create'}
+            onPress={handleSave}
+            disabled={isSaving}
+            loading={isSaving}
+          />
         </View>
+      }
+    >
+      <View style={styles.field}>
+        <Input
+          label="Name"
+          value={name}
+          onChangeText={setName}
+          placeholder="e.g., Feature X, Project Alpha"
+          autoFocus={!isEditing}
+          maxLength={theme.ui.PARENT_NAME_MAX_LENGTH}
+          required
+        />
       </View>
-    </Modal>
+
+      <ColorPicker selectedColor={selectedColor} onColorSelect={setSelectedColor} />
+    </BaseModal>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: theme.modal.overlay,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modal: {
-    backgroundColor: theme.modal.background,
-    borderRadius: 12,
-    width: '90%',
-    maxHeight: '80%',
-    overflow: 'hidden',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.border.primary,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: theme.text.primary,
-  },
-  closeButton: {
-    padding: 4,
-  },
-  closeButtonText: {
-    fontSize: 24,
-    color: theme.text.secondary,
-  },
-  content: {
-    padding: 16,
-  },
   field: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 8,
-    color: theme.text.primary,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: theme.input.border,
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    color: theme.input.text,
-    backgroundColor: theme.input.background,
+    marginBottom: theme.spacing.lg,
   },
   footer: {
     flexDirection: 'row',
-    padding: 16,
-    gap: 12,
-    borderTopWidth: 1,
-    borderTopColor: theme.border.primary,
-  },
-  button: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  cancelButton: {
-    backgroundColor: theme.button.secondary.background,
-  },
-  cancelButtonText: {
-    color: theme.button.secondary.text,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  saveButton: {
-    backgroundColor: theme.button.primary.background,
-  },
-  saveButtonText: {
-    color: theme.button.primary.text,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  disabledButton: {
-    opacity: 0.5,
+    gap: theme.spacing.md,
   },
 });

@@ -73,6 +73,13 @@ def create_configuration_service(args) -> ConfigurationService:
                 key.strip() for key in args.jira_projects.split(",")
             ]
 
+    # Load actions configuration from config file
+    from src.config.configuration_manager import ConfigurationManager
+    from pathlib import Path
+
+    config_manager = ConfigurationManager()
+    unified_config = config_manager.config
+
     config = DaemonConfiguration(
         enabled=not args.disable,
         polling_interval=args.polling_interval,
@@ -87,6 +94,8 @@ def create_configuration_service(args) -> ConfigurationService:
         done_column=args.done_column,
         data_path=data_path or get_mkanban_data_path(),
         jira=jira_config,
+        actions=unified_config.actions,
+        config_dir=Path(unified_config.config_dir),
     )
 
     if args.branch_patterns:

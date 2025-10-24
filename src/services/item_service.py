@@ -9,6 +9,7 @@ from src.services.validation_service import ValidationService
 from src.utils.logger_factory import ContextAwareLogger
 from src.utils.string_utils import generate_manual_item_id, get_board_prefix
 from src.config.configuration_manager import ConfigurationManager
+from src.core.event_bus import get_event_bus
 
 
 class ItemService:
@@ -23,6 +24,7 @@ class ItemService:
         self._validator = validation_service
         self._logger = logger
         self._config = config_manager
+        self._event_bus = get_event_bus()
 
     def create_item(
         self,
@@ -61,6 +63,15 @@ class ItemService:
         item.metadata["issue_type"] = self._config.config.default_issue_type
 
         self._logger.info("Successfully created item", board=board.name, column=column.name, item=title, item_id=item_id)
+
+        # Emit task state change event
+        self._event_bus.publish("task_state_change", {
+            "event": "created",
+            "task": item,
+            "board": board,
+            "column_id": column_id
+        })
+
         return item
 
     def _get_next_item_index(self, board: Board) -> int:
@@ -97,6 +108,16 @@ class ItemService:
                     self._validator.validate_item_title(kwargs["title"])
 
                 item.update(**kwargs)
+
+                # Emit task state change event
+                self._event_bus.publish("task_state_change", {
+                    "event": "updated",
+                    "task": item,
+                    "board": board,
+                    "column_id": column.id,
+                    "updates": kwargs
+                })
+
                 return True
 
         raise ItemNotFoundError(f"Item with id '{item_id}' not found")
@@ -117,6 +138,15 @@ class ItemService:
                 if success:
                     self._storage.save_board_to_storage(board)
                     self._logger.info("Successfully deleted item", board=board.name, column=column.name, item=item.title)
+
+                    # Emit task state change event
+                    self._event_bus.publish("task_state_change", {
+                        "event": "deleted",
+                        "task": item,
+                        "board": board,
+                        "column_id": column.id
+                    })
+
                 return success
 
         self._logger.warning("Item not found for deletion", board=board.name, item=item_id)
@@ -162,6 +192,16 @@ class ItemService:
         target_column.move_item_to_end(item_to_move)
 
         self._storage.save_board_to_storage(board)
+
+        # Emit task state change event
+        self._event_bus.publish("task_state_change", {
+            "event": "moved",
+            "task": item_to_move,
+            "board": board,
+            "source_column_id": source_column.id,
+            "target_column_id": target_column_id
+        })
+
         return True
 
     def set_item_parent(

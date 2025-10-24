@@ -6,7 +6,6 @@ import {
   FlatList,
   TouchableOpacity,
   RefreshControl,
-  Alert,
   TextInput,
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -14,7 +13,9 @@ import { RootStackParamList } from '../navigation/AppNavigator';
 import { Board } from '../../domain/entities/Board';
 import { getBoardService } from '../../core/DependencyContainer';
 import EmptyState from '../components/EmptyState';
-import theme from '../theme/colors';
+import theme from '../theme';
+import alertService from '../../services/AlertService';
+import logger from '../../utils/logger';
 
 type BoardListScreenNavigationProp = StackNavigationProp<RootStackParamList, 'BoardList'>;
 
@@ -51,8 +52,8 @@ export default function BoardListScreen({ navigation }: Props) {
       const allBoards = await boardService.getAllBoards();
       setBoards(allBoards);
     } catch (error) {
-      console.error('Failed to load boards:', error);
-      Alert.alert('Error', 'Failed to load boards');
+      logger.error('Failed to load boards', error);
+      alertService.showError('Failed to load boards');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -70,7 +71,7 @@ export default function BoardListScreen({ navigation }: Props) {
 
   const handleCreateBoard = async () => {
     if (!newBoardName.trim()) {
-      Alert.alert('Error', 'Board name is required');
+      alertService.showValidationError('Board name is required');
       return;
     }
 
@@ -97,8 +98,8 @@ export default function BoardListScreen({ navigation }: Props) {
         navigation.navigate('Board', { boardId: newBoard.id });
       }
     } catch (error) {
-      console.error('Failed to create board:', error);
-      Alert.alert('Error', 'Failed to create board');
+      logger.error('Failed to create board', error, { name: newBoardName });
+      alertService.showError('Failed to create board');
     }
   };
 
@@ -114,7 +115,7 @@ export default function BoardListScreen({ navigation }: Props) {
     <TouchableOpacity
       style={styles.boardCard}
       onPress={() => handleBoardPress(board)}
-      activeOpacity={0.7}
+      activeOpacity={theme.ui.PRESSED_OPACITY}
     >
       <Text style={styles.boardName}>{board.name}</Text>
       {board.description && (
@@ -231,36 +232,30 @@ const styles = StyleSheet.create({
     backgroundColor: theme.background.primary,
   },
   loadingText: {
-    fontSize: 16,
+    ...theme.typography.textStyles.body,
     color: theme.text.secondary,
   },
   listContent: {
-    padding: 16,
+    padding: theme.spacing.lg,
   },
   boardCard: {
     backgroundColor: theme.card.background,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: theme.radius.card,
+    padding: theme.spacing.lg,
+    marginBottom: theme.spacing.md,
     borderWidth: 1,
     borderColor: theme.card.border,
-    shadowColor: theme.card.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    ...theme.shadows.card,
   },
   boardName: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    ...theme.typography.textStyles.h3,
     color: theme.text.primary,
-    marginBottom: 4,
+    marginBottom: theme.spacing.xs,
   },
   boardDescription: {
-    fontSize: 14,
+    ...theme.typography.textStyles.body,
     color: theme.text.secondary,
-    marginBottom: 12,
-    lineHeight: 20,
+    marginBottom: theme.spacing.md,
   },
   boardFooter: {
     flexDirection: 'row',
@@ -268,48 +263,43 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   boardStats: {
-    fontSize: 12,
+    ...theme.typography.textStyles.bodySmall,
     color: theme.text.tertiary,
   },
   fab: {
     position: 'absolute',
-    right: 24,
-    bottom: 24,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    right: theme.spacing.xl,
+    bottom: theme.spacing.xl,
+    width: theme.ui.FAB_SIZE,
+    height: theme.ui.FAB_SIZE,
+    borderRadius: theme.radius.fab,
     backgroundColor: theme.accent.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: theme.card.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 8,
+    ...theme.shadows.fab,
   },
   fabText: {
     color: theme.button.primary.text,
-    fontSize: 32,
-    fontWeight: '300',
+    fontSize: theme.typography.fontSizes.display,
+    fontWeight: theme.typography.fontWeights.light,
   },
   dialogContainer: {
     flex: 1,
-    padding: 24,
+    padding: theme.spacing.xl,
     backgroundColor: theme.modal.background,
   },
   dialogTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    ...theme.typography.textStyles.h1,
     color: theme.text.primary,
-    marginBottom: 24,
+    marginBottom: theme.spacing.xl,
   },
   input: {
     borderWidth: 1,
     borderColor: theme.input.border,
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    marginBottom: 16,
+    borderRadius: theme.radius.input,
+    padding: theme.spacing.md,
+    fontSize: theme.typography.fontSizes.lg,
+    marginBottom: theme.spacing.lg,
     backgroundColor: theme.input.background,
     color: theme.input.text,
   },
@@ -320,28 +310,26 @@ const styles = StyleSheet.create({
   dialogButtons: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    marginTop: 24,
+    marginTop: theme.spacing.xl,
   },
   dialogButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginLeft: 12,
+    paddingHorizontal: theme.spacing.buttonPadding.horizontal,
+    paddingVertical: theme.spacing.buttonPadding.vertical,
+    borderRadius: theme.radius.button,
+    marginLeft: theme.spacing.md,
   },
   cancelButton: {
     backgroundColor: theme.button.secondary.background,
   },
   cancelButtonText: {
     color: theme.button.secondary.text,
-    fontSize: 16,
-    fontWeight: '600',
+    ...theme.typography.textStyles.button,
   },
   createButton: {
     backgroundColor: theme.button.primary.background,
   },
   createButtonText: {
     color: theme.button.primary.text,
-    fontSize: 16,
-    fontWeight: '600',
+    ...theme.typography.textStyles.button,
   },
 });

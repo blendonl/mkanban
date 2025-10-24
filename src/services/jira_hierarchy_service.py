@@ -15,11 +15,7 @@ class JiraHierarchyService:
     """Service for managing JIRA ticket hierarchies"""
 
     def __init__(self):
-        self.logger = LoggerFactory.get_logger(
-            "mkanban-daemon",
-            context_type="service",
-            service_name="jira_hierarchy"
-        )
+        self.logger = LoggerFactory().get_daemon_logger("jira_hierarchy")
 
     async def sync_epic_with_children(
         self,

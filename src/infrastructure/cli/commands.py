@@ -4,6 +4,7 @@ from typing import Optional
 from src.core.exceptions import MKanbanError
 from src.core.dependency_container import get_config_manager, get_board_service
 from .daemon_commands import daemon_command
+from .action_commands import action_command
 
 
 def get_board_names(ctx, param, incomplete):
@@ -289,9 +290,9 @@ def checkout_command(task: Optional[str], board: Optional[str]) -> None:
         click.echo(f"Error: {e}", err=True)
 
 
-# Import and add daemon command group
-
+# Import and add command groups
 main_command.add_command(daemon_command)
+main_command.add_command(action_command)
 
 
 if __name__ == "__main__":

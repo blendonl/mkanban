@@ -1,0 +1,56 @@
+# Example: Board Enter Notification
+# This action sends a welcome notification when you enter a specific board
+
+id: action-hoo-board-enter-myproject
+type: hook
+name: "My Project board entry notification"
+description: "Welcomes me when I open the my-project board"
+enabled: true
+created_at: "2024-10-20T10:00:00"
+modified_at: "2024-10-20T10:00:00"
+
+# Board-scoped - only for "my-project" board
+scope:
+  type: board
+  target_id: "my-project"
+
+# Triggered when entering the board
+triggers:
+  - type: board_switch
+    event: enter
+    board_id: "my-project"
+
+# No conditions - always execute
+conditions: []
+
+# Send welcome notification
+actions:
+  - type: notify
+    message: "Welcome to My Project! You have tasks waiting in to-do."
+    title: "MKanban - My Project"
+    platforms: ["desktop"]
+    channels: ["system"]
+    priority: low
+
+recurrence: null
+snooze: null
+
+execution:
+  last_triggered: null
+  last_success: null
+  last_failure: null
+  last_error: null
+  total_executions: 0
+  successful_executions: 0
+  consecutive_failures: 0
+
+metadata:
+  priority: 1
+  max_retries: 1
+  retry_delay: 60
+  timeout: 10
+  tags: ["hook", "welcome", "board"]
+  custom: {}
+
+on_success: []
+on_failure: []

@@ -22,6 +22,13 @@ from src.daemon.jira.jira_sync_coordinator import JiraSyncCoordinator
 from src.daemon.git_monitor import GitMonitor
 from src.daemon.core.session_context_manager import SessionContextManager
 
+# Action system imports
+from src.domain.repositories.action_repository import ActionRepository
+from src.infrastructure.repositories.yaml_action_repository import YamlActionRepository
+from src.services.action_service import ActionService
+from src.services.action_engine import ActionEngine
+from src.services.notification_service import NotificationService
+
 # CLI components imported lazily to avoid circular imports
 from src.controllers.item_controller import ItemController
 from src.controllers.column_controller import ColumnController
@@ -45,6 +52,7 @@ class DependencyContainer:
         self._setup_daemon_factories()
         self._setup_repository_factories()
         self._setup_service_factories()
+        self._setup_action_factories()
         self._setup_cli_factories()
 
     def _setup_configuration_factories(self):
@@ -124,6 +132,39 @@ class DependencyContainer:
         )
         self._factories[BranchService] = lambda: BranchService(
             self.get(LoggerFactory).get_daemon_logger("branch_service"),
+        )
+
+    def _setup_action_factories(self):
+        """Set up action system factories."""
+        def _create_action_repository():
+            from pathlib import Path
+            config_manager = self.get(ConfigurationManager)
+            actions_dir = Path(config_manager.config.config_dir) / "actions"
+            return YamlActionRepository(
+                actions_dir,
+                self.get(LoggerFactory).get_daemon_logger("action_repository")
+            )
+
+        self._factories[ActionRepository] = _create_action_repository
+        self._factories[YamlActionRepository] = _create_action_repository
+
+        self._factories[NotificationService] = lambda: NotificationService(
+            self.get(ConfigurationManager),
+            self.get(LoggerFactory).get_daemon_logger("notification_service")
+        )
+
+        self._factories[ActionService] = lambda: ActionService(
+            self.get(ActionRepository),
+            self.get(MarkdownBoardRepository),
+            self.get(LoggerFactory).get_daemon_logger("action_service")
+        )
+
+        self._factories[ActionEngine] = lambda: ActionEngine(
+            self.get(ActionService),
+            self.get(NotificationService),
+            self.get(BoardService),
+            self.get(ItemService),
+            self.get(LoggerFactory).get_daemon_logger("action_engine")
         )
 
     def _setup_cli_factories(self):
@@ -233,6 +274,22 @@ def get_config_manager() -> ConfigurationManager:
 
 def get_board_service() -> BoardService:
     return get_container().get(BoardService)
+
+
+def get_item_service() -> ItemService:
+    return get_container().get(ItemService)
+
+
+def get_action_service() -> ActionService:
+    return get_container().get(ActionService)
+
+
+def get_action_engine() -> ActionEngine:
+    return get_container().get(ActionEngine)
+
+
+def get_notification_service() -> NotificationService:
+    return get_container().get(NotificationService)
 
 
 def get_logger_factory() -> LoggerFactory:
