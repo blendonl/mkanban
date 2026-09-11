@@ -4,12 +4,8 @@ import re
 from croniter import croniter
 from src.domain.entities.action import Action
 from src.domain.entities.trigger import Trigger, TriggerType, ScheduleType
-from src.domain.entities.condition import Condition, ConditionType, Operator
+from src.domain.entities.condition import ConditionType, Operator
 from src.domain.entities.action_executor import ActionExecutor, ActionExecutorType
-from src.domain.entities.item import Item
-from src.domain.entities.board import Board
-from src.services.action_service import ActionService
-from src.utils.logger_factory import LoggerFactory
 
 
 class ActionEngine:

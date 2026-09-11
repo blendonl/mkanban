@@ -26,7 +26,6 @@ ruff check             # Run ruff linter directly (configured in ruff.toml)
 
 ```bash
 make test              # Run pytest tests
-python test/test_operations.py  # Run specific debugging tests
 pytest tests/unit/test_services/test_board_service.py::TestBoardService::test_create_board  # Run single test
 ```
 

@@ -224,7 +224,6 @@ class TestColumn:
         """Test reordering with invalid position."""
         column = ColumnFactory.create_with_items(item_count=3)
         item_to_move = column.items[0]
-        original_items = column.items.copy()
 
         # Position beyond list bounds
         result = column.reorder_items(item_to_move.id, 10)

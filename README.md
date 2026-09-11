@@ -2,6 +2,8 @@
 
 A powerful Terminal User Interface (TUI) Kanban board application built with Python and Textual. MKanban manages tasks using markdown files stored in a hierarchical folder structure, providing a vim-inspired interface for efficient task management.
 
+> **Note:** Active development continues in [Cadence](https://cadence.blendonl.com), which grew out of mkanban.
+
 ## Features
 
 - **Vim-style Navigation**: Navigate with `hjkl` keys and vim-inspired keybindings
@@ -25,7 +27,7 @@ Best for development and regular use. Installs `mkanban` and `mkanban-daemon` co
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/blendonl/mkanban.git
 cd mkanban
 
 # Install in development mode (changes to code are immediately reflected)
@@ -52,7 +54,7 @@ Best for Arch Linux users who want proper system integration with pacman.
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/blendonl/mkanban.git
 cd mkanban
 
 # Build and install the package
@@ -70,7 +72,7 @@ Best for creating a portable single-file executable (no Python runtime required 
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/blendonl/mkanban.git
 cd mkanban
 
 # Set up the environment (required for building)
@@ -289,7 +291,7 @@ Comprehensive documentation is available in the `docs/` folder:
 
 ## License
 
-[License information here]
+MIT. See [LICENSE](LICENSE).
 
 ## Support
 
