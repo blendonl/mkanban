@@ -9,7 +9,6 @@ from src.domain.entities.condition import Condition
 from src.domain.entities.action_executor import ActionExecutor
 from src.domain.repositories.action_repository import ActionRepository
 from src.utils.file_utils import ensure_directory_exists
-from src.utils.logger_factory import LoggerFactory
 
 
 def _serialize_value(obj: Any) -> Any:

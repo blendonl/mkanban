@@ -2,15 +2,12 @@
 
 import click
 import sys
-from pathlib import Path
-from typing import Optional, List
-from datetime import datetime
+from typing import Optional
 from src.core.dependency_container import get_action_service
 from src.domain.entities.action import ActionType
 from src.domain.entities.action_scope import ActionScope, ScopeType
 from src.domain.entities.trigger import Trigger, TriggerType, TimeSchedule, ScheduleType
 from src.domain.entities.action_executor import ActionExecutor, ActionExecutorType, NotificationPriority
-from src.utils.string_utils import generate_id_from_name
 
 
 @click.group("action")
@@ -85,7 +82,7 @@ def show_action(action_id: str):
         click.echo(f"Type: {action.type.value}")
         click.echo(f"Enabled: {'Yes' if action.enabled else 'No'}")
         click.echo(f"Description: {action.description or 'N/A'}")
-        click.echo(f"\nScope:")
+        click.echo("\nScope:")
         click.echo(f"  Type: {action.scope.type.value}")
         if action.scope.target_id:
             click.echo(f"  Target ID: {action.scope.target_id}")
@@ -113,7 +110,7 @@ def show_action(action_id: str):
             if executor.message:
                 click.echo(f"     Message: {executor.message[:50]}...")
 
-        click.echo(f"\nExecution History:")
+        click.echo("\nExecution History:")
         click.echo(f"  Total: {action.execution.total_executions}")
         click.echo(f"  Successful: {action.execution.successful_executions}")
         click.echo(f"  Consecutive Failures: {action.execution.consecutive_failures}")

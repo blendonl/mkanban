@@ -1,10 +1,9 @@
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Any
 from datetime import datetime, timedelta
 from src.domain.entities.action import Action, ActionType
 from src.domain.entities.action_scope import ActionScope, ScopeType
 from src.domain.repositories.action_repository import ActionRepository
 from src.domain.repositories.board_repository import BoardRepository
-from src.utils.logger_factory import LoggerFactory
 from src.utils.date_utils import now
 from src.utils.string_utils import generate_id_from_name
 

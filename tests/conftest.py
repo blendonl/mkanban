@@ -100,7 +100,7 @@ def sample_board() -> Board:
     # Add some columns
     todo_column = board.add_column("To Do", 0)
     in_progress_column = board.add_column("In Progress", 1)
-    done_column = board.add_column("Done", 2)
+    board.add_column("Done", 2)
 
     # Add some items
     todo_column.items.append(Item(
@@ -169,7 +169,7 @@ def reset_dependency_container():
         from src.core.dependency_container import get_container
         container = get_container()
         container.clear_instances()
-    except:
+    except Exception:
         pass
 
 

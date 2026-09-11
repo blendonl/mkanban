@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 from enum import Enum
 from src.utils.date_utils import now
 from src.core.types import Timestamp
-from .action_scope import ActionScope, ScopeType
+from .action_scope import ActionScope
 from .trigger import Trigger
 from .condition import Condition
 from .action_executor import ActionExecutor

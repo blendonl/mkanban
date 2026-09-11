@@ -1,7 +1,6 @@
-from typing import List, Optional, Any, Dict
+from typing import List, Optional, Any
 from enum import Enum
 from src.domain.entities.action_executor import NotificationPriority
-from src.utils.logger_factory import LoggerFactory
 
 
 class NotificationChannel(str, Enum):
