@@ -75,7 +75,6 @@ def create_configuration_service(args) -> ConfigurationService:
 
     # Load actions configuration from config file
     from src.config.configuration_manager import ConfigurationManager
-    from pathlib import Path
 
     config_manager = ConfigurationManager()
     unified_config = config_manager.config
