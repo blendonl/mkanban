@@ -136,9 +136,7 @@ class TodoSelector:
         self._update_todo_status(todo, board)
 
         click.echo(
-            f"Successfully switched to branch '{
-                branch_name
-            }' and moved todo to in-progress"
+            f"Successfully switched to branch '{branch_name}' and moved todo to in-progress"
         )
 
     def _parse_selection(self, selected_text: str) -> Tuple[str, Optional[str]]:

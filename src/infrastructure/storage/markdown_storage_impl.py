@@ -300,9 +300,7 @@ class MarkdownStorageImpl(BoardRepository, StorageRepository):
 
         logger = logging.getLogger("mkanban-daemon")
         logger.debug(
-            f"Saving column {board.name} '{column.name}' (ID: {column.id}) with {
-                len(column.items)
-            } items"
+            f"Saving column {board.name} '{column.name}' (ID: {column.id}) with {len(column.items)} items"
         )
         for item in column.items:
             logger.debug(f"  Item: {item.title} (ID: {item.id})")
