@@ -87,8 +87,7 @@ mkanban/
 ├── requirements.txt              # Production dependencies
 ├── requirements-dev.txt          # Development dependencies
 ├── Makefile                      # Development commands
-├── main.py                       # Entry point
-└── CLAUDE.md                     # AI assistant instructions
+└── main.py                       # Entry point
 ```
 
 ## Architecture Overview

@@ -210,3 +210,9 @@ pkg/
 src/mkanban-*/
 *.pkg.tar.zst
 *.tar.gz
+
+# Local-only files
+node_modules/
+CLAUDE.md
+mvp-plan.md
+progress.md
